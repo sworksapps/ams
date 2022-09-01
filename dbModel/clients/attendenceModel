@@ -1,0 +1,22 @@
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+
+const attendenceModel = new Schema({
+    userId: { type: String, required: true },
+    companyId: { type: String, required: true },
+    locationId: { type: String, required: true },
+    deptId: { type: String, required: true },
+    shiftStart: { type: String, default: '' },
+    shiftEnd: { type: String, default: '' },
+    clockIn: { type: String, default: '' },
+    clockOut: { type: String, default: '' },
+    clockOutLog: [{ type: String }],
+    date: { type: String, required: true },
+    isHoliday: { type: Schema.Types.ObjectId, default: null }
+}, {
+    timestamps: true
+});
+
+attendenceModel.index({ deptId: 1 });
+
+module.exports = mongoose.model('attendences_data', attendenceModel);
