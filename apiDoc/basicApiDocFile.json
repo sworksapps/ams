@@ -1,0 +1,231 @@
+{
+  "openapi":"3.0.3",
+  "info":{
+     "title":"All API Doc for Client Spoc Saas Application",
+     "description":"This is a REST API application made with Express. It retrieves data from Our Mongodb Database.",
+     "version":"1.0.0"
+  },
+  "servers":[
+     {
+        "url":"http://localhost:9000/",
+        "description":"Local Development server"
+     },
+     {
+        "url":"https://client-saas.sworks.co.in/backend/",
+        "description":"Staging server"
+     }
+  ],
+  "components":{
+     "securitySchemes":{
+        "bearerAuth":{
+           "type":"apiKey",
+           "name":"Authorization",
+           "in":"header"
+        }
+     }
+  },
+  "security":[
+     {
+        "bearerAuth":[
+           
+        ]
+     }
+  ],
+  "paths":{
+     "/client/v1/basic/get-all-country":{
+        "get":{
+           "summary":"List of all country",
+           "description":"List of all country",
+           "tags":["Basic Datas"],
+           "parameters":[
+              {
+                 "in":"query",
+                 "name":"pgno",
+                 "description":"Page number for pagination",
+                 "required":true,
+                 "schema":{
+                    "type":"integer"
+                 }
+              },
+              {
+                 "in":"query",
+                 "name":"row",
+                 "description":"Number of rows per page",
+                 "required":true,
+                 "schema":{
+                    "type":"integer"
+                 }
+              },
+              {
+                 "in":"query",
+                 "name":"text",
+                 "description":"text to match with data",
+                 "schema":{
+                    "type":"integer"
+                 }
+              },
+              {
+                 "in":"query",
+                 "name":"type",
+                 "description":"country status type may be active or inactive",
+                 "schema":{
+                    "type":"integer"
+                 }
+              },
+              {
+                 "in":"query",
+                 "name":"sort_by",
+                 "description":"key name to sort the data.",
+                 "schema":{
+                    "type":"integer"
+                 }
+              }
+           ],
+           "responses":{
+              "200":{
+                 "description":"All Country",
+                 "content":{
+                    "application/json":{
+                       "schema":{
+                          "required":[
+                             "statusText",
+                             "statusValue",
+                             "message",
+                             "payload"
+                          ],
+                          "properties":{
+                             "statusText":{
+                                "type":"string"
+                             },
+                             "statusValue":{
+                                "type":"number"
+                             },
+                             "message":{
+                                "type":"string"
+                             },
+                             "payload":{
+                                "required":[
+                                   "countryData",
+                                   "total"
+                                ],
+                                "properties":{
+                                   "countryData":{
+                                      "type":"array",
+                                      "items":{
+                                         "type":"object",
+                                         "properties":{
+                                            "countryStatus":{
+                                               "type":"string"
+                                            },
+                                            "_id":{
+                                               "type":"string"
+                                            },
+                                            "countryName":{
+                                               "type":"string"
+                                            },
+                                            "createdAt":{
+                                               "type":"string"
+                                            }
+                                         }
+                                      }
+                                   },
+                                   "total":{
+                                      "type":"number"
+                                   }
+                                },
+                                "type":"object"
+                             }
+                          }
+                       },
+                       "example":{
+                          "statusText":"OK",
+                          "statusValue":200,
+                          "message":"All Country",
+                          "payload":{
+                             "countryData":[
+                                {
+                                   "countryStatus":"1",
+                                   "_id":"618a37c085362b1b89a12e57",
+                                   "countryName":"UK",
+                                   "createdAt":"2021-11-09T08:56:32.116Z"
+                                },
+                                {
+                                   "countryStatus":"1",
+                                   "_id":"617b9602cd117b08fb4e15d9",
+                                   "countryName":"INDIA",
+                                   "createdAt":"2021-10-29T06:34:42.065Z"
+                                }
+                             ],
+                             "total":2
+                          }
+                       }
+                    }
+                 }
+              }
+           }
+        }
+     },
+     "/client/v1/basic/manage-country":{
+        "post":{
+           "summary":"Manage Country",
+           "description":"Add or update a country",
+           "tags":["Basic Datas"],
+           "requestBody":{
+              "content":{
+                 "application/json":{
+                    "schema":{
+                       "type":"object",
+                       "properties":{
+                          "countryName":{
+                             "type":"string",
+                             "example":"UK"
+                          },
+                          "countryId":{
+                             "type":"string",
+                             "example":"618a37c085362b1b89a12e57"
+                          },
+                          "actionType":{
+                             "type":"string",
+                             "example":"UPDATE"
+                          }
+                       }
+                    }
+                 }
+              }
+           },
+           "responses":{
+              "200":{
+                 "description":"Manage Country",
+                 "content":{
+                    "application/json":{
+                       "schema":{
+                          "required":[
+                             "statusText",
+                             "statusValue",
+                             "message"
+                          ],
+                          "properties":{
+                             "statusText":{
+                                "type":"string"
+                             },
+                             "statusValue":{
+                                "type":"number"
+                             },
+                             "message":{
+                                "type":"string"
+                             }
+                          }
+                       },
+                       "example":{
+                          "statusText":"OK",
+                          "statusValue":200,
+                          "message":"New Country added Successfully"
+                       }
+                    }
+                 }
+              }
+           }
+        }
+     }
+  }
+}
