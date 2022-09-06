@@ -11,7 +11,7 @@ const { connectAllDb } = require('./connectionManager');
  *-----------------------Includes Routes----------------
  */
 
-const userRoutes = require('./routes/userRoutes');
+const attendenceRoutes = require('./routes/attendenceRoutes');
 
 
 /*
@@ -40,7 +40,7 @@ app.get('/', async (req, res) => {
 
 /*-----------------------------*/
 
-app.use('/', userRoutes);
+app.use('/', attendenceRoutes);
 
 /*-----------------------------*/
 app.use((req, res, next) => {
