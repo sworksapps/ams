@@ -3,7 +3,8 @@ const Schema = mongoose.Schema;
 
 const clientMasterSchema = new Schema({
   clientName: { type: String, required: true },
-  clientDomain: { type: String, trim: true, unique: true, required: true, },
+  clientId : { type: String, required: true },
+  clientUuid: { type: String, trim: true, unique: true, required: true, },
   clientDbName: { type: String, trim: true, unique: true, required: true, },
   clientStatus: { type: String, enum: ['1', '2'], default: '1' },
 },{

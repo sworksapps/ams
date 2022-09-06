@@ -1,0 +1,15 @@
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+
+const holidayListModel = new Schema({
+  deptId: { type: String, required: true },
+  holidayName: { type: String, required: true },
+  locationId: { type: String, required: true },
+  date: { type: String, required: true },
+}, {
+  timestamps: true
+});
+
+holidayListModel.index({ deptId: 1 });
+
+module.exports = mongoose.model('holiday_list', holidayListModel);
