@@ -11,13 +11,11 @@ const resolveTenant = (req, res, next) => {
   let tenantIdentity = null;
   if(req.headers['authorization']){
     const decodedjwt = dataValidation.parseJwt(req.headers['authorization']);
-    if(decodedjwt && decodedjwt.did){
-      tenantIdentity = decodedjwt.did;
+    if(decodedjwt && decodedjwt.clientDbName){
+      tenantIdentity = decodedjwt.clientDbName;
     } else {
       tenantIdentity = null;
     }
-  } else if(req.headers['x-client']){
-    tenantIdentity = req.headers['x-client'];
   } else {
     return res.status(403).json({ statusText: 'FAIL', statusValue: 403, message: `Please provide auth Token` });
   }
@@ -25,7 +23,7 @@ const resolveTenant = (req, res, next) => {
   if (dataValidation.isEmpty(tenantIdentity)) {
     return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `Please provide client's name to connect` });
   }
-  const dbString = dataValidation.decryptString(tenantIdentity);
+  const dbString = tenantIdentity;
   // Run the application in the defined namespace. It will contextualize every underlying function calls.
   nameSpace.run(() => {
     const tenantDbConnection = getConnectionByTenant(dbString);

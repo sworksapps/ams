@@ -5,14 +5,14 @@ const attendenceModel = new Schema({
   deptId: { type: String, required: true },
   locationId: { type: String, required: true },
   userId: { type: String, required: true },
+  date: { type: String, required: true },
+  shiftStart: { type: String, default: '' },
+  shiftEnd: { type: String, default: '' },
+  // isHoliday: { type: Schema.Types.ObjectId, default: null },
+  attendenceStatus: { type: String, enum: ['N/A', 'CLOCKIN', 'CLOCKOUT', 'ABSENT', 'SINGLEPUNCHOUT'], default: 'N/A' },
   attendenceDetails: [{
-    date: { type: String, required: true },
-    shiftStart: { type: String, default: '' },
-    shiftEnd: { type: String, default: '' },
-    clockIn: { type: String, default: '' },
-    clockOut: { type: String, default: '' },
-    clockOutLog: [{ type: String }],
-    isHoliday: { type: Schema.Types.ObjectId, default: null }
+    clockIn: [{ type: String, default: '' }],
+    clockOut: [{ type: String, default: '' }],
   }]
 }, {
   timestamps: true

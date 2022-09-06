@@ -24,6 +24,8 @@ const connectAllDb = async () => {
     return;
   }
 
+  // console.log(tenants);
+
   connectionMap = tenants
     .map(tenant => {
       return {

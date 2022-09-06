@@ -11,6 +11,15 @@ const clientOption = {
   useCreateIndex: true
 };
 
+const newClientOption =  {
+  ssl: true,
+  sslValidate: true,
+  sslCA: `./db/rds-combined-ca-bundle.pem`,
+  socketTimeoutMS: 30000,
+  keepAlive: true,
+  maxPoolSize: 1,
+};
+
 // CONNECTION EVENTS
 // When successfully connected
 mongoose.connection.on('connected', () => {
@@ -40,38 +49,23 @@ let i = 1;
 
 const initTenantDbConnection = (DB_URL) => {
   try {
-    const db = mongoose.createConnection(DB_URL, clientOption);
+    const db = mongoose.createConnection(DB_URL, newClientOption);
+    console.log('connection Db ' + i++);
 
-    db.on(
-      'error',
-      console.error.bind(
-        console,
-        'initTenantDbConnection MongoDB Connection Error>> : '
-      )
-    );
-    db.once('open', () => {
-      console.log('initTenantDbConnection client MongoDB Connection ok-->', i++);
-    });
+    // db.on(
+    //   'error',
+    //   console.error.bind(
+    //     console,
+    //     'initTenantDbConnection MongoDB Connection Error>> : '
+    //   )
+    // );
+    // db.once('open', () => {
+    //   console.log('initTenantDbConnection client MongoDB Connection ok-->', i++);
+    // });
 
     // require all schemas
-    // require('../dbModel/clients/basic/buildingModel');
-    // require('../dbModel/clients/basic/cityModel');
-    // require('../dbModel/clients/basic/countryModel');
-    // require('../dbModel/clients/basic/floorModel');
-    // require('../dbModel/clients/basic/stateModel');
-    // require('../dbModel/clients/department/departmentModel');
-    // require('../dbModel/clients/member/allUserModel');
-    // require('../dbModel/clients/role/spocRolesModel');
-    // require('../dbModel/clients/seats/shiftModel');
-    // require('../dbModel/clients/member/userActivityModel');
-    // require('../dbModel/clients/seats/floorPlanModel');
-    // require('../dbModel/clients/seats/seatBookingModel');
-    // require('../dbModel/clients/seats/rosterMasterModel');
-    // require('../dbModel/clients/invoice/invoiceItemModel');
-    // require('../dbModel/clients/invoice/invoiceModel');
-    // require('../dbModel/clients/documents/kycDocsModel');
-    // require('../dbModel/clients/documents/legalDocsModel');
-    // require('../dbModel/clients/basic/clientProfileModel');
+    require('../dbModel/clients/attendenceModel');
+    require('../dbModel/clients/holidayListModel');
 
     return db;
   } catch (error) {

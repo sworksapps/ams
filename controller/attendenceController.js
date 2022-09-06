@@ -23,6 +23,7 @@ exports.addShift = async (req, res) => {
       return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: result.error.details[0].message });
 
     const dbConnection = getConnection();
+    console.log(dbConnection);
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
     const resData = await attendenceService.insertShiftData(dbConnection, req.body);

@@ -4,11 +4,23 @@ mongoose.Promise = global.Promise;
 const clientOption = {
   socketTimeoutMS: 30000,
   keepAlive: true,
-  poolSize: 5,
+  poolSize: 15,
   useNewUrlParser: true,
   useUnifiedTopology: true,
   useFindAndModify: false,
-  useCreateIndex: true
+  useCreateIndex: true,
+  ssl: true,
+  sslValidate: true,
+  sslCA: `./rds-combined-ca-bundle.pem`
+};
+
+const newClientOption =  {
+  ssl: true,
+  sslValidate: true,
+  sslCA: `./db/rds-combined-ca-bundle.pem`,
+  socketTimeoutMS: 30000,
+  keepAlive: true,
+  maxPoolSize: 5,
 };
 
 // CONNECTION EVENTS
@@ -39,22 +51,22 @@ process.on('SIGINT', () => {
 
 const initAdminDbConnection = async (DB_URL) => {
   try {
-    const db = await mongoose.createConnection(DB_URL, clientOption);
+    const db = await mongoose.connect(DB_URL, newClientOption);
 
-    db.on(
-      'error',
-      console.error.bind(
-        console,
-        'initAdminDbConnection MongoDB Connection Error>> : '
-      )
-    );
-    db.once('open', () => {
-      console.log('initAdminDbConnection client MongoDB Connection ok!');
-    });
+    // db.on(
+    //   'error',
+    //   console.error.bind(
+    //     console,
+    //     'initAdminDbConnection MongoDB Connection Error>> : '
+    //   )
+    // );
+    // db.once('open', () => {
+    //   console.log('initAdminDbConnection client MongoDB Connection ok!');
+    // });
 
     // require all schemas
     require('../dbModel/master/clientMasterModel');
-    require('../dbModel/master/spocServicesMaster');
+    // require('../dbModel/master/spocServicesMaster');
     return db;
   } catch (error) {
     console.log('initAdminDbConnection error', error);
