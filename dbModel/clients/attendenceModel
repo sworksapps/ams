@@ -1,23 +1,26 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-const attendenceModel = new Schema({
-  deptId: { type: String, required: true },
-  locationId: { type: String, required: true },
-  userId: { type: String, required: true },
-  date: { type: String, required: true },
-  shiftStart: { type: String, default: '' },
-  shiftEnd: { type: String, default: '' },
-  // isHoliday: { type: Schema.Types.ObjectId, default: null },
-  attendenceStatus: { type: String, enum: ['N/A', 'CLOCKIN', 'CLOCKOUT', 'ABSENT', 'SINGLEPUNCHOUT'], default: 'N/A' },
-  attendenceDetails: [{
-    clockIn: [{ type: String, default: '' }],
-    clockOut: [{ type: String, default: '' }],
-  }]
-}, {
-  timestamps: true
-});
+const attendenceSchema = async (dbconn) => {
+  const attendenceModel = new Schema({
+    deptId: { type: String, required: true },
+    locationId: { type: String, required: true },
+    userId: { type: String, required: true },
+    date: { type: String, required: true },
+    shiftStart: { type: String, default: '' },
+    shiftEnd: { type: String, default: '' },
+    // isHoliday: { type: Schema.Types.ObjectId, default: null },
+    attendenceStatus: { type: String, enum: ['N/A', 'CLOCKIN', 'CLOCKOUT', 'ABSENT', 'SINGLEPUNCHOUT'], default: 'N/A' },
+    attendenceDetails: [{
+      clockIn: [{ type: String, default: '' }],
+      clockOut: [{ type: String, default: '' }],
+    }]
+  }, {
+    timestamps: true
+  });
+  dbconn.model('attendences_data', attendenceModel);
+};
 
-attendenceModel.index({ date: 1 });
-
-module.exports = mongoose.model('attendences_data', attendenceModel);
+module.exports = {
+  attendenceSchema
+};

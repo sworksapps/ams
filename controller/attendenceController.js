@@ -11,19 +11,16 @@ exports.addShift = async (req, res) => {
       deptId: Joi.string().required().label('Department Id'),
       userId: Joi.string().required().label('User Id'),
       locationId: Joi.string().required().label('Location Id'),
-      attendenceDetails: Joi.array().items({
-        shiftStart: Joi.string().required().label('Shift Start'),
-        shiftEnd: Joi.string().required().label('Shift End'),
-        date: Joi.string().required().label('Date')
-      })
+      shiftStart: Joi.string().required().label('Shift Start'),
+      shiftEnd: Joi.string().required().label('Shift End'),
+      date: Joi.string().required().label('Date')
     });
-
+    
     const result = schema.validate(req.body);
     if (result.error)
       return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: result.error.details[0].message });
 
     const dbConnection = getConnection();
-    console.log(dbConnection);
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
     const resData = await attendenceService.insertShiftData(dbConnection, req.body);
@@ -34,6 +31,6 @@ exports.addShift = async (req, res) => {
       res.status(202).json({ statusText: 'Failed', statusValue: 202, message: 'Unable to Save Data' });
   } catch (err) {
     console.log(err);
-    res.status(500);
+    res.status(500).json({ statusText: 'ERROR', statusValue: 500, message: 'Unable to Process your Request' });
   }
 };
