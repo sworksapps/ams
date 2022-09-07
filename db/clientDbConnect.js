@@ -1,23 +1,26 @@
 const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
+const { attendenceSchema } = require('../dbModel/clients/attendenceModel');
+const { holidayListSchema } = require('../dbModel/clients/holidayListModel');
 
-const clientOption = {
-  socketTimeoutMS: 30000,
-  keepAlive: true,
-  poolSize: 1,
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  useFindAndModify: false,
-  useCreateIndex: true
-};
+// const clientOption = {
+//   socketTimeoutMS: 30000,
+//   keepAlive: true,
+//   poolSize: 1,
+//   useNewUrlParser: true,
+//   useUnifiedTopology: true,
+//   useFindAndModify: false,
+//   useCreateIndex: true
+// };
 
-const newClientOption =  {
+const newClientOption = {
   ssl: true,
   sslValidate: true,
   sslCA: `./db/rds-combined-ca-bundle.pem`,
   socketTimeoutMS: 30000,
   keepAlive: true,
   maxPoolSize: 1,
+  retryWrites: false
 };
 
 // CONNECTION EVENTS
@@ -64,8 +67,8 @@ const initTenantDbConnection = (DB_URL) => {
     // });
 
     // require all schemas
-    require('../dbModel/clients/attendenceModel');
-    require('../dbModel/clients/holidayListModel');
+    attendenceSchema(db);
+    holidayListSchema(db);
 
     return db;
   } catch (error) {
