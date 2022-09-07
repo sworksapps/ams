@@ -1,0 +1,18 @@
+version: 0.0
+os: linux
+files:
+  - source: .
+    destination: /var/www/html/dev-attendance.sworks.co.in/
+hooks:
+  BeforeInstall:
+    - location: scripts/docker_build.sh
+      timeout: 300
+      runas: root
+    - location: scripts/docker_stop.sh
+      timeout: 300
+      runas: root
+  ApplicationStop:
+    - location: scripts/docker_start.sh
+      timeout: 300
+      runas: root
+
