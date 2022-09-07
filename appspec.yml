@@ -1,8 +1,25 @@
 version: 0.0
-os: linux
+os: linux 
 files:
   - source: .
     destination: /var/www/html/dev-attendance
+permissions:
+  - object: /var/www/html/dev-attendance
+#    except:
+    owner: root
+    group: root
+    mode: 644
+    # acls:
+    #   -
+    # context:
+    #   user:
+    #   type:
+    #   range:
+    # type:
+    #   -
+# If you are not running any commands on the instance, then remove 
+#   the "hooks" section altogether. A blank or incomplete "hooks" section
+#   may cause associated deployments to fail.
 hooks:
   BeforeInstall:
     - location: scripts/docker_build.sh
