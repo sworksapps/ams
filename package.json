@@ -4,8 +4,8 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "start": "env-cmd -f .env.development node app.js",
-    "dev": "env-cmd -f .env.development nodemon app.js",
+    "start": "env-cmd -f .env.prod node app.js",
+    "dev": "env-cmd -f .env.dev nodemon app.js",
     "dev:qa": "env-cmd -f .env.qa node app.js",
     "dev:uat": "env-cmd -f .env.uat node app.js"
   },
