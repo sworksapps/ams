@@ -2,7 +2,7 @@ version: 0.0
 os: linux
 files:
   - source: .
-    destination: /var/www/html/dev-attendance.sworks.co.in/
+    destination: /var/www/html/dev-attendance.sworks.co.in
 hooks:
   BeforeInstall:
     - location: scripts/docker_build.sh
