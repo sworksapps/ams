@@ -3,7 +3,7 @@ moment.tz.setDefault('Asia/Kolkata');
 const crypto = require('crypto');
 const { Buffer } = require('buffer');
 
-
+// is empty
 const isEmpty = (value) => {
   return typeof value == 'string' && !value.trim() || typeof value == 'undefined' || value === null;
 };
