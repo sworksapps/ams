@@ -9,9 +9,9 @@ const nameSpace = createNamespace('unique context');
  */
 const resolveTenant = (req, res, next) => {
   let tenantIdentity = null;
-  if(req.headers['authorization']){
+  if (req.headers['authorization']) {
     const decodedjwt = dataValidation.parseJwt(req.headers['authorization']);
-    if(decodedjwt && decodedjwt.clientDbName){
+    if (decodedjwt && decodedjwt.clientDbName) {
       tenantIdentity = decodedjwt.clientDbName;
     } else {
       tenantIdentity = null;
@@ -41,7 +41,7 @@ const setAdminDb = (req, res, next) => {
   // Run the application in the defined namespace. It will contextualize every underlying function calls.
   nameSpace.run(() => {
     const adminDbConnection = getAdminConnection();
-    console.log('setAdminDb adminDbConnection', adminDbConnection.name);
+    // console.log('setAdminDb adminDbConnection', adminDbConnection.name);
     nameSpace.set('connection', adminDbConnection);
     next();
   });

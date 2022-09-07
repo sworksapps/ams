@@ -1,16 +1,13 @@
-
-// const mongoose = require('mongoose');
-/*
-*------------User Service------------
-*/
 exports.insertShiftData = async (tenantDbConnection, bodyData) => {
-  try{
-    const attendenceModel = await tenantDbConnection.model('attendences_data');
+  try {
+    const propertyModel = await tenantDbConnection.model('attendences_data');
     for (const iterator of bodyData) {
-      await new attendenceModel(iterator).save();
+      await propertyModel.findOneAndUpdate(
+        { userId: iterator.userId, date: iterator.date }, { $set: iterator }, { upsert: true });
     }
     return true;
-  } catch (err){
+  } catch (err) {
+    console.log(err);
     return false;
   }
 };
