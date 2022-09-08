@@ -157,6 +157,7 @@ exports.checkIn = async (req, res) => {
       });
 
     const dbConnection = getConnection();
+    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
     const response = await attendenceMobileService.checkInService(dbConnection, userDetails, moment().format('YYYY-MM-DD'));
     
@@ -295,6 +296,8 @@ exports.checkOut = async (req, res) => {
       });
 
     const dbConnection = getConnection();
+    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
+    
     const response = await attendenceMobileService.checkOutService(dbConnection, userDetails, moment().format('YYYY-MM-DD'));
     
     if(response.type == true){
