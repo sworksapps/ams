@@ -12,8 +12,8 @@ const attendenceSchema = async (dbconn) => {
     // isHoliday: { type: Schema.Types.ObjectId, default: null },
     attendenceStatus: { type: String, enum: ['N/A', 'CLOCKIN', 'CLOCKOUT', 'ABSENT', 'SINGLEPUNCHOUT'], default: 'N/A' },
     attendenceDetails: [{
-      clockIn: [{ type: String, default: '' }],
-      clockOut: [{ type: String, default: '' }],
+      clockIn: { type: String, default: '' },
+      clockOut: { type: String, default: '' },
     }]
   }, {
     timestamps: true
