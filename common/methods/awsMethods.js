@@ -26,11 +26,11 @@ if (!fs.existsSync(dir)){
 }
 */
 
-const uploadFileToBucket = async (filePath, fileName, bucketFolder, mimeType) => {
+const uploadFileToBucket = async (filePath, fileName, mimeType) => {
   return new Promise((resolve) => {
     const params = {
       Bucket: process.env.BUCKETNAME,
-      Key: `${bucketFolder}/${fileName}`,
+      Key: `${fileName}`,
       ACL: 'public-read',
       ContentType: mimeType,
       Body: fs.readFileSync(filePath)
@@ -39,7 +39,7 @@ const uploadFileToBucket = async (filePath, fileName, bucketFolder, mimeType) =>
       if (err) {
         return resolve({ success: false, message: err.message });
       } else {
-        return resolve({ success: true, imgUrl: `${res.Location}`, message: 'File Uploaded Successfully' });
+        return resolve({ success: true, imgName: `${res.key}`, message: 'File Uploaded Successfully' });
       }
     });
   });
