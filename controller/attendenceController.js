@@ -39,10 +39,7 @@ exports.getUsersShiftData = async (req, res) => {
   try {
     const schema = Joi.object({
       users: Joi.array().required().label('users'),
-      startDate: Joi.string().required().label('startDate'),
-      endDate: Joi.string().required().label('endDate'),
     });
-    
     const result = schema.validate(req.body);
     if (result.error)
       return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: result.error.details[0].message });
@@ -50,11 +47,11 @@ exports.getUsersShiftData = async (req, res) => {
     const dbConnection = getConnection();
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
-    const response = await attendenceService.getUsersShiftData(dbConnection, req.body);
+    const response = await attendenceService.getUsersShiftData(dbConnection, req.body, req.params.deptId, req.params.startDate, req.params.endDate);
     
     if(response.type == true){
       res.status(200).json({ 
-        statusText: 'Success', statusValue: 200, message: response.msg, data: response.data
+        statusText: 'Success', statusValue: 200, message: response.msg, refData: response.refData
       });
     } else if(response.type == false){
       res.status(202).json({ statusText: 'Failed', statusValue: 202, message: response.msg });

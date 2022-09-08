@@ -8,7 +8,10 @@ v1Routes.use('/admin', connectionResolver.setAdminDb);
 v1Routes.use('/client', connectionResolver.resolveTenant);
 /*-----------------Routes Section----------------*/
 v1Routes.post('/client/v1/attendence/add-shift', attendenceController.addShift);
-v1Routes.post('/client/v1/attendence/get-users-shift-data', attendenceController.getUsersShiftData);
+v1Routes.post(
+  '/client/v1/attendence/get-users-shift-data/:deptId/:startDate/:endDate', 
+  attendenceController.getUsersShiftData
+);
 // v1Routes.post('/client/v1/attendence/get-daily-report', attendenceController.dailyReport);
 
 /*------------------------------*/

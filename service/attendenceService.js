@@ -15,25 +15,48 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
   }
 };
 
-exports.getUsersShiftData = async (tenantDbConnection, userData) => {
+exports.getUsersShiftData = async (tenantDbConnection, userData, deptId, startDate, endDate) => {
   try {
     const attendenceModel = await tenantDbConnection.model('attendences_data');
     const res = await attendenceModel
       .find({
+        deptId: deptId,
         userId: { $in: userData.users },
         date: {
-          $gte: userData.startDate, 
-          $lte: userData.endDate
+          $gte: startDate, 
+          $lte: endDate
         }
       })
-      .select({ userId: 1, shiftStart: 1, shiftEnd: 1, date: 1 });
+      .select({ userId: 1, shiftStart: 1, shiftEnd: 1, date: 1, locationId: 1, deptId: 1 });
 
-    const newRes = res.reduce((r, a) => {
-      r[a.userId] = r[a.userId] || [];
-      r[a.userId].push(a);
-      return r;
-    }, Object.create(null));
-    return { type: true, msg: 'Users shift data.', data: newRes };
+    const key = 'userId';
+
+    let refData = [...new Map(res.map(item =>
+      [item[key], item])).values()];
+
+    refData = refData.map( (v) => {
+      return {
+        user_id: v.userId,
+        dept_id: v.deptId,
+        dataArray: []
+      };
+    });
+
+    for (let index = 0; index < res.length; index++) {
+      const element = res[index];
+      for (let j = 0; j < refData.length; j++) {
+        const ele = refData[j];
+        if(element.userId == ele.user_id) {
+          ele.dataArray.push({
+            'shift_date': element.date,
+            'shift_start_time': element.shiftStart,
+            'shift_end_time': element.shiftEnd
+          });
+        }
+      }
+    }
+
+    return { type: true, msg: 'Users shift data.', refData };
   } catch (err) {
     console.log(err);
     return false;
