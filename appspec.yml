@@ -10,7 +10,7 @@ hooks:
       runas: root
   ApplicationStart:
     - location: scripts/docker_build.sh 
-      timeout: 15
+      timeout: 600
       runas: root
   ValidateService:
     - location: scripts/docker_start.sh   
