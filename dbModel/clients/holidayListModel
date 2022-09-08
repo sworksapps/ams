@@ -5,7 +5,7 @@ const holidayListSchema = async (dbconn) => {
   const holidayListModel = new Schema({
     deptId: { type: String, required: true },
     holidayName: { type: String, required: true },
-    locationId: { type: String, required: true },
+    locationId: [{ type: String, required: true }],
     date: { type: String, required: true },
   }, {
     timestamps: true
