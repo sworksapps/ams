@@ -9,8 +9,12 @@ const attendenceSchema = async (dbconn) => {
     date: { type: String, required: true },
     shiftStart: { type: String, default: '' },
     shiftEnd: { type: String, default: '' },
-    // isHoliday: { type: Schema.Types.ObjectId, default: null },
-    attendenceStatus: { type: String, enum: ['N/A', 'CLOCKIN', 'CLOCKOUT', 'ABSENT', 'SINGLEPUNCHOUT'], default: 'N/A' },
+    userStatus: {
+      type: String, enum: ['N/A', 'PRESENT', 'ABSENT', 'LATECHECKIN', 'ONLEAVE', 'ONTIME',
+        'EARLYEXIT', 'LATEEXIT', 'WEEKOFF', 'WFH', 'HOLIDAY', 'OVERTIME'], default: 'N/A'
+    },
+    isHoliday: { type: Schema.Types.ObjectId, default: null },
+    attendenceStatus: { type: String, enum: ['N/A', 'CLOCKIN', 'CLOCKOUT'], default: 'N/A' },
     attendenceDetails: [{
       clockIn: { type: String, default: '' },
       clockOut: { type: String, default: '' },

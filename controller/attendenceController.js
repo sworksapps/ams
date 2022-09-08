@@ -69,7 +69,7 @@ exports.dailyReport = async (req, res) => {
     const limit = Math.abs(row) || 10;
     const page = (Math.abs(pgno) || 1) - 1;
 
-    const dataRes = await attendenceService.fetchAllPropertyData(dbConnection, limit, page, sort_by, search, filter, dateChk);
+    const dataRes = await attendenceService.fetchDailyReportData(dbConnection, limit, page, sort_by, search, filter, dateChk);
     if (dataRes)
       return res.status(200).json({ statusText: 'OK', statusValue: 200, data: dataRes.propertyData, total: dataRes.total });
     else
