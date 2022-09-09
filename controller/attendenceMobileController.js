@@ -58,7 +58,7 @@ exports.checkIn = async (req, res) => {
 
     const totaldistance = calculateDistance(decodedjwt.clientLat, decodedjwt.clientLong, req.body.latitude, req.body.longitude);
     
-    if(totaldistance > 200)
+    if(totaldistance > 400)
       return res.status(202).json({
         statusText: 'Failed',
         statusValue: 202,
@@ -197,7 +197,7 @@ exports.checkOut = async (req, res) => {
 
     const totaldistance = calculateDistance(decodedjwt.clientLat, decodedjwt.clientLong, req.body.latitude, req.body.longitude);
 
-    if(totaldistance > 200)
+    if(totaldistance > 400)
       return res.status(202).json({
         statusText: 'Failed',
         statusValue: 202,

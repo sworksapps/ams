@@ -195,7 +195,7 @@ exports.getUsersShiftData = async (tenantDbConnection, userData, deptId, startDa
       return {
         user_id: v.userId,
         dept_id: v.deptId,
-        dataArray: []
+        dateArray: []
       };
     });
 
@@ -204,7 +204,7 @@ exports.getUsersShiftData = async (tenantDbConnection, userData, deptId, startDa
       for (let j = 0; j < refData.length; j++) {
         const ele = refData[j];
         if (element.userId == ele.user_id) {
-          ele.dataArray.push({
+          ele.dateArray.push({
             'shift_date': element.date,
             'shift_start_time': timeConvertHHMM(element.shiftStart),
             'shift_end_time': timeConvertHHMM(element.shiftEnd)

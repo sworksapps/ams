@@ -6,6 +6,8 @@ const moment = require('moment');
 exports.checkInService = async (tenantDbConnection, userDetails, date) => {
   try {
     const attendenceModel = await tenantDbConnection.model('attendences_data');
+    let clockInTimeStamp = moment().unix();
+    const totalDuration = '00:00';
     const res = await attendenceModel.findOne({
       userId: userDetails.user_id,
       date: date,
@@ -17,22 +19,26 @@ exports.checkInService = async (tenantDbConnection, userDetails, date) => {
         userId: userDetails.user_id,
         date: date,
         attendenceStatus: 'CLOCKIN',
-        attendenceDetails: [{ clockIn: moment().unix(), clockOut: '' }],
+        attendenceDetails: [{ clockIn: clockInTimeStamp, clockOut: '' }],
       };
       await attendenceModel(insertData).save();
-      return { type: true, msg: 'Check-in Successfully', data: userDetails };
+      clockInTimeStamp = moment.unix(clockInTimeStamp).format('hh:mm a');
+      return { type: true, msg: 'Check-in Successfully', data: {userDetails, clockInTimeStamp, totalDuration} };
     }
     if (res.attendenceStatus == 'CLOCKIN')
       return { type: false, msg: 'Already Check-in', data: '' };
 
     if (res.attendenceStatus == 'CLOCKOUT' || res.attendenceStatus == 'N/A') {
       const attendenceDetails = res.attendenceDetails;
-      attendenceDetails.push({ clockIn: moment().unix(), clockOut: '' });
+      attendenceDetails.push({ clockIn: clockInTimeStamp, clockOut: '' });
       await attendenceModel.findOneAndUpdate(
         { _id: res._id },
         { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKIN' }
       );
-      return { type: true, msg: 'Check-in Successfully', data: userDetails };
+      clockInTimeStamp = moment.unix(clockInTimeStamp).format('hh:mm a');
+      if (res.attendenceStatus == 'CLOCKOUT')
+        clockInTimeStamp = moment.unix(res.attendenceDetails[0].clockIn).format('hh:mm a');
+      return { type: true, msg: 'Check-in Successfully', data: {userDetails, clockInTimeStamp, totalDuration} };
     }
   } catch (err) {
     return false;
@@ -42,6 +48,9 @@ exports.checkInService = async (tenantDbConnection, userDetails, date) => {
 exports.checkOutService = async (tenantDbConnection, userDetails, date) => {
   try {
     const attendenceModel = await tenantDbConnection.model('attendences_data');
+    let clockInTimeStamp = moment().unix();
+    let clockOutTimeStamp = moment().unix();
+    let totalDuration = '00:00';
     const res = await attendenceModel.findOne({
       userId: userDetails.user_id,
       date: date,
@@ -58,12 +67,19 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date) => {
       const objIndex = attendenceDetails.findIndex(
         (obj) => obj._id == attendenceDetails[0]['_id']
       );
-      attendenceDetails[objIndex].clockOut = moment().unix();
+      attendenceDetails[objIndex].clockOut = clockOutTimeStamp;
+      attendenceDetails = attendenceDetails.reverse();
+      const diff = moment.unix(clockOutTimeStamp).startOf('minutes').diff(moment.unix(res.attendenceDetails[0].clockIn).startOf('minutes'), 'minutes');
+      totalDuration = Math.floor(diff / 60) + 'hrs ' + diff % 60+ 'min' ;
+      clockInTimeStamp = moment.unix(res.attendenceDetails[0].clockIn).format('hh:mm a');
+      clockOutTimeStamp = moment.unix(clockOutTimeStamp).format('hh:mm a');
       await attendenceModel.findOneAndUpdate(
         { _id: res._id },
         { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKOUT' }
       );
-      return { type: true, msg: 'Check-out Successfully', data: userDetails };
+      return { 
+        type: true, msg: 'Check-out Successfully', data: {userDetails, clockInTimeStamp, clockOutTimeStamp, totalDuration} 
+      };
     }
   } catch (err) {
     return false;
