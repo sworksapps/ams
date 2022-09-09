@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const moment = require('moment');
+const axios = require('axios');
 
 /* ---------------get daily report----------------------*/
 exports.insertShiftData = async (tenantDbConnection, bodyData) => {
@@ -135,7 +136,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
         },
       },
       {
-        $match: {date}
+        $match: { date }
       },
       // { $sort: sort_by },
     ];
@@ -149,18 +150,34 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
     const resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
     const userIds = resData.map(i => i.userId);
-    console.log(userIds);
+    let userDetails = [];
+
+    // get user name
+    const userData = await axios.post(
+      `${process.env.CLIENTSPOC}api/v1/user/get-user-name`,
+      { rec_id: userIds }
+    );
+
+    if (userData.data.status == 200)
+      userDetails = userData.data.data;
 
     resData.map((item, index) => {
       let totalSpendTime = 0;
-      item.attendenceDetails.forEach(element => {
 
+      item.attendenceDetails.forEach(element => {
         const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
         totalSpendTime = totalSpendTime + diff;
       });
+
       const shiftDiff = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
-      console.log(totalSpendTime, shiftDiff);
+      const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
       resData[index]['overTime'] = totalSpendTime - shiftDiff;
+      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name'].trim() : '-';
+      resData[index]['firstEnrty'] = format_time(item['firstEnrty']);
+      resData[index]['lastExit'] = format_time(item['lastExit']);
+      resData[index]['recentEnrty'] = format_time(item['recentEnrty']);
+      resData[index]['shiftStart'] = format_time(item['shiftStart']);
+      resData[index]['shiftEnd'] = format_time(item['shiftEnd']);
     });
 
     const total = await attModel.aggregate([...query, { $count: 'totalCount' }])
@@ -206,8 +223,8 @@ exports.getUsersShiftData = async (tenantDbConnection, userData, deptId, startDa
         if (element.userId == ele.user_id) {
           ele.dateArray.push({
             'shift_date': element.date,
-            'shift_start_time': timeConvertHHMM(element.shiftStart),
-            'shift_end_time': timeConvertHHMM(element.shiftEnd)
+            'shift_start_time': format_time(element.shiftStart),
+            'shift_end_time': format_time(element.shiftEnd)
           });
         }
       }
@@ -221,9 +238,15 @@ exports.getUsersShiftData = async (tenantDbConnection, userData, deptId, startDa
 };
 
 const getTimeDiff = (start, end, type) => {
-  return moment.unix(end).startOf(type).diff(moment.unix(start).startOf(type), type);
+  if (start && end && start != '' && end != '')
+    return moment.unix(end).startOf(type).diff(moment.unix(start).startOf(type), type);
+  return 0;
 };
 
-const timeConvertHHMM = (unixTimestamp) => {
-  return new Date(unixTimestamp * 1000).toLocaleTimeString('en-GB').slice(0, 5);
-};
+function format_time(s) {
+  const dtFormat = new Intl.DateTimeFormat('en-GB', {
+    timeStyle: 'medium',
+    timeZone: 'IST'
+  });
+  return dtFormat.format(new Date(s * 1e3)).slice(0, 5);
+}
