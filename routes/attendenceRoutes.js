@@ -12,7 +12,7 @@ v1Routes.post(
   '/client/v1/attendence/get-users-shift-data/:deptId/:startDate/:endDate', 
   attendenceController.getUsersShiftData
 );
-v1Routes.post('/client/v1/attendence/get-daily-report', attendenceController.dailyReport);
+v1Routes.get('/client/v1/attendence/get-daily-report', attendenceController.dailyReport);
 
 /*------------------------------*/
 module.exports = v1Routes;
