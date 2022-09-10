@@ -165,8 +165,11 @@ exports.checkIn = async (req, res) => {
       }
     });
   } catch (err) {
-    console.log(err);
-    res.status(500).json({msg: err});
+    if(err.Code == 'InvalidParameterException'){
+      res.status(400).json({statusText: 'Fail', msg: 'There are no faces in the image. Should be at least 1'});
+    } else {
+      res.status(500).json({statusText: 'Fail', msg: 'Somthing went erong'});
+    }
   }
 };
 
@@ -298,8 +301,11 @@ exports.checkOut = async (req, res) => {
       statusText: 'Success', statusValue: 200, message: 'Proceed to Check-out.', data: userTimeData.data
     });
   }  catch (err) {
-    console.log(err);
-    res.status(500).json({msg: err});
+    if(err.Code == 'InvalidParameterException'){
+      res.status(400).json({statusText: 'Fail', msg: 'There are no faces in the image. Should be at least 1'});
+    } else {
+      res.status(500).json({statusText: 'Fail', msg: 'Somthing went erong'});
+    }
   }
 };
 
@@ -392,8 +398,7 @@ exports.checkInSubmit = async (req, res) => {
       return res.status(400).json({ statusText: 'Failed', statusValue: 400, message: `Went Something Wrong.` });
     }
   }  catch (err) {
-    console.log(err);
-    res.status(500).json({msg: err});
+    res.status(500).json({statusText: 'Fail', msg: 'Somthing went erong'});
   }
 };
 
@@ -479,7 +484,6 @@ exports.checkOutSubmit = async (req, res) => {
       return res.status(400).json({ statusText: 'Failed', statusValue: 400, message: `Went Something Wrong.` });
     }
   }  catch (err) {
-    console.log(err);
-    res.status(500).json({msg: err});
+    res.status(500).json({statusText: 'Fail', msg: 'Somthing went erong'});
   }
 };
