@@ -166,9 +166,9 @@ exports.checkIn = async (req, res) => {
     });
   } catch (err) {
     if(err.Code == 'InvalidParameterException'){
-      res.status(400).json({statusText: 'Fail', msg: 'There are no faces in the image. Should be at least 1'});
+      res.status(400).json({statusText: 'Fail', message: 'There are no faces in the image. Should be at least 1'});
     } else {
-      res.status(500).json({statusText: 'Fail', msg: 'Somthing went erong'});
+      res.status(500).json({statusText: 'Fail', message: 'Somthing went erong'});
     }
   }
 };
@@ -302,9 +302,9 @@ exports.checkOut = async (req, res) => {
     });
   }  catch (err) {
     if(err.Code == 'InvalidParameterException'){
-      res.status(400).json({statusText: 'Fail', msg: 'There are no faces in the image. Should be at least 1'});
+      res.status(400).json({statusText: 'Fail', message: 'There are no faces in the image. Should be at least 1'});
     } else {
-      res.status(500).json({statusText: 'Fail', msg: 'Somthing went erong'});
+      res.status(500).json({statusText: 'Fail', message: 'Somthing went erong'});
     }
   }
 };
@@ -398,7 +398,7 @@ exports.checkInSubmit = async (req, res) => {
       return res.status(400).json({ statusText: 'Failed', statusValue: 400, message: `Went Something Wrong.` });
     }
   }  catch (err) {
-    res.status(500).json({statusText: 'Fail', msg: 'Somthing went erong'});
+    res.status(500).json({statusText: 'Fail', message: 'Somthing went erong'});
   }
 };
 
@@ -484,6 +484,6 @@ exports.checkOutSubmit = async (req, res) => {
       return res.status(400).json({ statusText: 'Failed', statusValue: 400, message: `Went Something Wrong.` });
     }
   }  catch (err) {
-    res.status(500).json({statusText: 'Fail', msg: 'Somthing went erong'});
+    res.status(500).json({statusText: 'Fail', message: 'Somthing went erong'});
   }
 };
