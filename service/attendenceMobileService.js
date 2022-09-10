@@ -3,10 +3,11 @@ const moment = require('moment');
 /*
  *------------User Service------------
  */
-exports.checkInService = async (tenantDbConnection, userDetails, date) => {
+exports.checkInService = async (tenantDbConnection, userDetails, date, clockInTime) => {
   try {
     const attendenceModel = await tenantDbConnection.model('attendences_data');
-    let clockInTimeStamp = moment().unix();
+    let clockInTimeStamp = clockInTime;
+    // let clockInTimeStamp = moment().unix();
     const totalDuration = '00:00';
     const res = await attendenceModel.findOne({
       userId: userDetails.user_id,

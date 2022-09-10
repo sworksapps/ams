@@ -157,9 +157,10 @@ exports.checkIn = async (req, res) => {
       });
 
     userDetails.userFaceId = userFaceId;
+    const clockInTime = moment().unix();
     
     return res.status(200).json({ 
-      statusText: 'Success', statusValue: 200, message: 'Proceed to Check-in.', data: userDetails
+      statusText: 'Success', statusValue: 200, message: 'Proceed to Check-in.', data: userDetails, clockInTime
     });
   } catch (err) {
     console.log(err);
@@ -316,6 +317,7 @@ exports.checkInSubmit = async (req, res) => {
       latitude: Joi.number().required().label('latitude'),
       longitude: Joi.number().required().label('longitude'),
       userFaceId: Joi.string().required().label('Face Id'),
+      clockInTime: Joi.number().required().label('Clock In Time'),
     });
 
     const result = schema.validate(req.body);
@@ -375,7 +377,7 @@ exports.checkInSubmit = async (req, res) => {
     const dbConnection = getConnection();
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
   
-    const response = await attendenceMobileService.checkInService(dbConnection, userDetails, moment().format('YYYY-MM-DD'));
+    const response = await attendenceMobileService.checkInService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body.clockInTime);
       
     if(response.type == true){
       res.status(200).json({ 
