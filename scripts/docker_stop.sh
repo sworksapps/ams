@@ -1,4 +1,4 @@
 #!/bin/bash
-docker stop attendance-management-dev
-docker rm  -f attendance-management-dev
+docker stop attendance-management-$ATTENDANCE_MANAGEMENT_ENV
+docker rm  -f attendance-management-$ATTENDANCE_MANAGEMENT_ENV
 
