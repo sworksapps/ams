@@ -90,6 +90,71 @@ exports.dailyReport = async (req, res) => {
   }
 };
 
+/*----------------Get user specific Report------------*/
+exports.userReport = async (req, res) => {
+  try {
+    const dbConnection = getConnection();
+    if (!dbConnection) {
+      return res.status(400)
+        .json({ statusText: 'FAIL', statusValue: 400, message: 'The provided Client is not available' });
+    }
+
+    const { pgno, row, sort_by, filter, userId, startDate, endDate } = req.query;
+
+    let search = '';
+    let dateChk = false;
+
+    if (req.query.search) {
+      search = req.query.search.trim();
+      dateChk = moment(search, 'DD/MM/YYYY', true).isValid();
+    }
+
+    if(!userId && !dataValidation.isNumber(userId))
+      return res.status(400).json({
+        statusText: 'FAIL',
+        statusValue: 400,
+        message: 'Please provide valid User Id',
+      });
+
+    if (startDate && endDate) {
+      const st = startDate.trim();
+      const end = endDate.trim();
+      let isValid = moment(st, 'YYYY-MM-DD', true).isValid();
+      isValid = moment(end, 'YYYY-MM-DD', true).isValid();
+      if(!isValid)
+        return res.status(400).json({
+          statusText: 'FAIL',
+          statusValue: 400,
+          message: 'Please give valid start date and end date in YYYY-MM-DD format',
+        });
+    }
+    else
+      return res.status(400).json({
+        statusText: 'FAIL',
+        statusValue: 400,
+        message: 'Please give start date and end date in YYYY-MM-DD format',
+      });
+
+    if (!dataValidation.isNumber(pgno) || !dataValidation.isNumber(row))
+      return res.status(400).json({
+        statusText: 'FAIL',
+        statusValue: 400,
+        message: 'Provide valid Page and Limit',
+      });
+
+    const limit = Math.abs(row) || 10;
+    const page = (Math.abs(pgno) || 1) - 1;
+
+    const dataRes = await attendenceService.fetchUserSpecReportData(dbConnection, limit, page, sort_by, search, filter, dateChk, userId, startDate, endDate);
+    if (dataRes)
+      return res.status(200).json({ statusText: 'OK', statusValue: 200, data: dataRes.resData, total: dataRes.total });
+    else
+      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: 'No Data Found' });
+  } catch (err) {
+    res.status(500).json({ statusText: 'ERROR', statusValue: 500, message: 'Unable to Process your Request' });
+  }
+};
+
 exports.getUsersShiftData = async (req, res) => {
   try {
     const schema = Joi.object({
