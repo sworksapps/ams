@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const moment = require('moment');
+const axios = require('axios');
 
 /* ---------------get daily report----------------------*/
 exports.insertShiftData = async (tenantDbConnection, bodyData) => {
@@ -28,7 +30,7 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
   }
 };
 /* ---------------get daily report----------------------*/
-exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search, filter, dateChk) => {
+exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search, filter, dateChk, date) => {
   try {
     const dbQuery = [];
     const dbQuery1 = [];
@@ -122,27 +124,19 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
         '$project': {
           '_id': 1,
           'userId': 1,
+          'deptId': 1,
+          'locationId': 1,
           'date': 1,
           'firstEnrty': { '$arrayElemAt': ['$attendenceDetails.clockIn', 0] },
           'lastExit': { '$arrayElemAt': ['$attendenceDetails.clockIn', -1] },
           'recentEnrty': { '$arrayElemAt': ['$attendenceDetails.clockIn', 0] },
           'shiftStart': 1,
           'shiftEnd': 1,
-          'attendenceStatus': 1,
-          // 'overTime':{
-          //   'attendenceDetails.clockIn': {$objectToArray: '$attendenceDetails.clockIn'}
-          // },
-          //  {'$unwind':'$hourly_info.metric_one'},
-          // 'area': {
-          //   $toString: '$microMarketDetails.averageDealSizeSft'
-          // },
-          // 'overtime': 1,
-          // 'avh': { $toLower: { '$arrayElemAt': ['$city.cityName', 0] } },
-
+          'attendenceDetails': 1
         },
       },
       {
-        $match: {}
+        $match: { date }
       },
       // { $sort: sort_by },
     ];
@@ -154,11 +148,42 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
     //   query[4].$match.$or = dbQuery1;
 
 
-    const propertyData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
+    const resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
+    const userIds = resData.map(i => i.userId);
+    let userDetails = [];
+
+    // get user name
+    const userData = await axios.post(
+      `${process.env.CLIENTSPOC}api/v1/user/get-user-name`,
+      { rec_id: userIds }
+    );
+
+    if (userData.data.status == 200)
+      userDetails = userData.data.data;
+
+    resData.map((item, index) => {
+      let totalSpendTime = 0;
+
+      item.attendenceDetails.forEach(element => {
+        const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
+        totalSpendTime = totalSpendTime + diff;
+      });
+
+      const shiftDiff = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
+      const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
+      resData[index]['overTime'] = totalSpendTime - shiftDiff;
+      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name'].trim() : '-';
+      resData[index]['firstEnrty'] = format_time(item['firstEnrty']);
+      resData[index]['lastExit'] = format_time(item['lastExit']);
+      resData[index]['recentEnrty'] = format_time(item['recentEnrty']);
+      resData[index]['shiftStart'] = format_time(item['shiftStart']);
+      resData[index]['shiftEnd'] = format_time(item['shiftEnd']);
+    });
+
     const total = await attModel.aggregate([...query, { $count: 'totalCount' }])
       .then(res => res.length > 0 ? res[0].totalCount : 0);
 
-    return { propertyData, total };
+    return { resData, total };
   } catch (err) {
     console.log(err);
     return false;
@@ -178,7 +203,6 @@ exports.getUsersShiftData = async (tenantDbConnection, userData, deptId, startDa
         }
       })
       .select({ userId: 1, shiftStart: 1, shiftEnd: 1, date: 1, locationId: 1, deptId: 1 });
-
     const key = 'userId';
 
     let refData = [...new Map(res.map(item =>
@@ -199,8 +223,8 @@ exports.getUsersShiftData = async (tenantDbConnection, userData, deptId, startDa
         if (element.userId == ele.user_id) {
           ele.dateArray.push({
             'shift_date': element.date,
-            'shift_start_time': element.shiftStart,
-            'shift_end_time': element.shiftEnd
+            'shift_start_time': format_time(element.shiftStart),
+            'shift_end_time': format_time(element.shiftEnd)
           });
         }
       }
@@ -212,3 +236,17 @@ exports.getUsersShiftData = async (tenantDbConnection, userData, deptId, startDa
     return false;
   }
 };
+
+const getTimeDiff = (start, end, type) => {
+  if (start && end && start != '' && end != '')
+    return moment.unix(end).startOf(type).diff(moment.unix(start).startOf(type), type);
+  return 0;
+};
+
+function format_time(s) {
+  const dtFormat = new Intl.DateTimeFormat('en-GB', {
+    timeStyle: 'medium',
+    timeZone: 'IST'
+  });
+  return dtFormat.format(new Date(s * 1e3)).slice(0, 5);
+}
