@@ -166,7 +166,7 @@ exports.checkIn = async (req, res) => {
     });
   } catch (err) {
     console.log(err);
-    res.status(500);
+    res.status(500).json({msg: err});
   }
 };
 
@@ -299,7 +299,7 @@ exports.checkOut = async (req, res) => {
     });
   }  catch (err) {
     console.log(err);
-    res.status(500);
+    res.status(500).json({msg: err});
   }
 };
 
@@ -393,7 +393,7 @@ exports.checkInSubmit = async (req, res) => {
     }
   }  catch (err) {
     console.log(err);
-    res.status(500);
+    res.status(500).json({msg: err});
   }
 };
 
@@ -480,6 +480,6 @@ exports.checkOutSubmit = async (req, res) => {
     }
   }  catch (err) {
     console.log(err);
-    res.status(500);
+    res.status(500).json({msg: err});
   }
 };
