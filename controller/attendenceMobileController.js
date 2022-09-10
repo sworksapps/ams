@@ -39,16 +39,6 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
  */
 exports.checkIn = async (req, res) => {
   try {
-    if (!req.file)
-      return res.status(200).json({
-        statusText: 'FAIL',
-        statusValue: 400,
-        message: 'file not provided',
-      });
-
-      return res.send(200).json({data: req.file});
-
-
     const schema = Joi.object({
       locationId: Joi.number().required().label('locationId'),
       latitude: Joi.number().required().label('latitude'),
