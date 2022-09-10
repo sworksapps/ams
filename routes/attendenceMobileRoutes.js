@@ -11,6 +11,6 @@ v1Routes.use('/client', connectionResolver.resolveTenant);
 /*-----------------Routes Section----------------*/
 v1Routes.post('/client/v1/api/check-in', userImageUp, attendenceMobileController.checkIn);
 v1Routes.post('/client/v1/api/check-out', userImageUp, attendenceMobileController.checkOut);
-
+v1Routes.post('/client/v1/api/check-in-submit', attendenceMobileController.checkInSubmit);
 /*------------------------------*/
 module.exports = v1Routes;
