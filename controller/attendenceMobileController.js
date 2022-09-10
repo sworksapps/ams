@@ -374,9 +374,9 @@ exports.checkInSubmit = async (req, res) => {
 
     const dbConnection = getConnection();
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
-    
-    const response = await attendenceMobileService.checkOutService(dbConnection, userDetails, moment().format('YYYY-MM-DD'));
-    
+  
+    const response = await attendenceMobileService.checkInService(dbConnection, userDetails, moment().format('YYYY-MM-DD'));
+      
     if(response.type == true){
       res.status(200).json({ 
         statusText: 'Success', statusValue: 200, message: response.msg, data: response.data
@@ -386,7 +386,6 @@ exports.checkInSubmit = async (req, res) => {
     }else{
       return res.status(400).json({ statusText: 'Failed', statusValue: 400, message: `Went Something Wrong.` });
     }
-
   }  catch (err) {
     console.log(err);
     res.status(500);
