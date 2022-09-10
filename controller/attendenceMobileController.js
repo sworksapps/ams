@@ -156,11 +156,13 @@ exports.checkIn = async (req, res) => {
         message: `User doesn't map in this location.`,
       });
 
-    userDetails.userFaceId = userFaceId;
     const clockInTime = moment().unix();
+    const clockInTimeString  = moment.unix(clockInTime).format('hh:mm a');
     
     return res.status(200).json({ 
-      statusText: 'Success', statusValue: 200, message: 'Proceed to Check-in.', data: userDetails, clockInTime
+      statusText: 'Success', statusValue: 200, message: 'Proceed to Check-in.', data: {
+        userDetails, clockInTime, clockInTimeString
+      }
     });
   } catch (err) {
     console.log(err);
@@ -287,20 +289,14 @@ exports.checkOut = async (req, res) => {
         message: `User doesn't map in this location.`,
       });
 
-    const dbConnection = getConnection();
-    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
+    const clockOutTime = moment().unix();
+    const clockOutTimeString  = moment.unix(clockOutTime).format('hh:mm a');
     
-    const response = await attendenceMobileService.checkOutService(dbConnection, userDetails, moment().format('YYYY-MM-DD'));
-    
-    if(response.type == true){
-      res.status(200).json({ 
-        statusText: 'Success', statusValue: 200, message: response.msg, data: response.data
-      });
-    } else if(response.type == false){
-      res.status(202).json({ statusText: 'Failed', statusValue: 202, message: response.msg });
-    }else{
-      return res.status(400).json({ statusText: 'Failed', statusValue: 400, message: `Went Something Wrong.` });
-    }
+    return res.status(200).json({ 
+      statusText: 'Success', statusValue: 200, message: 'Proceed to Check-out.', data: {
+        userDetails, clockOutTime, clockOutTimeString
+      }
+    });
   }  catch (err) {
     console.log(err);
     res.status(500);
@@ -378,6 +374,93 @@ exports.checkInSubmit = async (req, res) => {
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
   
     const response = await attendenceMobileService.checkInService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body.clockInTime);
+      
+    if(response.type == true){
+      res.status(200).json({ 
+        statusText: 'Success', statusValue: 200, message: response.msg, data: response.data
+      });
+    } else if(response.type == false){
+      res.status(202).json({ statusText: 'Failed', statusValue: 202, message: response.msg });
+    }else{
+      return res.status(400).json({ statusText: 'Failed', statusValue: 400, message: `Went Something Wrong.` });
+    }
+  }  catch (err) {
+    console.log(err);
+    res.status(500);
+  }
+};
+
+/*
+*---------------------------------------------
+*/
+exports.checkOutSubmit = async (req, res) => {
+  try {
+    const schema = Joi.object({
+      locationId: Joi.number().required().label('locationId'),
+      latitude: Joi.number().required().label('latitude'),
+      longitude: Joi.number().required().label('longitude'),
+      userFaceId: Joi.string().required().label('Face Id'),
+      clockOutTime: Joi.number().required().label('Clock Out Time'),
+    });
+
+    const result = schema.validate(req.body);
+    if (result.error)
+      return res.status(400).json({
+        statusText: 'FAIL',
+        statusValue: 400,
+        message: result.error.details[0].message,
+      });
+    
+    const decodedjwt = dataValidation.parseJwt(req.headers['authorization']);
+
+    const totaldistance = calculateDistance(decodedjwt.clientLat, decodedjwt.clientLong, req.body.latitude, req.body.longitude);
+
+    if(totaldistance > 200)
+      return res.status(202).json({
+        statusText: 'Failed',
+        statusValue: 202,
+        message: `User outside of geofencing.`,
+      });
+
+    const userData = await axios.post(
+      `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
+      { faceId: req.body.userFaceId }
+    );
+  
+    if (userData.data.status != 'success')
+      return res.status(202).json({
+        statusText: 'Failed',
+        statusValue: 202,
+        message: `User not found.`,
+      });
+  
+    if (userData.data.data.result.length == 0)
+      return res.status(202).json({
+        statusText: 'Failed',
+        statusValue: 202,
+        message: `User not found.`,
+      });
+  
+    const userDetails = userData.data.data.result[0];
+  
+    if(userDetails.company_id != decodedjwt.clientId)
+      return res.status(202).json({
+        statusText: 'Failed',
+        statusValue: 202,
+        message: `User doesn't map to this company.`,
+      });
+  
+    if(userDetails.location_id != req.body.locationId)
+      return res.status(202).json({
+        statusText: 'Failed',
+        statusValue: 202,
+        message: `User doesn't map in this location.`,
+      });
+  
+    const dbConnection = getConnection();
+    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
+      
+    const response = await attendenceMobileService.checkOutService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body.clockOutTime);
       
     if(response.type == true){
       res.status(200).json({ 

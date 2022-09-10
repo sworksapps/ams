@@ -46,11 +46,12 @@ exports.checkInService = async (tenantDbConnection, userDetails, date, clockInTi
   }
 };
 
-exports.checkOutService = async (tenantDbConnection, userDetails, date) => {
+exports.checkOutService = async (tenantDbConnection, userDetails, date, clockOutTime) => {
   try {
     const attendenceModel = await tenantDbConnection.model('attendences_data');
     let clockInTimeStamp = moment().unix();
-    let clockOutTimeStamp = moment().unix();
+    let clockOutTimeStamp = clockOutTime;
+    // let clockOutTimeStamp = moment().unix();
     let totalDuration = '00:00';
     const res = await attendenceModel.findOne({
       userId: userDetails.user_id,
