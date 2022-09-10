@@ -371,11 +371,22 @@ exports.checkInSubmit = async (req, res) => {
         statusValue: 202,
         message: `User doesn't map in this location`,
       });
-  
-    return res.status(200).json({ 
-      statusText: 'Success', statusValue: 200, message: 'Check-in data submitted Successfully', data: userDetails
-    });
-   
+
+    const dbConnection = getConnection();
+    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
+    
+    const response = await attendenceMobileService.checkOutService(dbConnection, userDetails, moment().format('YYYY-MM-DD'));
+    
+    if(response.type == true){
+      res.status(200).json({ 
+        statusText: 'Success', statusValue: 200, message: response.msg, data: response.data
+      });
+    } else if(response.type == false){
+      res.status(202).json({ statusText: 'Failed', statusValue: 202, message: response.msg });
+    }else{
+      return res.status(400).json({ statusText: 'Failed', statusValue: 400, message: `Went Something Wrong.` });
+    }
+
   }  catch (err) {
     console.log(err);
     res.status(500);
