@@ -90,11 +90,11 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, clockOut
 };
 
 
-exports.getCheckInTimeByUser = async (tenantDbConnection, userDetails, date, clockOutTime) => {
+exports.getCheckInTimeByUser = async (tenantDbConnection, userDetails, date) => {
   try {
     const attendenceModel = await tenantDbConnection.model('attendences_data');
-
-    const clockOutTimeStamp = clockOutTime;
+    //let clockInTimeStamp = moment().unix();
+    const clockOutTimeStamp = moment().unix();
     let totalDuration = '00:00';
     const res = await attendenceModel.findOne({
       userId: userDetails.user_id,

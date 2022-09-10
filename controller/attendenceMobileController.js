@@ -292,7 +292,7 @@ exports.checkOut = async (req, res) => {
     const dbConnection = getConnection();
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
       
-    const userTimeData = await attendenceMobileService.getCheckInTimeByUser(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body.clockOutTime);
+    const userTimeData = await attendenceMobileService.getCheckInTimeByUser(dbConnection, userDetails, moment().format('YYYY-MM-DD'));
     
     return res.status(200).json({ 
       statusText: 'Success', statusValue: 200, message: 'Proceed to Check-out.', data: userTimeData.data
