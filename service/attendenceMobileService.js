@@ -43,6 +43,7 @@ exports.checkInService = async (tenantDbConnection, userDetails, date, clockInTi
       return { type: true, msg: 'Check-in Successfully', data: {userDetails, clockInTimeStamp, totalDuration} };
     }
   } catch (err) {
+    console.log(err);
     return false;
   }
 };
