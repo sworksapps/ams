@@ -159,7 +159,7 @@ exports.checkIn = async (req, res) => {
     userDetails.userFaceId = userFaceId;
     
     return res.status(200).json({ 
-      statusText: 'Success', statusValue: 200, message: 'Proceed to Check-in', data: userDetails
+      statusText: 'Success', statusValue: 200, message: 'Proceed to Check-in.', data: userDetails
     });
   } catch (err) {
     console.log(err);
