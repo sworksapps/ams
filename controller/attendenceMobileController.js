@@ -337,7 +337,6 @@ exports.checkInSubmit = async (req, res) => {
         message: `User outside of geofencing.`,
       });
 
-
     const userData = await axios.post(
       `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
       { faceId: req.body.userFaceId }
