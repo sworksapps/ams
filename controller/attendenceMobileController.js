@@ -369,7 +369,7 @@ exports.checkInSubmit = async (req, res) => {
       return res.status(202).json({
         statusText: 'Failed',
         statusValue: 202,
-        message: `User doesn't map in this location.`,
+        message: `User doesn't map in this location`,
       });
   
     return res.status(200).json({ 
