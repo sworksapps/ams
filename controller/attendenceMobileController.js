@@ -289,13 +289,13 @@ exports.checkOut = async (req, res) => {
         message: `User doesn't map in this location.`,
       });
 
-    const clockOutTime = moment().unix();
-    const clockOutTimeString  = moment.unix(clockOutTime).format('hh:mm a');
+    const dbConnection = getConnection();
+    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
+      
+    const userTimeData = await attendenceMobileService.getCheckInTimeByUser(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body.clockOutTime);
     
     return res.status(200).json({ 
-      statusText: 'Success', statusValue: 200, message: 'Proceed to Check-out.', data: {
-        userDetails, clockOutTime, clockOutTimeString
-      }
+      statusText: 'Success', statusValue: 200, message: 'Proceed to Check-out.', data: userTimeData.data
     });
   }  catch (err) {
     console.log(err);
