@@ -296,10 +296,18 @@ exports.checkOut = async (req, res) => {
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
       
     const userTimeData = await attendenceMobileService.getCheckInTimeByUser(dbConnection, userDetails, moment().format('YYYY-MM-DD'));
-    
-    return res.status(200).json({ 
-      statusText: 'Success', statusValue: 200, message: 'Proceed to Check-out.', data: userTimeData
-    });
+    if(userTimeData.type == true){
+      res.status(200).json({ 
+        statusText: 'Success', statusValue: 200, message: userTimeData.msg, data: userTimeData.data
+      });
+    } else if(userTimeData.type == false){
+      res.status(202).json({ statusText: 'Failed', statusValue: 202, message: userTimeData.msg });
+    }else{
+      return res.status(400).json({ statusText: 'Failed', statusValue: 400, message: `Went Something Wrong.` });
+    }
+    // return res.status(200).json({ 
+    //   statusText: 'Success', statusValue: 200, message: 'Proceed to Check-out.', data: userTimeData
+    // });
   }  catch (err) {
     if(err.Code == 'InvalidParameterException'){
       res.status(400).json({statusText: 'Fail', message: 'There are no faces in the image. Should be at least 1'});
