@@ -298,7 +298,7 @@ exports.checkOut = async (req, res) => {
     const userTimeData = await attendenceMobileService.getCheckInTimeByUser(dbConnection, userDetails, moment().format('YYYY-MM-DD'));
     
     return res.status(200).json({ 
-      statusText: 'Success', statusValue: 200, message: 'Proceed to Check-out.', data: userTimeData.data
+      statusText: 'Success', statusValue: 200, message: 'Proceed to Check-out.', data: userTimeData
     });
   }  catch (err) {
     if(err.Code == 'InvalidParameterException'){
