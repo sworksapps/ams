@@ -121,7 +121,7 @@ exports.getCheckInTimeByUser = async (tenantDbConnection, userDetails, date) => 
       const clockOutTimeString = moment.unix(clockOutTimeStamp).format('hh:mm a');
       const clockOutTime = moment().unix();
       return { 
-        type: true, msg: 'user checkin data', data: {userDetails, clockInTimeString, clockOutTime, clockOutTimeString, totalDuration} 
+        type: true, msg: 'Proceed to Check-out', data: {userDetails, clockInTimeString, clockOutTime, clockOutTimeString, totalDuration} 
       };
     }
   } catch (err) {
