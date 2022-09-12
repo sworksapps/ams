@@ -25,10 +25,10 @@ exports.checkInService = async (tenantDbConnection, userDetails, date, clockInTi
       };
       await attendenceModel(insertData).save();
       clockInTimeStamp = moment.unix(clockInTimeStamp).format('hh:mm a');
-      return { type: true, msg: 'Check-in Successfully', data: {userDetails, clockInTimeStamp, totalDuration} };
+      return { type: true, msg: 'You have successfully Checked In', data: {userDetails, clockInTimeStamp, totalDuration} };
     }
     if (res.attendenceStatus == 'CLOCKIN')
-      return { type: false, msg: 'Already Check-in', data: '' };
+      return { type: false, msg: 'You have Already Checked in', data: '' };
 
     if (res.attendenceStatus == 'CLOCKOUT' || res.attendenceStatus == 'N/A') {
       const attendenceDetails = res.attendenceDetails;
@@ -40,7 +40,7 @@ exports.checkInService = async (tenantDbConnection, userDetails, date, clockInTi
       clockInTimeStamp = moment.unix(clockInTimeStamp).format('hh:mm a');
       if (res.attendenceStatus == 'CLOCKOUT')
         clockInTimeStamp = moment.unix(res.attendenceDetails[0].clockIn).format('hh:mm a');
-      return { type: true, msg: 'Check-in Successfully', data: {userDetails, clockInTimeStamp, totalDuration} };
+      return { type: true, msg: 'You have successfully Checked In', data: {userDetails, clockInTimeStamp, totalDuration} };
     }
   } catch (err) {
     console.log(err);
@@ -60,9 +60,9 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, clockOut
       date: date,
     });
     if (!res)
-      return { type: false, msg: 'Check-in first to Check-out', data: '' };
+      return { type: false, msg: 'Its Seems you are not check in today so please checkin first', data: '' };
     if (res.attendenceStatus == 'CLOCKOUT' || res.attendenceStatus == 'N/A')
-      return { type: false, msg: 'Check-in first to Check-out', data: '' };
+      return { type: false, msg: 'Its Seems you are not check in today so please checkin first', data: '' };
 
     if (res.attendenceStatus == 'CLOCKIN') {
       let attendenceDetails = res.attendenceDetails;
@@ -82,7 +82,7 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, clockOut
         { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKOUT' }
       );
       return { 
-        type: true, msg: 'Check-out Successfully', data: {userDetails, clockInTimeStamp, clockOutTimeStamp, totalDuration} 
+        type: true, msg: 'You have successfully Checked Out', data: {userDetails, clockInTimeStamp, clockOutTimeStamp, totalDuration} 
       };
     }
   } catch (err) {
@@ -102,9 +102,9 @@ exports.getCheckInTimeByUser = async (tenantDbConnection, userDetails, date) => 
       date: date,
     });
     if (!res)
-      return { type: false, msg: 'Check-in first to Check-out', data: '' };
+      return { type: false, msg: 'Its Seems you are not check in today so please checkin first', data: '' };
     if (res.attendenceStatus == 'CLOCKOUT' || res.attendenceStatus == 'N/A')
-      return { type: false, msg: 'Check-in first to Check-out', data: '' };
+      return { type: false, msg: 'Its Seems you are not check in today so please checkin first', data: '' };
 
     if (res.attendenceStatus == 'CLOCKIN') {
       let attendenceDetails = res.attendenceDetails;
