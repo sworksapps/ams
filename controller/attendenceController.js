@@ -183,3 +183,53 @@ exports.getUsersShiftData = async (req, res) => {
     res.status(500).json({ statusText: 'ERROR', statusValue: 500, message: 'Unable to Process your Request' });
   }
 };
+
+/*----------------Get Report by date------------*/
+exports.getReportByDate = async (req, res) => {
+  try {
+    const dbConnection = getConnection();
+    if (!dbConnection) {
+      return res.status(400)
+        .json({ statusText: 'FAIL', statusValue: 400, message: 'The provided Client is not available' });
+    }
+
+    const { pgno, row, sort_by, filter, date } = req.query;
+
+    let search = '';
+    let dateChk = false;
+
+    if (req.query.search) {
+      search = req.query.search.trim();
+      dateChk = moment(search, 'DD/MM/YYYY', true).isValid();
+    }
+
+    if (date) {
+      search = date.trim();
+      const isValid = moment(search, 'YYYY-MM-DD', true).isValid();
+      if(!isValid)
+        return res.status(400).json({
+          statusText: 'FAIL',
+          statusValue: 400,
+          message: 'Please give Date in YYYY-MM-DD format',
+        });
+    }
+
+    if (!dataValidation.isNumber(pgno) || !dataValidation.isNumber(row))
+      return res.status(400).json({
+        statusText: 'FAIL',
+        statusValue: 400,
+        message: 'Provide valid Page and Limit',
+      });
+
+    const limit = Math.abs(row) || 10;
+    const page = (Math.abs(pgno) || 1) - 1;
+
+    const dataRes = await attendenceService.fetchDailyReportData(dbConnection, limit, page, sort_by, search, filter, dateChk, date);
+    if (dataRes)
+      return res.status(200).json({ statusText: 'OK', statusValue: 200, data: dataRes.resData, total: dataRes.total });
+    else
+      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: 'No Data Found' });
+  } catch (err) {
+    res.status(500).json({ statusText: 'ERROR', statusValue: 500, message: 'Unable to Process your Request' });
+  }
+};
