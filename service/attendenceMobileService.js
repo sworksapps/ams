@@ -21,6 +21,7 @@ exports.checkInService = async (tenantDbConnection, userDetails, date, clockInTi
         userId: userDetails.user_id,
         date: date,
         attendenceStatus: 'CLOCKIN',
+        userStatus: 'PRESENT',
         attendenceDetails: [{ clockIn: clockInTimeStamp, clockOut: '' }],
       };
       await attendenceModel(insertData).save();
@@ -33,9 +34,21 @@ exports.checkInService = async (tenantDbConnection, userDetails, date, clockInTi
     if (res.attendenceStatus == 'CLOCKOUT' || res.attendenceStatus == 'N/A') {
       const attendenceDetails = res.attendenceDetails;
       attendenceDetails.push({ clockIn: clockInTimeStamp, clockOut: '' });
+      let userStatus = res.userStatus;
+      
+      if(res.shiftStart)
+      {
+        const diffTime = getTimeDiff(res.shiftStart, clockInTimeStamp, 'minutes');
+        if(diffTime <= 15  && diffTime >= -15)
+          userStatus = 'ONTIME';
+        
+        if(diffTime > 15)
+          userStatus = 'LATECHECKIN';
+      }
+
       await attendenceModel.findOneAndUpdate(
         { _id: res._id },
-        { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKIN' }
+        { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKIN', userStatus: userStatus }
       );
       clockInTimeStamp = moment.unix(clockInTimeStamp).format('hh:mm a');
       if (res.attendenceStatus == 'CLOCKOUT')
@@ -77,9 +90,22 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, clockOut
       totalDuration = Math.floor(diff / 60) + 'hrs ' + diff % 60+ 'min' ;
       clockInTimeStamp = moment.unix(res.attendenceDetails[0].clockIn).format('hh:mm a');
       clockOutTimeStamp = moment.unix(clockOutTimeStamp).format('hh:mm a');
+
+      let userStatus = res.userStatus;
+      
+      if(res.shiftEnd)
+      {
+        const diffTime = getTimeDiff(res.shiftEnd, clockOutTimeStamp, 'minutes');
+        if(diffTime > -15)
+          userStatus = 'EARLYEXIT';
+        
+        if(diffTime > 15)
+          userStatus = 'LATEEXIT';
+      }
+
       await attendenceModel.findOneAndUpdate(
         { _id: res._id },
-        { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKOUT' }
+        { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKOUT', userStatus : userStatus }
       );
       return { 
         type: true, msg: 'You have successfully Checked Out', data: {userDetails, clockInTimeStamp, clockOutTimeStamp, totalDuration} 
@@ -127,4 +153,10 @@ exports.getCheckInTimeByUser = async (tenantDbConnection, userDetails, date) => 
   } catch (err) {
     return false;
   }
+};
+
+const getTimeDiff = (start, end, type) => {
+  if (start && end && start != '' && end != '')
+    return moment.unix(end).startOf(type).diff(moment.unix(start).startOf(type), type);
+  return 0;
 };

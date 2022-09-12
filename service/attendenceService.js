@@ -18,7 +18,18 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
         const holidayId = holidayRes[0]['_id'].toString();
         iterator.isHoliday = holidayId;
         iterator.userStatus = 'HOLIDAY';
+        iterator.shiftStart = '-4';
+        iterator.shiftEnd = '-4';
       }
+
+      if (iterator.shiftStart == -1)
+        iterator.userStatus = 'WEEKOFF';
+
+      if (iterator.shiftStart == -2)
+        iterator.userStatus = 'WFH';
+
+      if (iterator.shiftStart == -3)
+        iterator.userStatus = 'ONLEAVE';
 
       await attModel.findOneAndUpdate(
         { userId: iterator.userId, date: iterator.date }, { $set: iterator }, { upsert: true });
@@ -124,6 +135,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
         '$project': {
           '_id': 1,
           'userId': 1,
+          'userStatus': 1,
           'deptId': 1,
           'locationId': 1,
           'date': 1,
@@ -223,8 +235,10 @@ exports.getUsersShiftData = async (tenantDbConnection, userData, deptId, startDa
         if (element.userId == ele.user_id) {
           ele.dateArray.push({
             'shift_date': element.date,
-            'shift_start_time': format_time(element.shiftStart),
-            'shift_end_time': format_time(element.shiftEnd)
+            'shift_start_time': element.shiftStart && element.shiftStart > 0 ? format_time(element.shiftStart) :
+              element.shiftStart ? element.shiftStart : 'N/A',
+            'shift_end_time': element.shiftEnd && element.shiftEnd > 0 ? format_time(element.shiftEnd) :
+              element.shiftEnd ? element.shiftEnd : 'N/A'
           });
         }
       }
@@ -344,8 +358,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
           'deptId': 1,
           'locationId': 1,
           'date': 1,
-          // 'clockIn': { '$arrayElemAt': ['$attendenceDetails.clockIn', 0] },
-          // 'clockOut': { '$arrayElemAt': ['$attendenceDetails.clockOut', -1] },
+          'userStatus': 1,
           'shiftStart': 1,
           'shiftEnd': 1,
           'attendenceDetails': 1
@@ -397,14 +410,19 @@ const getTimeDiff = (start, end, type) => {
 };
 
 function format_time(s) {
-  const dtFormat = new Intl.DateTimeFormat('en-GB', {
-    timeStyle: 'medium',
-    timeZone: 'IST'
-  });
-  return dtFormat.format(new Date(s * 1e3));
+  if (s && s != '') {
+    const dtFormat = new Intl.DateTimeFormat('en-GB', {
+      timeStyle: 'medium',
+      timeZone: 'IST'
+    });
+    return dtFormat.format(new Date(s * 1e3));
+  }
+  else
+    return 'N/A';
 }
 
 function getTimeDiffInHours(stTime, endTime) {
-  const res = moment.utc(moment(endTime, 'HH:mm:ss').diff(moment(stTime, 'HH:mm:ss'))).format('hh:mm');
-  return res;
+  if (stTime && endTime && stTime != '' && endTime != '')
+    return moment.utc(moment(endTime, 'HH:mm:ss').diff(moment(stTime, 'HH:mm:ss'))).format('hh:mm');
+  return 0;
 }
