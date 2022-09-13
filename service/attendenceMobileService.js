@@ -21,26 +21,39 @@ exports.checkInService = async (tenantDbConnection, userDetails, date, clockInTi
         userId: userDetails.user_id,
         date: date,
         attendenceStatus: 'CLOCKIN',
+        userStatus: 'PRESENT',
         attendenceDetails: [{ clockIn: clockInTimeStamp, clockOut: '' }],
       };
       await attendenceModel(insertData).save();
       clockInTimeStamp = moment.unix(clockInTimeStamp).format('hh:mm a');
-      return { type: true, msg: 'Check-in Successfully', data: {userDetails, clockInTimeStamp, totalDuration} };
+      return { type: true, msg: 'You have successfully Checked In', data: {userDetails, clockInTimeStamp, totalDuration} };
     }
     if (res.attendenceStatus == 'CLOCKIN')
-      return { type: false, msg: 'Already Check-in', data: '' };
+      return { type: false, msg: 'You have Already Checked in', data: '' };
 
     if (res.attendenceStatus == 'CLOCKOUT' || res.attendenceStatus == 'N/A') {
       const attendenceDetails = res.attendenceDetails;
       attendenceDetails.push({ clockIn: clockInTimeStamp, clockOut: '' });
+      let userStatus = res.userStatus;
+      
+      if(res.shiftStart)
+      {
+        const diffTime = getTimeDiff(res.shiftStart, clockInTimeStamp, 'minutes');
+        if(diffTime <= 15  && diffTime >= -15)
+          userStatus = 'ONTIME';
+        
+        if(diffTime > 15)
+          userStatus = 'LATECHECKIN';
+      }
+
       await attendenceModel.findOneAndUpdate(
         { _id: res._id },
-        { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKIN' }
+        { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKIN', userStatus: userStatus }
       );
       clockInTimeStamp = moment.unix(clockInTimeStamp).format('hh:mm a');
       if (res.attendenceStatus == 'CLOCKOUT')
         clockInTimeStamp = moment.unix(res.attendenceDetails[0].clockIn).format('hh:mm a');
-      return { type: true, msg: 'Check-in Successfully', data: {userDetails, clockInTimeStamp, totalDuration} };
+      return { type: true, msg: 'You have successfully Checked In', data: {userDetails, clockInTimeStamp, totalDuration} };
     }
   } catch (err) {
     console.log(err);
@@ -60,9 +73,9 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, clockOut
       date: date,
     });
     if (!res)
-      return { type: false, msg: 'Check-in first to Check-out', data: '' };
+      return { type: false, msg: 'Its Seems you are not check in today so please checkin first', data: '' };
     if (res.attendenceStatus == 'CLOCKOUT' || res.attendenceStatus == 'N/A')
-      return { type: false, msg: 'Check-in first to Check-out', data: '' };
+      return { type: false, msg: 'Its Seems you are not check in today so please checkin first', data: '' };
 
     if (res.attendenceStatus == 'CLOCKIN') {
       let attendenceDetails = res.attendenceDetails;
@@ -77,12 +90,25 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, clockOut
       totalDuration = Math.floor(diff / 60) + 'hrs ' + diff % 60+ 'min' ;
       clockInTimeStamp = moment.unix(res.attendenceDetails[0].clockIn).format('hh:mm a');
       clockOutTimeStamp = moment.unix(clockOutTimeStamp).format('hh:mm a');
+
+      let userStatus = res.userStatus;
+      
+      if(res.shiftEnd)
+      {
+        const diffTime = getTimeDiff(res.shiftEnd, clockOutTimeStamp, 'minutes');
+        if(diffTime > -15)
+          userStatus = 'EARLYEXIT';
+        
+        if(diffTime > 15)
+          userStatus = 'LATEEXIT';
+      }
+
       await attendenceModel.findOneAndUpdate(
         { _id: res._id },
-        { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKOUT' }
+        { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKOUT', userStatus : userStatus }
       );
       return { 
-        type: true, msg: 'Check-out Successfully', data: {userDetails, clockInTimeStamp, clockOutTimeStamp, totalDuration} 
+        type: true, msg: 'You have successfully Checked Out', data: {userDetails, clockInTimeStamp, clockOutTimeStamp, totalDuration} 
       };
     }
   } catch (err) {
@@ -102,9 +128,9 @@ exports.getCheckInTimeByUser = async (tenantDbConnection, userDetails, date) => 
       date: date,
     });
     if (!res)
-      return { type: false, msg: 'Check-in first to Check-out', data: '' };
+      return { type: false, msg: 'Its Seems you are not check in today so please checkin first', data: '' };
     if (res.attendenceStatus == 'CLOCKOUT' || res.attendenceStatus == 'N/A')
-      return { type: false, msg: 'Check-in first to Check-out', data: '' };
+      return { type: false, msg: 'Its Seems you are not check in today so please checkin first', data: '' };
 
     if (res.attendenceStatus == 'CLOCKIN') {
       let attendenceDetails = res.attendenceDetails;
@@ -127,4 +153,10 @@ exports.getCheckInTimeByUser = async (tenantDbConnection, userDetails, date) => 
   } catch (err) {
     return false;
   }
+};
+
+const getTimeDiff = (start, end, type) => {
+  if (start && end && start != '' && end != '')
+    return moment.unix(end).startOf(type).diff(moment.unix(start).startOf(type), type);
+  return 0;
 };
