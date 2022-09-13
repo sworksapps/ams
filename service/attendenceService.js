@@ -408,3 +408,30 @@ function getTimeDiffInHours(stTime, endTime) {
   const res = moment.utc(moment(endTime, 'HH:mm:ss').diff(moment(stTime, 'HH:mm:ss'))).format('hh:mm');
   return res;
 }
+
+/*-------------*/
+exports.fetchReportDataByDate = async (dbConnection, startDate, endDate) => {
+  const attModel = await dbConnection.model('attendences_data');
+  const attData = await attModel.aggregate([
+    {
+      $match: {
+        date: {
+          $gte: startDate,
+          $lte: endDate,
+          
+        }
+      }
+    },
+    {
+      '$project': {
+        '_id': 1,
+        'attendenceStatus': 1,
+        'attendenceDetails': 1,
+        'userId': 1,
+        'date': 1
+      }
+    },
+
+  ]);
+  return attData;
+};
