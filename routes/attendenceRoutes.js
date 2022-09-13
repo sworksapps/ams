@@ -14,6 +14,7 @@ v1Routes.post(
 );
 v1Routes.get('/client/v1/attendence/get-daily-report', attendenceController.dailyReport);
 v1Routes.get('/client/v1/attendence/get-user-report', attendenceController.userReport);
+v1Routes.post('/client/v1/attendence/change-user-status', attendenceController.changeUserStatus);
 
 /*------------------------------*/
 module.exports = v1Routes;

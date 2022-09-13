@@ -40,6 +40,7 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
     return false;
   }
 };
+
 /* ---------------get daily report----------------------*/
 exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search, filter, dateChk, date) => {
   try {
@@ -402,6 +403,20 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
   }
 };
 
+/* ---------------change user status----------------------*/
+exports.changeUserStatus = async (tenantDbConnection, bodyData) => {
+  try {
+    const attendenceModel = await tenantDbConnection.model('attendences_data');
+    const res = await attendenceModel.findOneAndUpdate({ id: bodyData.id }, { $set: { userStatus: bodyData.status } });
+
+    if (res)
+      return true;
+    return false;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+};
 
 const getTimeDiff = (start, end, type) => {
   if (start && end && start != '' && end != '')

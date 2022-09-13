@@ -20,7 +20,7 @@ exports.addShift = async (req, res) => {
       shiftEnd: Joi.string().required().allow('').label('Shift End'),
       date: Joi.string().required().label('Date')
     });
-    
+
     const result = schema.validate(req.body);
     if (result.error)
       return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: result.error.details[0].message });
@@ -62,7 +62,7 @@ exports.dailyReport = async (req, res) => {
     if (date) {
       search = date.trim();
       const isValid = moment(search, 'YYYY-MM-DD', true).isValid();
-      if(!isValid)
+      if (!isValid)
         return res.status(400).json({
           statusText: 'FAIL',
           statusValue: 400,
@@ -109,7 +109,7 @@ exports.userReport = async (req, res) => {
       dateChk = moment(search, 'DD/MM/YYYY', true).isValid();
     }
 
-    if(!userId && !dataValidation.isNumber(userId))
+    if (!userId && !dataValidation.isNumber(userId))
       return res.status(400).json({
         statusText: 'FAIL',
         statusValue: 400,
@@ -121,7 +121,7 @@ exports.userReport = async (req, res) => {
       const end = endDate.trim();
       let isValid = moment(st, 'YYYY-MM-DD', true).isValid();
       isValid = moment(end, 'YYYY-MM-DD', true).isValid();
-      if(!isValid)
+      if (!isValid)
         return res.status(400).json({
           statusText: 'FAIL',
           statusValue: 400,
@@ -155,6 +155,7 @@ exports.userReport = async (req, res) => {
   }
 };
 
+/*----------------Get user shift data------------*/
 exports.getUsersShiftData = async (req, res) => {
   try {
     const schema = Joi.object({
@@ -168,16 +169,43 @@ exports.getUsersShiftData = async (req, res) => {
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
     const response = await attendenceService.getUsersShiftData(dbConnection, req.body, req.params.deptId, req.params.startDate, req.params.endDate);
-    
-    if(response.type == true){
-      res.status(200).json({ 
+
+    if (response.type == true) {
+      res.status(200).json({
         statusText: 'Success', statusValue: 200, message: response.msg, refData: response.refData
       });
-    } else if(response.type == false){
+    } else if (response.type == false) {
       res.status(202).json({ statusText: 'Failed', statusValue: 202, message: response.msg });
-    }else{
+    } else {
       return res.status(400).json({ statusText: 'Failed', statusValue: 400, message: `Went Something Wrong.` });
     }
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ statusText: 'ERROR', statusValue: 500, message: 'Unable to Process your Request' });
+  }
+};
+
+/*----------------Change user status------------*/
+exports.changeUserStatus = async (req, res) => {
+  try {
+    const schema = Joi.object({
+      id: Joi.string().required().length(24).label('Id'),
+      status: Joi.string().required().valid('PRESENT', 'ABSENT', 'HALFDAY', 'ONLEAVE').label('Status')
+    });
+
+    const result = schema.validate(req.body);
+    if (result.error)
+      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: 'Provide valid Status or Id'});
+
+    const dbConnection = getConnection();
+    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
+
+    const response = await attendenceService.changeUserStatus(dbConnection, req.body);
+
+    if (response)
+      res.status(200).json({ statusText: 'Success', statusValue: 200, message: 'Status Updated Successfully' });
+    else
+      return res.status(400).json({ statusText: 'Failed', statusValue: 400, message: `Unable to change Status` });
   } catch (err) {
     console.log(err);
     res.status(500).json({ statusText: 'ERROR', statusValue: 500, message: 'Unable to Process your Request' });
