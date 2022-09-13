@@ -203,6 +203,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
   }
 };
 
+/* ---------------get User shift data----------------------*/
 exports.getUsersShiftData = async (tenantDbConnection, userData, deptId, startDate, endDate) => {
   try {
     const attendenceModel = await tenantDbConnection.model('attendences_data');
@@ -237,9 +238,9 @@ exports.getUsersShiftData = async (tenantDbConnection, userData, deptId, startDa
           ele.dateArray.push({
             'shift_date': element.date,
             'shift_start_time': element.shiftStart && element.shiftStart > 0 ? format_time(element.shiftStart) :
-              element.shiftStart ? element.shiftStart : 'N/A',
+              element.shiftStart ? element.shiftStart : '',
             'shift_end_time': element.shiftEnd && element.shiftEnd > 0 ? format_time(element.shiftEnd) :
-              element.shiftEnd ? element.shiftEnd : 'N/A'
+              element.shiftEnd ? element.shiftEnd : ''
           });
         }
       }
