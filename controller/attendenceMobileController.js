@@ -435,12 +435,12 @@ exports.checkOutSubmit = async (req, res) => {
 
     const totaldistance = calculateDistance(decodedjwt.clientLat, decodedjwt.clientLong, req.body.latitude, req.body.longitude);
 
-    // if(totaldistance > 200)
-    //   return res.status(200).json({
-    //     statusText: 'FAIL',
-    //     statusValue: 400,
-    //     message: `User outside of geofencing area`,
-    //   });
+    if(totaldistance > 200)
+      return res.status(200).json({
+        statusText: 'FAIL',
+        statusValue: 400,
+        message: `User outside of geofencing area`,
+      });
 
     const userData = await axios.post(
       `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
