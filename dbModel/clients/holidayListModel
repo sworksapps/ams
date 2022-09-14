@@ -11,7 +11,7 @@ const holidayListSchema = async (dbconn) => {
     timestamps: true
   });
   holidayListModel.index({ deptId: 1 });
-  dbconn.model('holiday_list', holidayListModel);
+  dbconn.model('holiday_lists', holidayListModel);
 };
 
 module.exports = {

@@ -44,15 +44,15 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
 /* ---------------get daily report----------------------*/
 exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search, filter, dateChk, date) => {
   try {
-    const dbQuery = [];
+    const dbQuery = [{ 'date': date }];
     const dbQuery1 = [];
     const attModel = await dbConnection.model('attendences_data');
 
     if (filter) {
       filter = JSON.parse(filter);
 
-      if (filter.date) {
-        dbQuery.push({ propertyName: filter.date });
+      if (filter.status) {
+        dbQuery.push({ userStatus: filter.status });
       }
 
       //   if (filter.propertyCity) {
@@ -116,22 +116,36 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       // }
     }
 
-    // if (sort_by === 'propertyName')
-    //   sort_by = { propertyName: 1 };
-    // else if (sort_by === 'area')
-    //   sort_by = { areaNum: -1 };
-    // else if (sort_by === 'proposalDate')
-    //   sort_by = { proposalDate: -1 };
-    // else if (sort_by === 'city')
-    //   sort_by = { city: 1 };
-    // else if (sort_by === 'grade')
-    //   sort_by = { grade: 1 };
-    // else if (sort_by === 'propertyStatus')
-    //   sort_by = { propertyStatus: 1 };
-    // else
-    //   sort_by = { proposalDate: -1 };
+    let sortBy = '';
+    if (sort_by === 'overTime')
+      sortBy = 'overTime';
+    if (sort_by === 'name')
+      sortBy = 'name';
+    if (sort_by === 'userId')
+      sortBy = 'userId';
+
+    if (sort_by === 'firstEntry')
+      sort_by = { firstEnrty: 1 };
+    else if (sort_by === 'lastExit')
+      sort_by = { lastExit: 1 };
+    else if (sort_by === 'recentEntry')
+      sort_by = { recentEnrty: 1 };
+    else if (sort_by === 'shift')
+      sort_by = { shiftStart: 1 };
+    else if (sort_by === 'status')
+      sort_by = { userStatus: 1 };
+    else
+      sort_by = { firstEnrty: 1 };
 
     const query = [
+      {
+        $lookup: {
+          from: 'holiday_lists',
+          localField: 'isHoliday',
+          foreignField: '_id',
+          as: 'holiday',
+        },
+      },
       {
         '$project': {
           '_id': 1,
@@ -139,6 +153,8 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
           'userStatus': 1,
           'deptId': 1,
           'locationId': 1,
+          'isHoliday': 1,
+          'holidayName': { '$arrayElemAt': ['$holiday.holidayName', 0] },
           'date': 1,
           'firstEnrty': { '$arrayElemAt': ['$attendenceDetails.clockIn', 0] },
           'lastExit': { '$arrayElemAt': ['$attendenceDetails.clockIn', -1] },
@@ -149,19 +165,19 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
         },
       },
       {
-        $match: { date }
+        $match: {}
       },
-      // { $sort: sort_by },
+      { $sort: sort_by },
     ];
 
-    // if (dbQuery.length > 0)
-    //   query[4].$match.$and = dbQuery;
+    if (dbQuery.length > 0)
+      query[2].$match.$and = dbQuery;
 
     // if (dbQuery1.length > 0)
     //   query[4].$match.$or = dbQuery1;
 
 
-    const resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
+    let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
     const userIds = resData.map(i => i.userId);
     let userDetails = [];
 
@@ -191,14 +207,15 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       resData[index]['recentEnrty'] = format_time(item['recentEnrty']);
       resData[index]['shiftStart'] = format_time(item['shiftStart']);
       resData[index]['shiftEnd'] = format_time(item['shiftEnd']);
+      resData[index]['holidayName'] = resData[index]['holidayName'] ? resData[index]['holidayName'] : '';
     });
 
+    if (sortBy != '')
+      resData = sortByKey(resData, sortBy);
     const total = await attModel.aggregate([...query, { $count: 'totalCount' }])
       .then(res => res.length > 0 ? res[0].totalCount : 0);
-
     return { resData, total };
   } catch (err) {
-    console.log(err);
     return false;
   }
 };
@@ -515,7 +532,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
               'date': '$date',
               'userId': '$userId',
               'userStatus': '$userStatus',
-              'holiday': '$isHoliday',
+              'isHoliday': '$isHoliday',
               'shiftStart': '$shiftStart',
               'shiftEnd': '$shiftEnd',
               'attendenceDetails': '$attendenceDetails',
@@ -608,7 +625,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
         }
 
         // holidayCount
-        if (element.isHoliday)
+        if (element['isHoliday'] || element.userStatus == 'HOLIDAY')
           holidayCount++;
 
 
@@ -647,6 +664,13 @@ const getTimeDiff = (start, end, type) => {
   if (start && end && start != '' && end != '')
     return moment.unix(end).startOf(type).diff(moment.unix(start).startOf(type), type);
   return 0;
+};
+
+const sortByKey = (arr, key) => {
+  if (key == 'name')
+    return arr.sort((a, b) => a.name.localeCompare(b.name));
+
+  return arr.sort((a, b) => a[key] - b[key]);
 };
 
 function format_time(s) {
