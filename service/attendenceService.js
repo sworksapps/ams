@@ -419,6 +419,230 @@ exports.changeUserStatus = async (tenantDbConnection, bodyData) => {
   }
 };
 
+
+/* ---------------get daily report----------------------*/
+exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, search, filter, dateChk, startDate, endDate) => {
+  try {
+    const dbQuery = [];
+    const dbQuery1 = [];
+    const attModel = await dbConnection.model('attendences_data');
+
+    if (filter) {
+      filter = JSON.parse(filter);
+
+      // if (filter.date) {
+      //   dbQuery.push({ propertyName: filter.date });
+      // }
+      //   if (filter.regionId) {
+      //     dbQuery.push({ regionId: mongoose.Types.ObjectId(filter.regionId) });
+      //   }
+
+      //   if (filter.spocEmail) {
+      //     filter.spocEmail.forEach(element => {
+      //       if (element)
+      //         dbQuery1.push({ 'spocData.spocEmail': element.trim() });
+      //     });
+      //   }
+    }
+    // filter between dates
+    dbQuery.push({
+      'date': {
+        $gte: startDate,
+        $lte: endDate,
+      }
+    });
+
+
+    if (search) {
+      const dateArr = search.replace(/\\\//g, '/').split('/');
+
+      if (dateArr.length === 3 && dateChk === true) {
+        const dateData = new Date(`${dateArr[2]}-${dateArr[1]}-${dateArr[0]}`);
+        dbQuery1.push({
+          createdAt: {
+            $gte: new Date(new Date(dateData).setHours(0, 0, 0)),
+            $lte: new Date(new Date(dateData).setHours(23, 59, 59)),
+          }
+        },
+          // {
+          //   proposalDate: {
+          //     $gte: new Date(new Date(dateData).setHours(0, 0, 0)),
+          //     $lt: new Date(new Date(dateData).setHours(23, 59, 59)),
+          //   }
+          // }
+        );
+      }
+      // else {
+      //   dbQuery1.push(
+      //     { propertyName: { $regex: `.*${search}.*`, $options: 'i' } },
+      //     { area: { $regex: `.*${search}.*`, $options: 'i' } },
+      //     { city: { $regex: `.*${search}.*`, $options: 'i' } },
+      //     { grade: { $regex: `.*${search}.*`, $options: 'i' } },
+      //     { propertyCreatedBy: { $regex: `.*${search}.*`, $options: 'i' } },
+      //     { propertyStage: { $regex: `.*${search}.*`, $options: 'i' } },
+      //     { spocName: { $regex: `.*${search}.*`, $options: 'i' } }
+      //   );
+      // }
+    }
+
+    // if (sort_by === 'propertyName')
+    //   sort_by = { propertyName: 1 };
+    // else if (sort_by === 'area')
+    //   sort_by = { areaNum: -1 };
+    // else if (sort_by === 'proposalDate')
+    //   sort_by = { proposalDate: -1 };
+    // else if (sort_by === 'city')
+    //   sort_by = { city: 1 };
+    // else if (sort_by === 'grade')
+    //   sort_by = { grade: 1 };
+    // else if (sort_by === 'propertyStatus')
+    //   sort_by = { propertyStatus: 1 };
+    // else
+    //   sort_by = { proposalDate: -1 };
+
+    const query = [
+      {
+        $match: {}
+      },
+      {
+        $group: {
+          _id: '$userId',
+          'dataArr': {
+            '$push': {
+              '_id': '$_id',
+              'deptId': '$deptId',
+              'locationId': '$locationId',
+              'date': '$date',
+              'userId': '$userId',
+              'userStatus': '$userStatus',
+              'holiday': '$isHoliday',
+              'shiftStart': '$shiftStart',
+              'shiftEnd': '$shiftEnd',
+              'attendenceDetails': '$attendenceDetails',
+            }
+          }
+        }
+      }
+      // { $sort: sort_by },
+    ];
+
+    if (dbQuery.length > 0)
+      query[0].$match.$and = dbQuery;
+
+    // if (dbQuery1.length > 0)
+    //   query[4].$match.$or = dbQuery1;
+
+    const resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
+    const userIds = resData.map(i => i._id);
+    let userDetails = [];
+
+    // get user name
+    const userData = await axios.post(
+      `${process.env.CLIENTSPOC}api/v1/user/get-user-name`,
+      { rec_id: userIds }
+    );
+
+    if (userData.data.status == 200)
+      userDetails = userData.data.data;
+
+    resData.map((item, index) => {
+
+      const userObj = userDetails.filter(data => data.rec_id == item._id);
+      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name'].trim() : '-';
+
+      let lateEntryCount = 0;
+      let earlyExitCount = 0;
+      let presentCount = 0;
+      let absentCount = 0;
+      let leaveCount = 0;
+      let holidayCount = 0;
+      // eslint-disable-next-line prefer-const
+      let avgLate = 0;
+      let overTimeHr = 0;
+      let workHour = 0;
+
+      item.dataArr.forEach(element => {
+
+        // lateEntryCount
+        // eslint-disable-next-line max-len
+        if (element.shiftStart && element.shiftStart > 0 && element.attendenceDetails.length > 0 && element.attendenceDetails[0].clockIn && element.attendenceDetails[0].clockIn > 0) {
+          const diff = getTimeDiff(element.shiftStart, element.attendenceDetails[0].clockIn, 'minutes');
+          if (diff > 15)
+            lateEntryCount++;
+        }
+
+        // EarlyExitCount
+        // eslint-disable-next-line max-len
+        if (element.shiftEnd && element.shiftEnd > 0 && element.attendenceDetails.length > 0 && element.attendenceDetails[element.attendenceDetails.length - 1].clockOut && element.attendenceDetails[element.attendenceDetails.length - 1].clockOut > 0) {
+          // eslint-disable-next-line max-len
+          const diff = getTimeDiff(element.shiftEnd, element.attendenceDetails[element.attendenceDetails.length - 1].clockOut, 'minutes');
+          if (diff < 0)
+            earlyExitCount++;
+        }
+
+        // presentCount
+        // eslint-disable-next-line max-len
+        if (element.attendenceDetails.length > 0 && element.attendenceDetails[0].clockIn && element.attendenceDetails[0].clockIn > 0)
+          presentCount++;
+
+        // absentCount 
+        if (element.attendenceDetails.length == 0)
+          absentCount++;
+
+        //leaveCount 
+        if (element.shiftStart == -3 || element.shiftEnd == -3 || element.userStatus == 'ONLEAVE')
+          leaveCount++;
+
+        //avgLate
+
+        //overTimeHr
+        // eslint-disable-next-line max-len
+        if (element.shiftStart && element.shiftStart > 0 && element.shiftEnd && element.shiftEnd > 0 && element.attendenceDetails.length > 0 && element.attendenceDetails[0].clockIn && element.attendenceDetails[0].clockIn > 0 &&
+          // eslint-disable-next-line max-len
+          element.attendenceDetails[element.attendenceDetails.length - 1].clockOut && element.attendenceDetails[element.attendenceDetails.length - 1].clockOut > 0) {
+          const shiftDiff = getTimeDiff(element.shiftStart, element.shiftEnd, 'minutes');
+          // eslint-disable-next-line max-len
+          const attDiff = getTimeDiff(element.attendenceDetails[0].clockIn, element.attendenceDetails[element.attendenceDetails.length - 1].clockOut, 'minutes');
+          const overTime = attDiff - shiftDiff; // In mintues
+          overTimeHr = overTimeHr + (overTime / 60);
+        }
+
+        // holidayCount
+        if (element.isHoliday)
+          holidayCount++;
+
+
+        // avgWorkHour
+        // eslint-disable-next-line max-len
+        if (element.attendenceDetails.length > 0 && element.attendenceDetails[0].clockIn && element.attendenceDetails[0].clockIn > 0 &&
+          // eslint-disable-next-line max-len
+          element.attendenceDetails[element.attendenceDetails.length - 1].clockOut && element.attendenceDetails[element.attendenceDetails.length - 1].clockOut > 0) {
+          // eslint-disable-next-line max-len
+          const attDiff = getTimeDiff(element.attendenceDetails[0].clockIn, element.attendenceDetails[element.attendenceDetails.length - 1].clockOut, 'minutes');
+          workHour = workHour + (attDiff / 60);
+        }
+      });
+
+      resData[index]['lateEntryCount'] = lateEntryCount;
+      resData[index]['earlyExitCount'] = earlyExitCount;
+      resData[index]['presentCount'] = presentCount;
+      resData[index]['absentCount'] = absentCount;
+      resData[index]['leaveCount'] = leaveCount;
+      resData[index]['holidayCount'] = holidayCount;
+      resData[index]['avgLate'] = avgLate;
+      resData[index]['overTimeHr'] = parseInt(overTimeHr) > 0 ? parseInt(overTimeHr) : 0;
+      resData[index]['avgWorkHour'] = parseInt(workHour) / presentCount;
+    });
+
+    const total = await attModel.aggregate([...query, { $count: 'totalCount' }])
+      .then(res => res.length > 0 ? res[0].totalCount : 0);
+    return { resData, total };
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+};
+
 const getTimeDiff = (start, end, type) => {
   if (start && end && start != '' && end != '')
     return moment.unix(end).startOf(type).diff(moment.unix(start).startOf(type), type);
@@ -442,31 +666,3 @@ function getTimeDiffInHours(stTime, endTime) {
     return moment.utc(moment(endTime, 'HH:mm:ss').diff(moment(stTime, 'HH:mm:ss'))).format('hh:mm');
   return 0;
 }
-
-/*-------------*/
-exports.fetchReportDataByDate = async (dbConnection, startDate, endDate) => {
-  const attModel = await dbConnection.model('attendences_data');
-  const attData = await attModel.aggregate([
-    {
-      $match: {
-        date: {
-          $gte: startDate,
-          $lte: endDate,
-
-        }
-      }
-    },
-    {
-      '$project': {
-        '_id': 1,
-        'attendenceStatus': 1,
-        'attendenceDetails': 1,
-        'userId': 1,
-        'date': 1
-      }
-    },
-
-  ]);
-  return attData;
-};
-
