@@ -6,7 +6,7 @@ const axios = require('axios');
 exports.insertShiftData = async (tenantDbConnection, bodyData) => {
   try {
     const attModel = await tenantDbConnection.model('attendences_data');
-    const holidayModel = await tenantDbConnection.model('holiday_list');
+    const holidayModel = await tenantDbConnection.model('holiday_lists');
 
     for (const iterator of bodyData) {
       const holidayRes = await holidayModel.find({
