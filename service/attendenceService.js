@@ -119,10 +119,11 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
     let sortBy = '';
     if (sort_by === 'overTime')
       sortBy = 'overTime';
-    if (sort_by === 'name')
+    else if (sort_by === 'name')
       sortBy = 'name';
-    if (sort_by === 'userId')
+    else if (sort_by === 'userId')
       sortBy = 'userId';
+
 
     if (sort_by === 'firstEntry')
       sort_by = { firstEnrty: 1 };
@@ -136,6 +137,9 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       sort_by = { userStatus: 1 };
     else
       sort_by = { firstEnrty: 1 };
+
+    if (!sortBy)
+      sortBy = 'name';
 
     const query = [
       {
@@ -210,8 +214,10 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       resData[index]['holidayName'] = resData[index]['holidayName'] ? resData[index]['holidayName'] : '';
     });
 
+    //sorting 
     if (sortBy != '')
       resData = sortByKey(resData, sortBy);
+    
     const total = await attModel.aggregate([...query, { $count: 'totalCount' }])
       .then(res => res.length > 0 ? res[0].totalCount : 0);
     return { resData, total };
@@ -297,20 +303,6 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       //     dbQuery.push({ regionId: mongoose.Types.ObjectId(filter.regionId) });
       //   }
 
-      //   if (filter.propertyStage) {
-      //     dbQuery.push({ propertyStage: filter.propertyStage });
-      //   }
-
-      //   if (filter.regionId) {
-      //     dbQuery.push({ regionId: mongoose.Types.ObjectId(filter.regionId) });
-      //   }
-
-      //   if (filter.spocEmail) {
-      //     filter.spocEmail.forEach(element => {
-      //       if (element)
-      //         dbQuery1.push({ 'spocData.spocEmail': element.trim() });
-      //     });
-      //   }
     }
 
     dbQuery.push({
@@ -353,21 +345,26 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       //   );
       // }
     }
+    let sortBy = '';
 
-    // if (sort_by === 'propertyName')
-    //   sort_by = { propertyName: 1 };
-    // else if (sort_by === 'area')
-    //   sort_by = { areaNum: -1 };
-    // else if (sort_by === 'proposalDate')
-    //   sort_by = { proposalDate: -1 };
-    // else if (sort_by === 'city')
-    //   sort_by = { city: 1 };
-    // else if (sort_by === 'grade')
-    //   sort_by = { grade: 1 };
-    // else if (sort_by === 'propertyStatus')
-    //   sort_by = { propertyStatus: 1 };
-    // else
-    //   sort_by = { proposalDate: -1 };
+    if (sort_by === 'clockIn')
+      sortBy = 'clockIn';
+    else if (sort_by === 'clockOut')
+      sortBy = 'clockOut';
+    else if (sort_by === 'avgWork')
+      sortBy = 'working_hour';
+
+    if (sort_by === 'date')
+      sort_by = { date: 1 };
+    else if (sort_by === 'shift')
+      sort_by = { shiftStart: 1 };
+    else if (sort_by === 'status')
+      sort_by = { userStatus: 1 };
+    else
+      sort_by = { date: 1 };
+
+    // if (!sortBy)
+    //   sortBy = 'name';
 
     const query = [
       {
@@ -386,7 +383,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       {
         $match: {}
       },
-      // { $sort: sort_by },
+      { $sort: sort_by },
     ];
 
     if (dbQuery.length > 0)
@@ -395,7 +392,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
     // if (dbQuery1.length > 0)
     //   query[4].$match.$or = dbQuery1;
 
-    const resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
+    let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
     resData.map((item, index) => {
       let clockIn = 0;
       let clockOut = 0;
@@ -409,8 +406,13 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       resData[index]['clockOut'] = format_time(clockOut);
       resData[index]['shiftStart'] = format_time(item['shiftStart']);
       resData[index]['shiftEnd'] = format_time(item['shiftEnd']);
-      resData[index]['working_hour'] = getTimeDiffInHours(resData[index]['clockIn'], resData[index]['clockOut']);
+      // eslint-disable-next-line max-len
+      resData[index]['working_hour'] = clockIn > 0  && clockOut > 0 ? getTimeDiffInHours(resData[index]['clockIn'], resData[index]['clockOut']) : 'N/A';
     });
+
+    //sorting
+    if (sortBy != '')
+      resData = sortByKey(resData, sortBy);
 
     const total = await attModel.aggregate([...query, { $count: 'totalCount' }])
       .then(res => res.length > 0 ? res[0].totalCount : 0);
@@ -502,8 +504,8 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       // }
     }
 
-    // if (sort_by === 'propertyName')
-    //   sort_by = { propertyName: 1 };
+    // if (sort_by === 'userId')
+    //   sort_by = { userId: 1 };
     // else if (sort_by === 'area')
     //   sort_by = { areaNum: -1 };
     // else if (sort_by === 'proposalDate')
@@ -539,7 +541,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
             }
           }
         }
-      }
+      },
       // { $sort: sort_by },
     ];
 
@@ -549,7 +551,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
     // if (dbQuery1.length > 0)
     //   query[4].$match.$or = dbQuery1;
 
-    const resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
+    let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
     const userIds = resData.map(i => i._id);
     let userDetails = [];
 
@@ -650,6 +652,34 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       resData[index]['overTimeHr'] = parseInt(overTimeHr) > 0 ? parseInt(overTimeHr) : 0;
       resData[index]['avgWorkHour'] = parseInt(workHour) / presentCount;
     });
+
+    // sorting
+    if (sort_by && sort_by != '') {
+      if (sort_by == 'userId')
+        resData = sortByKey(resData, '_id');
+      else if (sort_by == 'name')
+        resData = sortByKey(resData, sort_by);
+      else if (sort_by == 'lateEntry')
+        resData = sortByKey(resData, 'lateEntryCount');
+      else if (sort_by == 'earlyExit')
+        resData = sortByKey(resData, 'earlyExitCount');
+      else if (sort_by == 'present')
+        resData = sortByKey(resData, 'presentCount');
+      else if (sort_by == 'absent')
+        resData = sortByKey(resData, 'absentCount');
+      else if (sort_by == 'leave')
+        resData = sortByKey(resData, 'leaveCount');
+      else if (sort_by == 'holiday')
+        resData = sortByKey(resData, 'holidayCount');
+      else if (sort_by == 'avgLate')
+        resData = sortByKey(resData, 'avgLate');
+      else if (sort_by == 'overtime')
+        resData = sortByKey(resData, 'overTimeHr');
+      else if (sort_by == 'avgWork')
+        resData = sortByKey(resData, 'avgWorkHour');
+      else
+        resData = sortByKey(resData, 'name');
+    }
 
     const total = await attModel.aggregate([...query, { $count: 'totalCount' }])
       .then(res => res.length > 0 ? res[0].totalCount : 0);
