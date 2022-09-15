@@ -10,7 +10,7 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
 
     for (const iterator of bodyData) {
       const holidayRes = await holidayModel.find({
-        deptId: iterator.deptId, date: iterator.date,
+        deptId: { $in: [iterator.deptId] }, date: iterator.date,
         locationId: { $in: [iterator.locationId] }
       }).select({ _id: 1 });
 
@@ -123,6 +123,8 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       sortBy = 'name';
     else if (sort_by === 'userId')
       sortBy = 'userId';
+    else if (sort_by === 'status')
+      sortBy = 'userStatus';
 
 
     if (sort_by === 'firstEntry')
@@ -133,8 +135,8 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       sort_by = { recentEnrty: 1 };
     else if (sort_by === 'shift')
       sort_by = { shiftStart: 1 };
-    else if (sort_by === 'status')
-      sort_by = { userStatus: 1 };
+    // else if (sort_by === 'status')
+    //   sort_by = { userStatus: 1 };
     else
       sort_by = { firstEnrty: 1 };
 
@@ -161,8 +163,8 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
           'holidayName': { '$arrayElemAt': ['$holiday.holidayName', 0] },
           'date': 1,
           'firstEnrty': { '$arrayElemAt': ['$attendenceDetails.clockIn', 0] },
-          'lastExit': { '$arrayElemAt': ['$attendenceDetails.clockIn', -1] },
-          'recentEnrty': { '$arrayElemAt': ['$attendenceDetails.clockIn', 0] },
+          'lastExit': { '$arrayElemAt': ['$attendenceDetails.clockOut', -1] },
+          'recentEnrty': { '$arrayElemAt': ['$attendenceDetails.clockIn', -1] },
           'shiftStart': 1,
           'shiftEnd': 1,
           'attendenceDetails': 1
@@ -315,7 +317,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
     dbQuery.push({
       'date': {
         $gte: startDate,
-        $lt: endDate,
+        $lte: endDate,
       }
     });
     dbQuery.push({ userId: userId });
@@ -360,13 +362,13 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       sortBy = 'clockOut';
     else if (sort_by === 'avgWork')
       sortBy = 'working_hour';
+    else if (sort_by === 'status')
+      sortBy = 'userStatus';
 
     if (sort_by === 'date')
       sort_by = { date: 1 };
     else if (sort_by === 'shift')
       sort_by = { shiftStart: 1 };
-    else if (sort_by === 'status')
-      sort_by = { userStatus: 1 };
     else
       sort_by = { date: 1 };
 
@@ -582,9 +584,10 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       let leaveCount = 0;
       let holidayCount = 0;
       // eslint-disable-next-line prefer-const
-      let avgLate = 0;
+      // let avgLate = 0;
       let overTimeHr = 0;
       let workHour = 0;
+      let lateInMin = 0;
 
       item.dataArr.forEach(element => {
 
@@ -592,8 +595,10 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
         // eslint-disable-next-line max-len
         if (element.shiftStart && element.shiftStart > 0 && element.attendenceDetails.length > 0 && element.attendenceDetails[0].clockIn && element.attendenceDetails[0].clockIn > 0) {
           const diff = getTimeDiff(element.shiftStart, element.attendenceDetails[0].clockIn, 'minutes');
-          if (diff > 15)
+          if (diff > 15) {
+            lateInMin = lateInMin + diff;
             lateEntryCount++;
+          }
         }
 
         // EarlyExitCount
@@ -654,7 +659,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       resData[index]['absentCount'] = absentCount;
       resData[index]['leaveCount'] = leaveCount;
       resData[index]['holidayCount'] = holidayCount;
-      resData[index]['avgLate'] = avgLate;
+      resData[index]['avgLate'] = parseInt(lateInMin / presentCount);
       resData[index]['overTimeHr'] = parseInt(overTimeHr) > 0 ? parseInt(overTimeHr) : 0;
       // eslint-disable-next-line max-len
       resData[index]['avgWorkHour'] = parseInt(parseInt(workHour) / presentCount) ? parseInt(parseInt(workHour) / presentCount) : 'N/A';
@@ -704,9 +709,8 @@ const getTimeDiff = (start, end, type) => {
 };
 
 const sortByKey = (arr, key) => {
-  if (key == 'name')
-    return arr.sort((a, b) => a.name.localeCompare(b.name));
-
+  if (key == 'name' || key == 'userStatus')
+    return arr.sort((a, b) => a[key].localeCompare(b[key]));
   return arr.sort((a, b) => a[key] - b[key]);
 };
 
