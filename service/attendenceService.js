@@ -196,28 +196,35 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
     resData.map((item, index) => {
       let totalSpendTime = 0;
+      let totalShiftTime = 0;
+
 
       item.attendenceDetails.forEach(element => {
-        const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
-        totalSpendTime = totalSpendTime + diff;
+        if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0) {
+          const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
+          totalSpendTime = totalSpendTime + diff;
+        }
       });
 
-      const shiftDiff = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
+      if (item.shiftStart && item.shiftStart > 0 && item.shiftEnd && item.shiftEnd > 0)
+        totalShiftTime = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
+
       const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
-      resData[index]['overTime'] = totalSpendTime - shiftDiff;
+      const overTime = totalSpendTime - totalShiftTime;
+      resData[index]['overTime'] = overTime > 0 ? overTime : 0;
       resData[index]['name'] = userObj.length > 0 ? userObj[0]['name'].trim() : '-';
-      resData[index]['firstEnrty'] = format_time(item['firstEnrty']);
-      resData[index]['lastExit'] = format_time(item['lastExit']);
-      resData[index]['recentEnrty'] = format_time(item['recentEnrty']);
-      resData[index]['shiftStart'] = format_time(item['shiftStart']);
-      resData[index]['shiftEnd'] = format_time(item['shiftEnd']);
+      resData[index]['firstEnrty'] = item['firstEnrty'] && item['firstEnrty'] > 0 ? format_time(item['firstEnrty']) : 'N/A';
+      resData[index]['lastExit'] = item['lastExit'] && item['lastExit'] > 0 ? format_time(item['lastExit']) : 'N/A';
+      resData[index]['recentEnrty'] = item['recentEnrty'] && item['recentEnrty'] > 0 ? format_time(item['recentEnrty']) : 'N/A';
+      resData[index]['shiftStart'] = item['shiftStart'] && item['shiftStart'] > 0 ? format_time(item['shiftStart']) : 'N/A';
+      resData[index]['shiftEnd'] = item['shiftEnd'] && item['shiftEnd'] > 0 ? format_time(item['shiftEnd']) : 'N/A';
       resData[index]['holidayName'] = resData[index]['holidayName'] ? resData[index]['holidayName'] : '';
     });
 
     //sorting 
     if (sortBy != '')
       resData = sortByKey(resData, sortBy);
-    
+
     const total = await attModel.aggregate([...query, { $count: 'totalCount' }])
       .then(res => res.length > 0 ? res[0].totalCount : 0);
     return { resData, total };
@@ -397,17 +404,17 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       let clockIn = 0;
       let clockOut = 0;
       item.attendenceDetails.forEach(element => {
-        if (element.clockIn && element.clockIn != '' && clockIn == 0)
+        if (element.clockIn && element.clockIn > 0 && element.clockIn != '' && clockIn == 0)
           clockIn = element.clockIn;
-        if (element.clockOut && element.clockOut != '')
+        if (element.clockOut && element.clockOut > 0 && element.clockOut != '')
           clockOut = element.clockOut;
       });
-      resData[index]['clockIn'] = format_time(clockIn);
-      resData[index]['clockOut'] = format_time(clockOut);
-      resData[index]['shiftStart'] = format_time(item['shiftStart']);
-      resData[index]['shiftEnd'] = format_time(item['shiftEnd']);
+      resData[index]['clockIn'] = clockIn > 0 ? format_time(clockIn) : 'N/A';
+      resData[index]['clockOut'] = clockOut > 0 ? format_time(clockOut) : 'N/A';
+      resData[index]['shiftStart'] = item['shiftStart'] && item['shiftStart'] > 0 ? format_time(item['shiftStart']) : 'N/A';
+      resData[index]['shiftEnd'] = item['shiftEnd'] && item['shiftEnd'] > 0 ? format_time(item['shiftEnd']) : 'N/A';
       // eslint-disable-next-line max-len
-      resData[index]['working_hour'] = clockIn > 0  && clockOut > 0 ? getTimeDiffInHours(resData[index]['clockIn'], resData[index]['clockOut']) : 'N/A';
+      resData[index]['working_hour'] = resData[index]['clockIn'] != 'N/A' && resData[index]['clockOut'] != 'N/A' ? getTimeDiffInHours(resData[index]['clockIn'], resData[index]['clockOut']) : 'N/A';
     });
 
     //sorting
@@ -650,7 +657,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       resData[index]['holidayCount'] = holidayCount;
       resData[index]['avgLate'] = avgLate;
       resData[index]['overTimeHr'] = parseInt(overTimeHr) > 0 ? parseInt(overTimeHr) : 0;
-      resData[index]['avgWorkHour'] = parseInt(workHour) / presentCount;
+      resData[index]['avgWorkHour'] = parseInt(parseInt(workHour) / presentCount);
     });
 
     // sorting
