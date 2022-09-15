@@ -434,8 +434,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
 exports.changeUserStatus = async (tenantDbConnection, bodyData) => {
   try {
     const attendenceModel = await tenantDbConnection.model('attendences_data');
-    const res = await attendenceModel.findOneAndUpdate({ id: bodyData.id }, { $set: { userStatus: bodyData.status } });
-
+    const res = await attendenceModel.findOneAndUpdate({ _id: bodyData.id }, { $set: { userStatus: bodyData.status } });
     if (res)
       return true;
     return false;
@@ -657,7 +656,8 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       resData[index]['holidayCount'] = holidayCount;
       resData[index]['avgLate'] = avgLate;
       resData[index]['overTimeHr'] = parseInt(overTimeHr) > 0 ? parseInt(overTimeHr) : 0;
-      resData[index]['avgWorkHour'] = parseInt(parseInt(workHour) / presentCount);
+      // eslint-disable-next-line max-len
+      resData[index]['avgWorkHour'] = parseInt(parseInt(workHour) / presentCount) ? parseInt(parseInt(workHour) / presentCount) : 'N/A';
     });
 
     // sorting
