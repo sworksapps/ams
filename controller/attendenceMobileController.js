@@ -384,12 +384,12 @@ exports.checkInSubmit = async (req, res) => {
         message: `User doesn't map in this location`,
       });
 
-    if(!userDetails.user_dept_id)
-      return res.status(200).json({
-        statusText: 'FAIL',
-        statusValue: 400,
-        message: `User doesn't have department`,
-      });
+    // if(!userDetails.user_dept_id)
+    //   return res.status(200).json({
+    //     statusText: 'FAIL',
+    //     statusValue: 400,
+    //     message: `User doesn't have department`,
+    //   });
 
     const dbConnection = getConnection();
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
