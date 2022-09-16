@@ -4,10 +4,10 @@ const moment = require('moment');
 /*
  *------------User Service------------
  */
-exports.checkInService = async (tenantDbConnection, userDetails, date, clockInTime) => {
+exports.checkInService = async (tenantDbConnection, userDetails, date, body) => {
   try {
     const attendenceModel = await tenantDbConnection.model('attendences_data');
-    let clockInTimeStamp = clockInTime;
+    let clockInTimeStamp = body.clockInTime;
     // let clockInTimeStamp = moment().unix();
     const totalDuration = '00:00';
     const res = await attendenceModel.findOne({
@@ -22,7 +22,7 @@ exports.checkInService = async (tenantDbConnection, userDetails, date, clockInTi
         date: date,
         attendenceStatus: 'CLOCKIN',
         userStatus: 'PRESENT',
-        attendenceDetails: [{ clockIn: clockInTimeStamp, clockOut: '' }],
+        attendenceDetails: [{ clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: body.deviceName, deviceNumberClockIn: body.deviceNumber, deviceLocationClockIn: body.deviceLocation }],
       };
       await attendenceModel(insertData).save();
       clockInTimeStamp = moment.unix(clockInTimeStamp).format('hh:mm a');
@@ -33,7 +33,7 @@ exports.checkInService = async (tenantDbConnection, userDetails, date, clockInTi
 
     if (res.attendenceStatus == 'CLOCKOUT' || res.attendenceStatus == 'N/A') {
       const attendenceDetails = res.attendenceDetails;
-      attendenceDetails.push({ clockIn: clockInTimeStamp, clockOut: '' });
+      attendenceDetails.push({ clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: body.deviceName, deviceNumberClockIn: body.deviceNumber, deviceLocationClockIn: body.deviceLocation });
       let userStatus = res.userStatus;
       
       if(res.shiftStart)
@@ -61,11 +61,11 @@ exports.checkInService = async (tenantDbConnection, userDetails, date, clockInTi
   }
 };
 
-exports.checkOutService = async (tenantDbConnection, userDetails, date, clockOutTime) => {
+exports.checkOutService = async (tenantDbConnection, userDetails, date, body) => {
   try {
     const attendenceModel = await tenantDbConnection.model('attendences_data');
     let clockInTimeStamp = moment().unix();
-    let clockOutTimeStamp = clockOutTime;
+    let clockOutTimeStamp = body.clockOutTime;
     // let clockOutTimeStamp = moment().unix();
     let totalDuration = '00:00';
     const res = await attendenceModel.findOne({
@@ -85,6 +85,9 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, clockOut
         (obj) => obj._id == attendenceDetails[0]['_id']
       );
       attendenceDetails[objIndex].clockOut = clockOutTimeStamp;
+      attendenceDetails[objIndex].deviceNameClockOut = body.deviceName;
+      attendenceDetails[objIndex].deviceNumberClockOut = body.deviceNumber;
+      attendenceDetails[objIndex].deviceLocationClockOut = body.deviceLocation;
       attendenceDetails = attendenceDetails.reverse();
       const diff = moment.unix(clockOutTimeStamp).startOf('minutes').diff(moment.unix(res.attendenceDetails[0].clockIn).startOf('minutes'), 'minutes');
       totalDuration = Math.floor(diff / 60) + 'hrs ' + diff % 60+ 'min' ;
@@ -154,6 +157,23 @@ exports.getCheckInTimeByUser = async (tenantDbConnection, userDetails, date) => 
     return false;
   }
 };
+
+exports.createJwtToken = async (adminDbConnection, body) => {
+  try {
+    const clientMasterDatas = await adminDbConnection.model('client_master_datas');
+    const res = await clientMasterDatas.findOne({
+      clientId: body.clientId,
+    });
+    if (!res)
+      return { type: false, msg: 'You are not subscribed this service', data: '' };
+
+    return { type: true, data: res };
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+};
+
 
 const getTimeDiff = (start, end, type) => {
   if (start && end && start != '' && end != '')
