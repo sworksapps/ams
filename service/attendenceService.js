@@ -10,7 +10,7 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
 
     for (const iterator of bodyData) {
       const holidayRes = await holidayModel.find({
-        deptId: { $in: [iterator.deptId] }, date: iterator.date,
+        date: iterator.date,
         locationId: { $in: [iterator.locationId] }
       }).select({ _id: 1 });
 
@@ -236,12 +236,11 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 };
 
 /* ---------------get User shift data----------------------*/
-exports.getUsersShiftData = async (tenantDbConnection, userData, deptId, startDate, endDate) => {
+exports.getUsersShiftData = async (tenantDbConnection, userData, startDate, endDate) => {
   try {
     const attendenceModel = await tenantDbConnection.model('attendences_data');
     const res = await attendenceModel
       .find({
-        deptId: deptId,
         userId: { $in: userData.users },
         date: {
           $gte: startDate,
@@ -659,7 +658,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       resData[index]['absentCount'] = absentCount;
       resData[index]['leaveCount'] = leaveCount;
       resData[index]['holidayCount'] = holidayCount;
-      resData[index]['avgLate'] = parseInt(lateInMin / presentCount);
+      resData[index]['avgLate'] = parseInt(lateInMin / presentCount) ? parseInt(lateInMin / presentCount)  : 'N/A';
       resData[index]['overTimeHr'] = parseInt(overTimeHr) > 0 ? parseInt(overTimeHr) : 0;
       // eslint-disable-next-line max-len
       resData[index]['avgWorkHour'] = parseInt(parseInt(workHour) / presentCount) ? parseInt(parseInt(workHour) / presentCount) : 'N/A';

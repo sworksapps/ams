@@ -13,7 +13,7 @@ const moment = require('moment');
 exports.addShift = async (req, res) => {
   try {
     const schema = Joi.array().items({
-      deptId: Joi.string().required().label('Department Id'),
+      deptId: Joi.string().label('Department Id'),
       userId: Joi.string().required().label('User Id'),
       locationId: Joi.string().required().label('Location Id'),
       shiftStart: Joi.string().required().allow('').label('Shift Start'),
@@ -168,7 +168,7 @@ exports.getUsersShiftData = async (req, res) => {
     const dbConnection = getConnection();
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
-    const response = await attendenceService.getUsersShiftData(dbConnection, req.body, req.params.deptId, req.params.startDate, req.params.endDate);
+    const response = await attendenceService.getUsersShiftData(dbConnection, req.body, req.params.startDate, req.params.endDate);
 
     if (response.type == true) {
       res.status(200).json({
