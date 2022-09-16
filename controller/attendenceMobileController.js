@@ -348,7 +348,6 @@ exports.checkInSubmit = async (req, res) => {
     //     statusValue: 400,
     //     message: `User outside of geofencing area`,
     //   });
-    //fggh
 
     const userData = await axios.post(
       `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
@@ -407,6 +406,7 @@ exports.checkInSubmit = async (req, res) => {
       return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `Went Something Wrong.` });
     }
   }  catch (err) {
+    console.log(err);
     res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'Somthing went erong'});
   }
 };
