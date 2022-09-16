@@ -348,6 +348,7 @@ exports.checkInSubmit = async (req, res) => {
     //     statusValue: 400,
     //     message: `User outside of geofencing area`,
     //   });
+    //fggh
 
     const userData = await axios.post(
       `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
