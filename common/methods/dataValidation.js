@@ -184,7 +184,17 @@ const getAllNumbersBetween = (x , y, prefix) => {
   }
   return numbers;
 };
+function isLatitude(lat) {
 
+  return isFinite(lat) && Math.abs(lat) <= 90;
+
+}
+
+function isLongitude(lng) {
+
+  return isFinite(lng) && Math.abs(lng) <= 180;
+
+}
 /*
 *-----------------------------------------------------------------
 */
@@ -205,5 +215,7 @@ module.exports = {
   parseJwt,
   ciEquals,
   mysql_real_escape_string,
-  getAllNumbersBetween
+  getAllNumbersBetween,
+  isLatitude,
+  isLongitude
 };
