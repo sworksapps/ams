@@ -692,6 +692,8 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       else
         resData = sortByKey(resData, 'name');
     }
+    else
+      resData = sortByKey(resData, 'name');
 
     const total = await attModel.aggregate([...query, { $count: 'totalCount' }])
       .then(res => res.length > 0 ? res[0].totalCount : 0);
