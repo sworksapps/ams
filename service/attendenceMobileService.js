@@ -36,7 +36,7 @@ exports.checkInService = async (tenantDbConnection, userDetails, date, clockInTi
       attendenceDetails.push({ clockIn: clockInTimeStamp, clockOut: '' });
       let userStatus = res.userStatus;
       
-      if(res.shiftStart)
+      if(res.shiftStart && res.attendenceDetails.length == 0)
       {
         const diffTime = getTimeDiff(res.shiftStart, clockInTimeStamp, 'minutes');
         if(diffTime <= 15  && diffTime >= -15)
@@ -93,7 +93,7 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, clockOut
 
       let userStatus = res.userStatus;
       
-      if(res.shiftEnd)
+      if(res.shiftEnd && moment.unix() >= (res.shiftEnd - 15))
       {
         const diffTime = getTimeDiff(res.shiftEnd, clockOutTimeStamp, 'minutes');
         if(diffTime > -15)
@@ -151,6 +151,22 @@ exports.getCheckInTimeByUser = async (tenantDbConnection, userDetails, date) => 
       };
     }
   } catch (err) {
+    return false;
+  }
+};
+
+exports.createJwtToken = async (adminDbConnection, body) => {
+  try {
+    const clientMasterDatas = await adminDbConnection.model('client_master_datas');
+    const res = await clientMasterDatas.findOne({
+      clientId: body.clientId,
+    });
+    if (!res)
+      return { type: false, msg: 'You are not subscribed this service', data: '' };
+
+    return { type: true, data: res };
+  } catch (err) {
+    console.log(err);
     return false;
   }
 };
