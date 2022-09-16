@@ -126,7 +126,6 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
     else if (sort_by === 'status')
       sortBy = 'userStatus';
 
-
     if (sort_by === 'firstEntry')
       sort_by = { firstEnrty: 1 };
     else if (sort_by === 'lastExit')
