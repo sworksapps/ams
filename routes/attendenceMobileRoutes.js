@@ -13,5 +13,7 @@ v1Routes.post('/client/v1/api/check-in', userImageUp, attendenceMobileController
 v1Routes.post('/client/v1/api/check-out', userImageUp, attendenceMobileController.checkOut);
 v1Routes.post('/client/v1/api/check-in-submit', attendenceMobileController.checkInSubmit);
 v1Routes.post('/client/v1/api/check-out-submit', attendenceMobileController.checkOutSubmit);
+
+v1Routes.post('/admin/v1/api/create-jwt-token', attendenceMobileController.createJwtToken);
 /*------------------------------*/
 module.exports = v1Routes;
