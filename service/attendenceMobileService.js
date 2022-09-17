@@ -93,7 +93,7 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, clockOut
 
       let userStatus = res.userStatus;
       
-      if(res.shiftEnd && moment.unix() >= (res.shiftEnd - 15))
+      if(res.shiftEnd && moment().unix() >= (res.shiftEnd - 15))
       {
         const diffTime = getTimeDiff(res.shiftEnd, clockOutTimeStamp, 'minutes');
         if(diffTime > -15)

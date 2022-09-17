@@ -199,7 +199,6 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       let totalSpendTime = 0;
       let totalShiftTime = 0;
 
-
       item.attendenceDetails.forEach(element => {
         if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0) {
           const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
@@ -209,6 +208,13 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
       if (item.shiftStart && item.shiftStart > 0 && item.shiftEnd && item.shiftEnd > 0)
         totalShiftTime = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
+
+      // MISSINGCHECKOUT  
+      const currentTime = moment().unix();
+      if (item.shiftEnd && item.shiftEnd > 0 && currentTime > item.shiftEnd && item.lastExit == '') {
+        const param = { id: item._id.toString(), status: 'MISSINGCHECKOUT' };
+        this.changeUserStatus(dbConnection, param);
+      }
 
       const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
       const overTime = totalSpendTime - totalShiftTime;
@@ -657,7 +663,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       resData[index]['absentCount'] = absentCount;
       resData[index]['leaveCount'] = leaveCount;
       resData[index]['holidayCount'] = holidayCount;
-      resData[index]['avgLate'] = parseInt(lateInMin / presentCount) ? parseInt(lateInMin / presentCount)  : 'N/A';
+      resData[index]['avgLate'] = parseInt(lateInMin / presentCount) ? parseInt(lateInMin / presentCount) : 'N/A';
       resData[index]['overTimeHr'] = parseInt(overTimeHr) > 0 ? parseInt(overTimeHr) : 0;
       // eslint-disable-next-line max-len
       resData[index]['avgWorkHour'] = parseInt(parseInt(workHour) / presentCount) ? parseInt(parseInt(workHour) / presentCount) : 'N/A';
