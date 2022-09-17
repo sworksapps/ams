@@ -4,10 +4,10 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "start": "env-cmd -f .env.prod node app.js",
+    "prod": "env-cmd -f .env.prod node app.js",
     "dev": "env-cmd -f .env.dev nodemon app.js",
-    "dev:qa": "env-cmd -f .env.qa node app.js",
-    "dev:uat": "env-cmd -f .env.uat node app.js"
+    "qa": "env-cmd -f .env.qa node app.js",
+    "uat": "env-cmd -f .env.uat node app.js"
   },
   "author": "Smartworks",
   "license": "ISC",
