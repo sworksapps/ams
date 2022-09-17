@@ -28,8 +28,8 @@ exports.checkInService = async (tenantDbConnection, userDetails, date, body) => 
       clockInTimeStamp = moment.unix(clockInTimeStamp).format('hh:mm a');
       return { type: true, msg: 'You have successfully Checked In', data: {userDetails, clockInTimeStamp, totalDuration} };
     }
-    // if (res.attendenceStatus == 'CLOCKIN')
-    //   return { type: false, msg: 'You have Already Checked in', data: '' };
+    if (res.attendenceStatus == 'CLOCKIN')
+      return { type: false, msg: 'You have Already Checked in', data: '' };
 
     if (res.attendenceStatus == 'CLOCKOUT' || res.attendenceStatus == 'N/A') {
       const attendenceDetails = res.attendenceDetails;
