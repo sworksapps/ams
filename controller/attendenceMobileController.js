@@ -2,6 +2,7 @@
 const Joi = require('joi');
 const fs = require('fs');
 const axios = require('axios');
+const jwt = require('jsonwebtoken');
 const moment = require('moment');
 const {
   RekognitionClient,
@@ -16,8 +17,9 @@ const client = new RekognitionClient({
 
 const awsMethods = require('../common/methods/awsMethods');
 const dataValidation = require('../common/methods/dataValidation');
-const { getConnection } = require('../connectionManager');
+const { getConnection, getAdminConnection } = require('../connectionManager');
 const attendenceMobileService = require('../service/attendenceMobileService');
+const { request } = require('http');
 
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const radlat1 = (Math.PI * lat1) / 180;
@@ -328,6 +330,9 @@ exports.checkInSubmit = async (req, res) => {
       longitude: Joi.number().required().label('longitude'),
       userFaceId: Joi.string().required().label('Face Id'),
       clockInTime: Joi.number().required().label('Clock In Time'),
+      deviceName: Joi.string().allow('').required().label('Device Name'),
+      deviceNumber: Joi.string().allow('').required().label('Device Number'),
+      deviceLocation: Joi.string().allow('').required().label('Device Location'),
     });
 
     const result = schema.validate(req.body);
@@ -342,7 +347,7 @@ exports.checkInSubmit = async (req, res) => {
 
     const totaldistance = calculateDistance(decodedjwt.clientLat, decodedjwt.clientLong, req.body.latitude, req.body.longitude);
       
-    // if(totaldistance > 200)
+    // if(totaldistance > range)
     //   return res.status(200).json({
     //     statusText: 'FAIL',
     //     statusValue: 400,
@@ -358,7 +363,7 @@ exports.checkInSubmit = async (req, res) => {
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
-        message: `It seems you're not registered with us. Please contact your Company's SPOC`
+        message: `SPOC Internal Server Error. Please contact your Company's SPOC`
       });
   
     if (userData.data.data.result.length == 0)
@@ -394,7 +399,7 @@ exports.checkInSubmit = async (req, res) => {
     const dbConnection = getConnection();
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
   
-    const response = await attendenceMobileService.checkInService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body.clockInTime);
+    const response = await attendenceMobileService.checkInService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body);
       
     if(response.type == true){
       res.status(200).json({ 
@@ -496,5 +501,90 @@ exports.checkOutSubmit = async (req, res) => {
     }
   }  catch (err) {
     res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'Somthing went erong'});
+  }
+};
+/*
+ *----------------Routes Section------------
+ */
+exports.createJwtToken = async (req, res) => {
+  try {
+    const schema = Joi.object({
+      bussinessId: Joi.string().allow('').required().label('bussinessId'),
+      clientId: Joi.string().required().label('clientId'),
+    });
+    const result = schema.validate(req.body);
+    if (result.error)
+      return res.status(400).json({
+        statusText: 'FAIL',
+        statusValue: 400,
+        message: result.error.details[0].message,
+      });
+
+    const adminDbConnection = getAdminConnection();
+    if (!adminDbConnection) return res.status(400).json({ message: 'The provided admin is not available' });
+
+    const response = await attendenceMobileService.createJwtToken(adminDbConnection, req.body);
+      
+    if(response.type == true){
+      let locationIdValue = '';
+      let latValue = '';
+      let longValue = '';
+      if(req.body.bussinessId != '') {
+        const bussinessData = await axios.get(`${process.env.CLIENTSPOC}api/v1/basic-data/get-business-detail?business_id=${req.body.bussinessId}`);
+        if (bussinessData.data.status != 'success')
+          return res.status(200).json({
+            statusText: 'FAIL',
+            statusValue: 400,
+            message: `Latitude and Longitude not found`,
+          });
+      
+        if (!dataValidation.isLatitude(bussinessData.data.data.lat) || bussinessData.data.data.lat == null)
+          return res.status(200).json({
+            statusText: 'FAIL',
+            statusValue: 400,
+            message: `Invalid Latitude`,
+          });
+
+        if (!dataValidation.isLongitude(bussinessData.data.data.lng) || bussinessData.data.data.lng == null)
+          return res.status(200).json({
+            statusText: 'FAIL',
+            statusValue: 400,
+            message: `Invalid Longitude`,
+          });
+
+        if (bussinessData.data.data.location_id == 0)
+          return res.status(200).json({
+            statusText: 'FAIL',
+            statusValue: 400,
+            message: `Invalid location Id`,
+          });
+
+        locationIdValue = bussinessData.data.data.location_id;
+        latValue = bussinessData.data.data.lat;
+        longValue = bussinessData.data.data.lng;
+      }
+      const attToken = jwt.sign({
+        '_id': response.data._id,
+        'clientName': response.data.clientName,
+        'clientId': response.data.clientId,
+        'clientLat': latValue,
+        'clientLong': longValue,
+        'clientDbName': response.data.clientDbName
+      }, process.env.JWTToken, { expiresIn: 800000 });
+      return res.status(200).json({ 
+        statusText: 'Success', statusValue: 200, message: 'Attendance token', data: {attToken, locationId: locationIdValue }
+      });
+    } else if(response.type == false){
+      return res.status(202).json({ statusText: 'FAIL', statusValue: 400, message: response.msg });
+    }else{
+      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `Went Something Wrong.` });
+    }
+
+  } catch (err) {
+    if(err.Code == 'InvalidParameterException'){
+      res.status(400).json({statusText: 'FAIL', statusValue: 400, message: 'There are no faces in the image. Should be at least 1'});
+    } else {
+      res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'Somthing went erong'});
+    }
   }
 };

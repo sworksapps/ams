@@ -13,7 +13,7 @@ const moment = require('moment');
 exports.addShift = async (req, res) => {
   try {
     const schema = Joi.array().items({
-      deptId: Joi.string().required().label('Department Id'),
+      deptId: Joi.string().label('Department Id'),
       userId: Joi.string().required().label('User Id'),
       locationId: Joi.string().required().label('Location Id'),
       shiftStart: Joi.string().required().allow('').label('Shift Start'),
@@ -168,7 +168,7 @@ exports.getUsersShiftData = async (req, res) => {
     const dbConnection = getConnection();
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
-    const response = await attendenceService.getUsersShiftData(dbConnection, req.body, req.params.deptId, req.params.startDate, req.params.endDate);
+    const response = await attendenceService.getUsersShiftData(dbConnection, req.body, req.params.startDate, req.params.endDate);
 
     if (response.type == true) {
       res.status(200).json({
@@ -185,6 +185,51 @@ exports.getUsersShiftData = async (req, res) => {
   }
 };
 
+/*----------------Get Report by date------------*/
+exports.getReportByDate = async (req, res) => {
+  try {
+    const dbConnection = getConnection();
+    if (!dbConnection) {
+      return res.status(400)
+        .json({ statusText: 'FAIL', statusValue: 400, message: 'The provided Client is not available' });
+    }
+
+    const { pgno, row, sort_by, filter, startDate, endDate } = req.query;
+
+    let search = '';
+    let dateChk = false;
+
+    if (req.query.search) {
+      search = req.query.search.trim();
+      dateChk = moment(search, 'DD/MM/YYYY', true).isValid();
+    }
+
+    const startDateChk = moment(startDate, 'YYYY-MM-DD', true).isValid();
+    const endDateChk = moment(endDate, 'YYYY-MM-DD', true).isValid();
+
+    if (startDateChk == false && endDateChk == false)
+      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: 'Please give Date in YYYY-MM-DD format' });
+
+    if (!dataValidation.isNumber(pgno) || !dataValidation.isNumber(row))
+      return res.status(400).json({
+        statusText: 'FAIL',
+        statusValue: 400,
+        message: 'Provide valid Page and Limit',
+      });
+
+    const limit = Math.abs(row) || 10;
+    const page = (Math.abs(pgno) || 1) - 1;
+
+    const dataRes = await attendenceService.fetchReportDataByDate(dbConnection, limit, page, sort_by, search, filter, dateChk, startDate, endDate);
+    if (dataRes)
+      return res.status(200).json({ statusText: 'OK', statusValue: 200, data: dataRes.resData, total: dataRes.total });
+    else
+      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: 'No Data Found' });
+  } catch (err) {
+    res.status(500).json({ statusText: 'ERROR', statusValue: 500, message: 'Unable to Process your Request' });
+  }
+};
+
 /*----------------Change user status------------*/
 exports.changeUserStatus = async (req, res) => {
   try {
@@ -195,7 +240,7 @@ exports.changeUserStatus = async (req, res) => {
 
     const result = schema.validate(req.body);
     if (result.error)
-      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: 'Provide valid Status or Id'});
+      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: 'Provide valid Status or Id' });
 
     const dbConnection = getConnection();
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });

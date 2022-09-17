@@ -3,7 +3,7 @@ const Schema = mongoose.Schema;
 
 const holidayListSchema = async (dbconn) => {
   const holidayListModel = new Schema({
-    deptId: { type: String, required: true },
+    deptId: [{ type: String, required: true }],
     holidayName: { type: String, required: true },
     locationId: [{ type: String, required: true }],
     date: { type: String, required: true },
@@ -11,7 +11,7 @@ const holidayListSchema = async (dbconn) => {
     timestamps: true
   });
   holidayListModel.index({ deptId: 1 });
-  dbconn.model('holiday_list', holidayListModel);
+  dbconn.model('holiday_lists', holidayListModel);
 };
 
 module.exports = {
