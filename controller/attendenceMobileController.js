@@ -330,6 +330,9 @@ exports.checkInSubmit = async (req, res) => {
       longitude: Joi.number().required().label('longitude'),
       userFaceId: Joi.string().required().label('Face Id'),
       clockInTime: Joi.number().required().label('Clock In Time'),
+      deviceName: Joi.string().allow('').required().label('Device Name'),
+      deviceNumber: Joi.string().allow('').required().label('Device Number'),
+      deviceLocation: Joi.string().allow('').required().label('Device Location'),
     });
 
     const result = schema.validate(req.body);
@@ -344,7 +347,7 @@ exports.checkInSubmit = async (req, res) => {
 
     const totaldistance = calculateDistance(decodedjwt.clientLat, decodedjwt.clientLong, req.body.latitude, req.body.longitude);
       
-    // if(totaldistance > 200)
+    // if(totaldistance > range)
     //   return res.status(200).json({
     //     statusText: 'FAIL',
     //     statusValue: 400,
@@ -360,7 +363,7 @@ exports.checkInSubmit = async (req, res) => {
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
-        message: `It seems you're not registered with us. Please contact your Company's SPOC`
+        message: `SPOC Internal Server Error. Please contact your Company's SPOC`
       });
   
     if (userData.data.data.result.length == 0)
@@ -386,17 +389,17 @@ exports.checkInSubmit = async (req, res) => {
         message: `User doesn't map in this location`,
       });
 
-    if(!userDetails.user_dept_id)
-      return res.status(200).json({
-        statusText: 'FAIL',
-        statusValue: 400,
-        message: `User doesn't have department`,
-      });
+    // if(!userDetails.user_dept_id)
+    //   return res.status(200).json({
+    //     statusText: 'FAIL',
+    //     statusValue: 400,
+    //     message: `User doesn't have department`,
+    //   });
 
     const dbConnection = getConnection();
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
   
-    const response = await attendenceMobileService.checkInService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body.clockInTime);
+    const response = await attendenceMobileService.checkInService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body);
       
     if(response.type == true){
       res.status(200).json({ 

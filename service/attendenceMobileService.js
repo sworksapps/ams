@@ -4,10 +4,10 @@ const moment = require('moment');
 /*
  *------------User Service------------
  */
-exports.checkInService = async (tenantDbConnection, userDetails, date, clockInTime) => {
+exports.checkInService = async (tenantDbConnection, userDetails, date, body) => {
   try {
     const attendenceModel = await tenantDbConnection.model('attendences_data');
-    let clockInTimeStamp = clockInTime;
+    let clockInTimeStamp = body.clockInTime;
     // let clockInTimeStamp = moment().unix();
     const totalDuration = '00:00';
     const res = await attendenceModel.findOne({
@@ -22,7 +22,7 @@ exports.checkInService = async (tenantDbConnection, userDetails, date, clockInTi
         date: date,
         attendenceStatus: 'CLOCKIN',
         userStatus: 'PRESENT',
-        attendenceDetails: [{ clockIn: clockInTimeStamp, clockOut: '' }],
+        attendenceDetails: [{ clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: body.deviceName, deviceNumberClockIn: body.deviceNumber, deviceLocationClockIn: body.deviceLocation }],
       };
       await attendenceModel(insertData).save();
       clockInTimeStamp = moment.unix(clockInTimeStamp).format('hh:mm a');
@@ -33,10 +33,10 @@ exports.checkInService = async (tenantDbConnection, userDetails, date, clockInTi
 
     if (res.attendenceStatus == 'CLOCKOUT' || res.attendenceStatus == 'N/A') {
       const attendenceDetails = res.attendenceDetails;
-      attendenceDetails.push({ clockIn: clockInTimeStamp, clockOut: '' });
+      attendenceDetails.push({ clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: body.deviceName, deviceNumberClockIn: body.deviceNumber, deviceLocationClockIn: body.deviceLocation });
       let userStatus = res.userStatus;
       
-      if(res.shiftStart && res.attendenceDetails.length == 0)
+      if(res.shiftStart)
       {
         const diffTime = getTimeDiff(res.shiftStart, clockInTimeStamp, 'minutes');
         if(diffTime <= 15  && diffTime >= -15)
