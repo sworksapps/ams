@@ -523,12 +523,30 @@ exports.createJwtToken = async (req, res) => {
     if (!adminDbConnection) return res.status(400).json({ message: 'The provided admin is not available' });
 
     const response = await attendenceMobileService.createJwtToken(adminDbConnection, req.body);
-      
-    if(response.type == true){
+
+    if (response.type == true) {
       let locationIdValue = '';
       let latValue = '';
       let longValue = '';
-      if(req.body.bussinessId != '') {
+      let clientLogo = '';
+
+      // get client logo
+      if (req.body.clientId != '') {
+        // call api to get logo
+        const resData = await axios.get(`${process.env.CLIENTSPOC}api/v1/basic-data/get-client-logo-by-companyid?companyId=${req.body.clientId}`);
+
+        if (resData.data.status != 'success') {
+          return res.status(200).json({
+            statusText: 'FAIL',
+            statusValue: 400,
+            message: `Unable to find logo`,
+          });
+        }
+        else
+          clientLogo = resData.data.logoData.logo;
+      }
+
+      if (req.body.bussinessId != '') {
         const bussinessData = await axios.get(`${process.env.CLIENTSPOC}api/v1/basic-data/get-business-detail?business_id=${req.body.bussinessId}`);
         if (bussinessData.data.status != 'success')
           return res.status(200).json({
@@ -536,7 +554,7 @@ exports.createJwtToken = async (req, res) => {
             statusValue: 400,
             message: `Latitude and Longitude not found`,
           });
-      
+
         if (!dataValidation.isLatitude(bussinessData.data.data.lat) || bussinessData.data.data.lat == null)
           return res.status(200).json({
             statusText: 'FAIL',
@@ -570,20 +588,21 @@ exports.createJwtToken = async (req, res) => {
         'clientLong': longValue,
         'clientDbName': response.data.clientDbName
       }, process.env.JWTToken, { expiresIn: 800000 });
-      return res.status(200).json({ 
-        statusText: 'Success', statusValue: 200, message: 'Attendance token', data: {attToken, locationId: locationIdValue }
+      return res.status(200).json({
+        statusText: 'Success', statusValue: 200, message: 'Attendance token', data: { attToken, locationId: locationIdValue, clientLogo: clientLogo }
       });
-    } else if(response.type == false){
+    } else if (response.type == false) {
       return res.status(202).json({ statusText: 'FAIL', statusValue: 400, message: response.msg });
-    }else{
+    } else {
       return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `Went Something Wrong.` });
     }
 
   } catch (err) {
-    if(err.Code == 'InvalidParameterException'){
-      res.status(400).json({statusText: 'FAIL', statusValue: 400, message: 'There are no faces in the image. Should be at least 1'});
+    console.log(err);
+    if (err.Code == 'InvalidParameterException') {
+      res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: 'There are no faces in the image. Should be at least 1' });
     } else {
-      res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'Somthing went erong'});
+      res.status(500).json({ statusText: 'ERROR', statusValue: 500, message: 'Somthing went wrong' });
     }
   }
 };
