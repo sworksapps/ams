@@ -168,7 +168,7 @@ exports.checkIn = async (req, res) => {
     });
   } catch (err) {
     if(err.Code == 'InvalidParameterException'){
-      res.status(400).json({statusText: 'FAIL', statusValue: 400, message: 'There are no faces in the image. Should be at least 1'});
+      res.status(400).json({statusText: 'FAIL', statusValue: 400, message: 'No face detected. Please stand in the front of the camera.'});
     } else {
       res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'Somthing went erong'});
     }
@@ -312,7 +312,7 @@ exports.checkOut = async (req, res) => {
     // });
   }  catch (err) {
     if(err.Code == 'InvalidParameterException'){
-      res.status(400).json({statusText: 'FAIL', statusValue: 400, message: 'There are no faces in the image. Should be at least 1'});
+      res.status(400).json({statusText: 'FAIL', statusValue: 400, message: 'No face detected. Please stand in the front of the camera.'});
     } else {
       res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'Somthing went erong'});
     }
@@ -600,7 +600,7 @@ exports.createJwtToken = async (req, res) => {
   } catch (err) {
     console.log(err);
     if (err.Code == 'InvalidParameterException') {
-      res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: 'There are no faces in the image. Should be at least 1' });
+      res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: 'No face detected. Please stand in the front of the camera.' });
     } else {
       res.status(500).json({ statusText: 'ERROR', statusValue: 500, message: 'Somthing went wrong' });
     }
