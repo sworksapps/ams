@@ -529,7 +529,7 @@ exports.createJwtToken = async (req, res) => {
       let locationIdValue = '';
       let latValue = '';
       let longValue = '';
-      let clientLogo = '';
+      let clientLogo = 'https://s3-ap-southeast-1.amazonaws.com/smartworks-production/logo.jpg';
 
       // get client logo
       if (req.body.clientId != '') {
