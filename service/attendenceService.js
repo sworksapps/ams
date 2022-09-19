@@ -45,7 +45,7 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
 exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search, filter, dateChk, date) => {
   try {
     const dbQuery = [{ 'date': date }];
-    const dbQuery1 = [];
+    // const dbQuery1 = [];
     const attModel = await dbConnection.model('attendences_data');
 
     if (filter) {
@@ -54,67 +54,40 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       if (filter.status) {
         dbQuery.push({ userStatus: filter.status });
       }
-
-      //   if (filter.propertyCity) {
-      //     dbQuery.push({ propertyCity: mongoose.Types.ObjectId(filter.propertyCity) });
-      //   }
-
-      //   if (filter.propertyGrade) {
-      //     dbQuery.push({ propertyGrade: mongoose.Types.ObjectId(filter.propertyGrade) });
-      //   }
-
-      //   if (filter.regionId) {
-      //     dbQuery.push({ regionId: mongoose.Types.ObjectId(filter.regionId) });
-      //   }
-
-      //   if (filter.propertyStage) {
-      //     dbQuery.push({ propertyStage: filter.propertyStage });
-      //   }
-
-      //   if (filter.regionId) {
-      //     dbQuery.push({ regionId: mongoose.Types.ObjectId(filter.regionId) });
-      //   }
-
-      //   if (filter.spocEmail) {
-      //     filter.spocEmail.forEach(element => {
-      //       if (element)
-      //         dbQuery1.push({ 'spocData.spocEmail': element.trim() });
-      //     });
-      //   }
     }
 
 
-    if (search) {
-      const dateArr = search.replace(/\\\//g, '/').split('/');
+    // if (search) {
+    //   const dateArr = search.replace(/\\\//g, '/').split('/');
 
-      if (dateArr.length === 3 && dateChk === true) {
-        const dateData = new Date(`${dateArr[2]}-${dateArr[1]}-${dateArr[0]}`);
-        dbQuery1.push({
-          createdAt: {
-            $gte: new Date(new Date(dateData).setHours(0, 0, 0)),
-            $lt: new Date(new Date(dateData).setHours(23, 59, 59)),
-          }
-        },
-          // {
-          //   proposalDate: {
-          //     $gte: new Date(new Date(dateData).setHours(0, 0, 0)),
-          //     $lt: new Date(new Date(dateData).setHours(23, 59, 59)),
-          //   }
-          // }
-        );
-      }
-      // else {
-      //   dbQuery1.push(
-      //     { propertyName: { $regex: `.*${search}.*`, $options: 'i' } },
-      //     { area: { $regex: `.*${search}.*`, $options: 'i' } },
-      //     { city: { $regex: `.*${search}.*`, $options: 'i' } },
-      //     { grade: { $regex: `.*${search}.*`, $options: 'i' } },
-      //     { propertyCreatedBy: { $regex: `.*${search}.*`, $options: 'i' } },
-      //     { propertyStage: { $regex: `.*${search}.*`, $options: 'i' } },
-      //     { spocName: { $regex: `.*${search}.*`, $options: 'i' } }
-      //   );
-      // }
-    }
+    //   if (dateArr.length === 3 && dateChk === true) {
+    //     const dateData = new Date(`${dateArr[2]}-${dateArr[1]}-${dateArr[0]}`);
+    //     dbQuery1.push({
+    //       createdAt: {
+    //         $gte: new Date(new Date(dateData).setHours(0, 0, 0)),
+    //         $lt: new Date(new Date(dateData).setHours(23, 59, 59)),
+    //       }
+    //     },
+    //       // {
+    //       //   proposalDate: {
+    //       //     $gte: new Date(new Date(dateData).setHours(0, 0, 0)),
+    //       //     $lt: new Date(new Date(dateData).setHours(23, 59, 59)),
+    //       //   }
+    //       // }
+    //     );
+    //   }
+    //   // else {
+    //   //   dbQuery1.push(
+    //   //     { propertyName: { $regex: `.*${search}.*`, $options: 'i' } },
+    //   //     { area: { $regex: `.*${search}.*`, $options: 'i' } },
+    //   //     { city: { $regex: `.*${search}.*`, $options: 'i' } },
+    //   //     { grade: { $regex: `.*${search}.*`, $options: 'i' } },
+    //   //     { propertyCreatedBy: { $regex: `.*${search}.*`, $options: 'i' } },
+    //   //     { propertyStage: { $regex: `.*${search}.*`, $options: 'i' } },
+    //   //     { spocName: { $regex: `.*${search}.*`, $options: 'i' } }
+    //   //   );
+    //   // }
+    // }
 
     let sortBy = '';
     if (sort_by === 'overTime')
@@ -181,8 +154,9 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
     // if (dbQuery1.length > 0)
     //   query[4].$match.$or = dbQuery1;
 
+    let resData = await attModel.aggregate([...query]);
 
-    let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
+    // let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
     const userIds = resData.map(i => i.userId);
     let userDetails = [];
 
@@ -404,8 +378,9 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
 
     // if (dbQuery1.length > 0)
     //   query[4].$match.$or = dbQuery1;
+    let resData = await attModel.aggregate([...query]);
 
-    let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
+    // let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
     resData.map((item, index) => {
       let clockIn = 0;
       let clockOut = 0;
@@ -458,23 +433,23 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
     const dbQuery1 = [];
     const attModel = await dbConnection.model('attendences_data');
 
-    if (filter) {
-      filter = JSON.parse(filter);
+    // if (filter) {
+    //   filter = JSON.parse(filter);
 
-      // if (filter.date) {
-      //   dbQuery.push({ propertyName: filter.date });
-      // }
-      //   if (filter.regionId) {
-      //     dbQuery.push({ regionId: mongoose.Types.ObjectId(filter.regionId) });
-      //   }
+    //   // if (filter.date) {
+    //   //   dbQuery.push({ propertyName: filter.date });
+    //   // }
+    //   //   if (filter.regionId) {
+    //   //     dbQuery.push({ regionId: mongoose.Types.ObjectId(filter.regionId) });
+    //   //   }
 
-      //   if (filter.spocEmail) {
-      //     filter.spocEmail.forEach(element => {
-      //       if (element)
-      //         dbQuery1.push({ 'spocData.spocEmail': element.trim() });
-      //     });
-      //   }
-    }
+    //   //   if (filter.spocEmail) {
+    //   //     filter.spocEmail.forEach(element => {
+    //   //       if (element)
+    //   //         dbQuery1.push({ 'spocData.spocEmail': element.trim() });
+    //   //     });
+    //   //   }
+    // }
     // filter between dates
     dbQuery.push({
       'date': {
@@ -484,37 +459,37 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
     });
 
 
-    if (search) {
-      const dateArr = search.replace(/\\\//g, '/').split('/');
+    // if (search) {
+    //   const dateArr = search.replace(/\\\//g, '/').split('/');
 
-      if (dateArr.length === 3 && dateChk === true) {
-        const dateData = new Date(`${dateArr[2]}-${dateArr[1]}-${dateArr[0]}`);
-        dbQuery1.push({
-          createdAt: {
-            $gte: new Date(new Date(dateData).setHours(0, 0, 0)),
-            $lte: new Date(new Date(dateData).setHours(23, 59, 59)),
-          }
-        },
-          // {
-          //   proposalDate: {
-          //     $gte: new Date(new Date(dateData).setHours(0, 0, 0)),
-          //     $lt: new Date(new Date(dateData).setHours(23, 59, 59)),
-          //   }
-          // }
-        );
-      }
-      // else {
-      //   dbQuery1.push(
-      //     { propertyName: { $regex: `.*${search}.*`, $options: 'i' } },
-      //     { area: { $regex: `.*${search}.*`, $options: 'i' } },
-      //     { city: { $regex: `.*${search}.*`, $options: 'i' } },
-      //     { grade: { $regex: `.*${search}.*`, $options: 'i' } },
-      //     { propertyCreatedBy: { $regex: `.*${search}.*`, $options: 'i' } },
-      //     { propertyStage: { $regex: `.*${search}.*`, $options: 'i' } },
-      //     { spocName: { $regex: `.*${search}.*`, $options: 'i' } }
-      //   );
-      // }
-    }
+    //   if (dateArr.length === 3 && dateChk === true) {
+    //     const dateData = new Date(`${dateArr[2]}-${dateArr[1]}-${dateArr[0]}`);
+    //     dbQuery1.push({
+    //       createdAt: {
+    //         $gte: new Date(new Date(dateData).setHours(0, 0, 0)),
+    //         $lte: new Date(new Date(dateData).setHours(23, 59, 59)),
+    //       }
+    //     },
+    //       // {
+    //       //   proposalDate: {
+    //       //     $gte: new Date(new Date(dateData).setHours(0, 0, 0)),
+    //       //     $lt: new Date(new Date(dateData).setHours(23, 59, 59)),
+    //       //   }
+    //       // }
+    //     );
+    //   }
+    //   // else {
+    //   //   dbQuery1.push(
+    //   //     { propertyName: { $regex: `.*${search}.*`, $options: 'i' } },
+    //   //     { area: { $regex: `.*${search}.*`, $options: 'i' } },
+    //   //     { city: { $regex: `.*${search}.*`, $options: 'i' } },
+    //   //     { grade: { $regex: `.*${search}.*`, $options: 'i' } },
+    //   //     { propertyCreatedBy: { $regex: `.*${search}.*`, $options: 'i' } },
+    //   //     { propertyStage: { $regex: `.*${search}.*`, $options: 'i' } },
+    //   //     { spocName: { $regex: `.*${search}.*`, $options: 'i' } }
+    //   //   );
+    //   // }
+    // }
 
     // if (sort_by === 'userId')
     //   sort_by = { userId: 1 };
@@ -562,8 +537,9 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
 
     // if (dbQuery1.length > 0)
     //   query[4].$match.$or = dbQuery1;
+    let resData = await attModel.aggregate([...query]);
 
-    let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
+    // let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
     const userIds = resData.map(i => i._id);
     let userDetails = [];
 
