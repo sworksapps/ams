@@ -192,7 +192,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
       const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
       const overTime = totalSpendTime - totalShiftTime;
-      resData[index]['overTime'] = overTime > 0 ? overTime : 0;
+      resData[index]['overTime'] = item.shiftEnd && item.shiftStart && overTime > 0 ? overTime : 0;
       resData[index]['name'] = userObj.length > 0 ? userObj[0]['name'].trim() : '-';
       resData[index]['firstEnrty'] = item['firstEnrty'] && item['firstEnrty'] > 0 ? format_time(item['firstEnrty']) : 'N/A';
       resData[index]['lastExit'] = item['lastExit'] && item['lastExit'] > 0 ? format_time(item['lastExit']) : 'N/A';

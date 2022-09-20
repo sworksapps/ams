@@ -556,19 +556,19 @@ exports.createJwtToken = async (req, res) => {
             message: `Latitude and Longitude not found`,
           });
 
-        if (!dataValidation.isLatitude(bussinessData.data.data.lat) || bussinessData.data.data.lat == null)
-          return res.status(200).json({
-            statusText: 'FAIL',
-            statusValue: 400,
-            message: `Invalid Latitude`,
-          });
+        // if (!dataValidation.isLatitude(bussinessData.data.data.lat) || bussinessData.data.data.lat == null)
+        //   return res.status(200).json({
+        //     statusText: 'FAIL',
+        //     statusValue: 400,
+        //     message: `Invalid Latitude`,
+        //   });
 
-        if (!dataValidation.isLongitude(bussinessData.data.data.lng) || bussinessData.data.data.lng == null)
-          return res.status(200).json({
-            statusText: 'FAIL',
-            statusValue: 400,
-            message: `Invalid Longitude`,
-          });
+        // if (!dataValidation.isLongitude(bussinessData.data.data.lng) || bussinessData.data.data.lng == null)
+        //   return res.status(200).json({
+        //     statusText: 'FAIL',
+        //     statusValue: 400,
+        //     message: `Invalid Longitude`,
+        //   });
 
         if (bussinessData.data.data.location_id == 0)
           return res.status(200).json({
@@ -578,8 +578,8 @@ exports.createJwtToken = async (req, res) => {
           });
 
         locationIdValue = bussinessData.data.data.location_id;
-        latValue = bussinessData.data.data.lat;
-        longValue = bussinessData.data.data.lng;
+        latValue = dataValidation.isLatitude(bussinessData.data.data.lat) ? bussinessData.data.data.lat : 0;
+        longValue = dataValidation.isLongitude(bussinessData.data.data.lng) ? bussinessData.data.data.lng : 0;
       }
       const attToken = jwt.sign({
         '_id': response.data._id,
