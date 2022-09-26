@@ -45,7 +45,6 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
 exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search, filter, dateChk, date) => {
   try {
     const dbQuery = [{ 'date': date }];
-    // const dbQuery1 = [];
     const attModel = await dbConnection.model('attendences_data');
 
     if (filter) {
@@ -55,39 +54,6 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
         dbQuery.push({ userStatus: filter.status });
       }
     }
-
-
-    // if (search) {
-    //   const dateArr = search.replace(/\\\//g, '/').split('/');
-
-    //   if (dateArr.length === 3 && dateChk === true) {
-    //     const dateData = new Date(`${dateArr[2]}-${dateArr[1]}-${dateArr[0]}`);
-    //     dbQuery1.push({
-    //       createdAt: {
-    //         $gte: new Date(new Date(dateData).setHours(0, 0, 0)),
-    //         $lt: new Date(new Date(dateData).setHours(23, 59, 59)),
-    //       }
-    //     },
-    //       // {
-    //       //   proposalDate: {
-    //       //     $gte: new Date(new Date(dateData).setHours(0, 0, 0)),
-    //       //     $lt: new Date(new Date(dateData).setHours(23, 59, 59)),
-    //       //   }
-    //       // }
-    //     );
-    //   }
-    //   // else {
-    //   //   dbQuery1.push(
-    //   //     { propertyName: { $regex: `.*${search}.*`, $options: 'i' } },
-    //   //     { area: { $regex: `.*${search}.*`, $options: 'i' } },
-    //   //     { city: { $regex: `.*${search}.*`, $options: 'i' } },
-    //   //     { grade: { $regex: `.*${search}.*`, $options: 'i' } },
-    //   //     { propertyCreatedBy: { $regex: `.*${search}.*`, $options: 'i' } },
-    //   //     { propertyStage: { $regex: `.*${search}.*`, $options: 'i' } },
-    //   //     { spocName: { $regex: `.*${search}.*`, $options: 'i' } }
-    //   //   );
-    //   // }
-    // }
 
     let sortBy = '';
     if (sort_by === 'overTime')
@@ -107,8 +73,6 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       sort_by = { recentEnrty: 1 };
     else if (sort_by === 'shift')
       sort_by = { shiftStart: 1 };
-    // else if (sort_by === 'status')
-    //   sort_by = { userStatus: 1 };
     else
       sort_by = { firstEnrty: 1 };
 
@@ -151,11 +115,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
     if (dbQuery.length > 0)
       query[2].$match.$and = dbQuery;
 
-    // if (dbQuery1.length > 0)
-    //   query[4].$match.$or = dbQuery1;
-
     let resData = await attModel.aggregate([...query]);
-
     // let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
     const userIds = resData.map(i => i.userId);
     let userDetails = [];
@@ -192,8 +152,10 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
       const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
       const overTime = totalSpendTime - totalShiftTime;
-      resData[index]['overTime'] = item.shiftEnd && item.shiftStart && overTime > 0 ? overTime : 0;
+      // eslint-disable-next-line max-len
+      resData[index]['overTime'] = item.shiftEnd && item.shiftStart && totalSpendTime > 0 && overTime > 0 ? new Date(overTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
       resData[index]['name'] = userObj.length > 0 ? userObj[0]['name'].trim() : '-';
+      resData[index]['duration'] = totalSpendTime > 0 ? new Date(totalSpendTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
       resData[index]['firstEnrty'] = item['firstEnrty'] && item['firstEnrty'] > 0 ? format_time(item['firstEnrty']) : 'N/A';
       resData[index]['lastExit'] = item['lastExit'] && item['lastExit'] > 0 ? format_time(item['lastExit']) : 'N/A';
       resData[index]['recentEnrty'] = item['recentEnrty'] && item['recentEnrty'] > 0 ? format_time(item['recentEnrty']) : 'N/A';
@@ -268,30 +230,9 @@ exports.getUsersShiftData = async (tenantDbConnection, userData, startDate, endD
 exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, search, filter, dateChk, userId, startDate, endDate) => {
   try {
     const dbQuery = [];
-    const dbQuery1 = [];
     const attModel = await dbConnection.model('attendences_data');
 
-    // if (filter) {
-    //   filter = JSON.parse(filter);
-
-    //   if (filter.date) {
-    //     dbQuery.push({ propertyName: filter.date });
-    //   }
-
-    //   //   if (filter.propertyCity) {
-    //   //     dbQuery.push({ propertyCity: mongoose.Types.ObjectId(filter.propertyCity) });
-    //   //   }
-
-    //   //   if (filter.propertyGrade) {
-    //   //     dbQuery.push({ propertyGrade: mongoose.Types.ObjectId(filter.propertyGrade) });
-    //   //   }
-
-    //   //   if (filter.regionId) {
-    //   //     dbQuery.push({ regionId: mongoose.Types.ObjectId(filter.regionId) });
-    //   //   }
-
-    // }
-
+    // filter by dates and user id
     dbQuery.push({
       'date': {
         $gte: startDate,
@@ -299,39 +240,6 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       }
     });
     dbQuery.push({ userId: userId });
-
-
-    // if (search) {
-    //   const dateArr = search.replace(/\\\//g, '/').split('/');
-
-    //   if (dateArr.length === 3 && dateChk === true) {
-    //     const dateData = new Date(`${dateArr[2]}-${dateArr[1]}-${dateArr[0]}`);
-    //     dbQuery1.push({
-    //       createdAt: {
-    //         $gte: new Date(new Date(dateData).setHours(0, 0, 0)),
-    //         $lt: new Date(new Date(dateData).setHours(23, 59, 59)),
-    //       }
-    //     },
-    //       // {
-    //       //   proposalDate: {
-    //       //     $gte: new Date(new Date(dateData).setHours(0, 0, 0)),
-    //       //     $lt: new Date(new Date(dateData).setHours(23, 59, 59)),
-    //       //   }
-    //       // }
-    //     );
-    //   }
-    //   // else {
-    //   //   dbQuery1.push(
-    //   //     { propertyName: { $regex: `.*${search}.*`, $options: 'i' } },
-    //   //     { area: { $regex: `.*${search}.*`, $options: 'i' } },
-    //   //     { city: { $regex: `.*${search}.*`, $options: 'i' } },
-    //   //     { grade: { $regex: `.*${search}.*`, $options: 'i' } },
-    //   //     { propertyCreatedBy: { $regex: `.*${search}.*`, $options: 'i' } },
-    //   //     { propertyStage: { $regex: `.*${search}.*`, $options: 'i' } },
-    //   //     { spocName: { $regex: `.*${search}.*`, $options: 'i' } }
-    //   //   );
-    //   // }
-    // }
     let sortBy = '';
 
     if (sort_by === 'clockIn')
@@ -349,9 +257,6 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       sort_by = { shiftStart: 1 };
     else
       sort_by = { date: 1 };
-
-    // if (!sortBy)
-    //   sortBy = 'name';
 
     const query = [
       {
@@ -376,26 +281,30 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
     if (dbQuery.length > 0)
       query[1].$match.$and = dbQuery;
 
-    // if (dbQuery1.length > 0)
-    //   query[4].$match.$or = dbQuery1;
     let resData = await attModel.aggregate([...query]);
-
     // let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
+
     resData.map((item, index) => {
       let clockIn = 0;
       let clockOut = 0;
+      let totalSpendTime = 0;
+
       item.attendenceDetails.forEach(element => {
         if (element.clockIn && element.clockIn > 0 && element.clockIn != '' && clockIn == 0)
           clockIn = element.clockIn;
         if (element.clockOut && element.clockOut > 0 && element.clockOut != '')
           clockOut = element.clockOut;
+        if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0) {
+          const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
+          totalSpendTime = totalSpendTime + diff;
+        }
       });
       resData[index]['clockIn'] = clockIn > 0 ? format_time(clockIn) : 'N/A';
       resData[index]['clockOut'] = clockOut > 0 ? format_time(clockOut) : 'N/A';
       resData[index]['shiftStart'] = item['shiftStart'] && item['shiftStart'] > 0 ? format_time(item['shiftStart']) : 'N/A';
       resData[index]['shiftEnd'] = item['shiftEnd'] && item['shiftEnd'] > 0 ? format_time(item['shiftEnd']) : 'N/A';
       // eslint-disable-next-line max-len
-      resData[index]['working_hour'] = resData[index]['clockIn'] != 'N/A' && resData[index]['clockOut'] != 'N/A' ? getTimeDiffInHours(resData[index]['clockIn'], resData[index]['clockOut']) : 'N/A';
+      resData[index]['duration'] = totalSpendTime > 0 ? new Date(totalSpendTime * 60 * 1000).toISOString().substr(11, 5) : 0;
     });
 
     //sorting
@@ -430,26 +339,8 @@ exports.changeUserStatus = async (tenantDbConnection, bodyData) => {
 exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, search, filter, dateChk, startDate, endDate) => {
   try {
     const dbQuery = [];
-    // const dbQuery1 = [];
     const attModel = await dbConnection.model('attendences_data');
 
-    // if (filter) {
-    //   filter = JSON.parse(filter);
-
-    //   // if (filter.date) {
-    //   //   dbQuery.push({ propertyName: filter.date });
-    //   // }
-    //   //   if (filter.regionId) {
-    //   //     dbQuery.push({ regionId: mongoose.Types.ObjectId(filter.regionId) });
-    //   //   }
-
-    //   //   if (filter.spocEmail) {
-    //   //     filter.spocEmail.forEach(element => {
-    //   //       if (element)
-    //   //         dbQuery1.push({ 'spocData.spocEmail': element.trim() });
-    //   //     });
-    //   //   }
-    // }
     // filter between dates
     dbQuery.push({
       'date': {
@@ -457,39 +348,6 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
         $lte: endDate,
       }
     });
-
-
-    // if (search) {
-    //   const dateArr = search.replace(/\\\//g, '/').split('/');
-
-    //   if (dateArr.length === 3 && dateChk === true) {
-    //     const dateData = new Date(`${dateArr[2]}-${dateArr[1]}-${dateArr[0]}`);
-    //     dbQuery1.push({
-    //       createdAt: {
-    //         $gte: new Date(new Date(dateData).setHours(0, 0, 0)),
-    //         $lte: new Date(new Date(dateData).setHours(23, 59, 59)),
-    //       }
-    //     },
-    //       // {
-    //       //   proposalDate: {
-    //       //     $gte: new Date(new Date(dateData).setHours(0, 0, 0)),
-    //       //     $lt: new Date(new Date(dateData).setHours(23, 59, 59)),
-    //       //   }
-    //       // }
-    //     );
-    //   }
-    //   // else {
-    //   //   dbQuery1.push(
-    //   //     { propertyName: { $regex: `.*${search}.*`, $options: 'i' } },
-    //   //     { area: { $regex: `.*${search}.*`, $options: 'i' } },
-    //   //     { city: { $regex: `.*${search}.*`, $options: 'i' } },
-    //   //     { grade: { $regex: `.*${search}.*`, $options: 'i' } },
-    //   //     { propertyCreatedBy: { $regex: `.*${search}.*`, $options: 'i' } },
-    //   //     { propertyStage: { $regex: `.*${search}.*`, $options: 'i' } },
-    //   //     { spocName: { $regex: `.*${search}.*`, $options: 'i' } }
-    //   //   );
-    //   // }
-    // }
 
     const query = [
       {
@@ -520,11 +378,9 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
     if (dbQuery.length > 0)
       query[0].$match.$and = dbQuery;
 
-    // if (dbQuery1.length > 0)
-    //   query[4].$match.$or = dbQuery1;
     let resData = await attModel.aggregate([...query]);
-
     // let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
+
     const userIds = resData.map(i => i._id);
     let userDetails = [];
 
@@ -548,10 +404,8 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       let absentCount = 0;
       let leaveCount = 0;
       let holidayCount = 0;
-      // eslint-disable-next-line prefer-const
-      // let avgLate = 0;
-      let overTimeHr = 0;
-      let workHour = 0;
+      let workDurationMin = 0;
+      let shiftDurationMin = 0;
       let lateInMin = 0;
 
       item.dataArr.forEach(element => {
@@ -577,8 +431,8 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
 
         // presentCount
         // eslint-disable-next-line max-len
-        if (element.attendenceDetails.length > 0 && element.attendenceDetails[0].clockIn && element.attendenceDetails[0].clockIn > 0)
-          presentCount++;
+        if (element.attendenceDetails.length > 0)
+          presentCount = element.attendenceDetails.length;
 
         // absentCount 
         if (element.attendenceDetails.length == 0)
@@ -590,32 +444,31 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
 
         //avgLate
 
-        //overTimeHr
-        // eslint-disable-next-line max-len
-        if (element.shiftStart && element.shiftStart > 0 && element.shiftEnd && element.shiftEnd > 0 && element.attendenceDetails.length > 0 && element.attendenceDetails[0].clockIn && element.attendenceDetails[0].clockIn > 0 &&
-          // eslint-disable-next-line max-len
-          element.attendenceDetails[element.attendenceDetails.length - 1].clockOut && element.attendenceDetails[element.attendenceDetails.length - 1].clockOut > 0) {
+        //overTime
+        if (element.shiftStart && element.shiftStart > 0 && element.shiftEnd && element.shiftEnd > 0) {
           const shiftDiff = getTimeDiff(element.shiftStart, element.shiftEnd, 'minutes');
-          // eslint-disable-next-line max-len
-          const attDiff = getTimeDiff(element.attendenceDetails[0].clockIn, element.attendenceDetails[element.attendenceDetails.length - 1].clockOut, 'minutes');
-          const overTime = attDiff - shiftDiff; // In mintues
-          overTimeHr = overTimeHr + (overTime / 60);
+          shiftDurationMin = shiftDurationMin + shiftDiff;
         }
 
         // holidayCount
         if (element['isHoliday'] || element.userStatus == 'HOLIDAY')
           holidayCount++;
 
+        // avgWorkHour
+        // if (element.attendenceDetails.length > 0) {
+        //   // eslint-disable-next-line max-len
+        //   const attDiff = getTimeDiff(element.attendenceDetails[0].clockIn,
+        //  element.attendenceDetails[element.attendenceDetails.length - 1].clockOut, 'minutes');
+        //   workDurationMin = workDurationMin + attDiff;
+        // }
 
         // avgWorkHour
-        // eslint-disable-next-line max-len
-        if (element.attendenceDetails.length > 0 && element.attendenceDetails[0].clockIn && element.attendenceDetails[0].clockIn > 0 &&
-          // eslint-disable-next-line max-len
-          element.attendenceDetails[element.attendenceDetails.length - 1].clockOut && element.attendenceDetails[element.attendenceDetails.length - 1].clockOut > 0) {
-          // eslint-disable-next-line max-len
-          const attDiff = getTimeDiff(element.attendenceDetails[0].clockIn, element.attendenceDetails[element.attendenceDetails.length - 1].clockOut, 'minutes');
-          workHour = workHour + (attDiff / 60);
-        }
+        element.attendenceDetails.forEach(elm => {
+          if (elm.clockIn && elm.clockIn > 0 && elm.clockOut && elm.clockOut > 0) {
+            const attDiff = getTimeDiff(elm.clockIn, elm.clockOut, 'minutes');
+            workDurationMin = workDurationMin + attDiff;
+          }
+        });
       });
 
       resData[index]['lateEntryCount'] = lateEntryCount;
@@ -625,9 +478,13 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       resData[index]['leaveCount'] = leaveCount;
       resData[index]['holidayCount'] = holidayCount;
       resData[index]['avgLate'] = parseInt(lateInMin / presentCount) ? parseInt(lateInMin / presentCount) : 'N/A';
-      resData[index]['overTimeHr'] = parseInt(overTimeHr) > 0 ? parseInt(overTimeHr) : 0;
       // eslint-disable-next-line max-len
-      resData[index]['avgWorkHour'] = parseInt(parseInt(workHour) / presentCount) ? parseInt(parseInt(workHour) / presentCount) : 'N/A';
+      resData[index]['overTime'] = shiftDurationMin > 0 && (workDurationMin - shiftDurationMin) > 0 ? new Date((workDurationMin - shiftDurationMin) * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
+      // eslint-disable-next-line max-len
+      resData[index]['duration'] = workDurationMin > 0 ? new Date(workDurationMin * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
+      const avgDurationMin = (workDurationMin / presentCount) > 0 ? (workDurationMin / presentCount) : 0;
+      // eslint-disable-next-line max-len
+      resData[index]['avgDuration'] = avgDurationMin > 0 ? new Date(avgDurationMin * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
     });
 
     // sorting
