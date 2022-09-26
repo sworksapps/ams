@@ -36,6 +36,8 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   dist = dist * 1000; // m
   return dist.toFixed(2);
 };
+
+const range = 400;
 /*
  *----------------Routes Section------------
  */
@@ -60,12 +62,12 @@ exports.checkIn = async (req, res) => {
 
     const totaldistance = calculateDistance(decodedjwt.clientLat, decodedjwt.clientLong, req.body.latitude, req.body.longitude);
     
-    // if(totaldistance > 200)
-    //   return res.status(200).json({
-    //     statusText: 'FAIL',
-    //     statusValue: 400,
-    //     message: `User outside of geofencing area`,
-    //   });
+    if(totaldistance > range)
+      return res.status(200).json({
+        statusText: 'FAIL',
+        statusValue: 400,
+        message: `User outside of geofencing area`,
+      });
 
     if (!req.file)
       return res.status(200).json({
@@ -118,7 +120,7 @@ exports.checkIn = async (req, res) => {
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
-        message: `It seems you're not registered with us. Please contact your Company's SPOC`,
+        message: `It seems you're not registered with our face recognition. Please contact your Company's SPOC`,
       });
 
     const userFaceId = faceData.FaceMatches[0].Face.FaceId;
@@ -132,7 +134,7 @@ exports.checkIn = async (req, res) => {
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
-        message: `It seems you're not registered with us. Please contact your Company's SPOC`,
+        message: `SPOC Internal Server Error. Please contact your Company's SPOC`,
       });
 
     if (userData.data.data.result.length == 0)
@@ -196,12 +198,12 @@ exports.checkOut = async (req, res) => {
 
     const totaldistance = calculateDistance(decodedjwt.clientLat, decodedjwt.clientLong, req.body.latitude, req.body.longitude);
 
-    // if(totaldistance > 200)
-    //   return res.status(200).json({
-    //     statusText: 'FAIL',
-    //     statusValue: 400,
-    //     message: `User outside of geofencing.`,
-    //   });
+    if(totaldistance > range)
+      return res.status(200).json({
+        statusText: 'FAIL',
+        statusValue: 400,
+        message: `User outside of geofencing.`,
+      });
 
     if (!req.file)
       return res.status(200).json({
@@ -254,7 +256,7 @@ exports.checkOut = async (req, res) => {
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
-        message: `It seems you're not registered with us. Please contact your Company's SPOC`
+        message: `It seems you're not registered with our face recognition. Please contact your Company's SPOC`
       });
 
     const userFaceId = faceData.FaceMatches[0].Face.FaceId;
@@ -268,7 +270,7 @@ exports.checkOut = async (req, res) => {
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
-        message: `It seems you're not registered with us. Please contact your Company's SPOC`
+        message: `SPOC Internal Server Error. Please contact your Company's SPOC`
       });
 
     if (userData.data.data.result.length == 0)
@@ -347,12 +349,12 @@ exports.checkInSubmit = async (req, res) => {
 
     const totaldistance = calculateDistance(decodedjwt.clientLat, decodedjwt.clientLong, req.body.latitude, req.body.longitude);
       
-    // if(totaldistance > range)
-    //   return res.status(200).json({
-    //     statusText: 'FAIL',
-    //     statusValue: 400,
-    //     message: `User outside of geofencing area`,
-    //   });
+    if(totaldistance > range)
+      return res.status(200).json({
+        statusText: 'FAIL',
+        statusValue: 400,
+        message: `User outside of geofencing area`,
+      });
 
     const userData = await axios.post(
       `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
@@ -398,8 +400,7 @@ exports.checkInSubmit = async (req, res) => {
 
     const dbConnection = getConnection();
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
-  
-    const response = await attendenceMobileService.checkInService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body);
+    const response = await attendenceMobileService.checkInService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body, decodedjwt);
       
     if(response.type == true){
       res.status(200).json({ 
@@ -427,6 +428,9 @@ exports.checkOutSubmit = async (req, res) => {
       longitude: Joi.number().required().label('longitude'),
       userFaceId: Joi.string().required().label('Face Id'),
       clockOutTime: Joi.number().required().label('Clock Out Time'),
+      deviceName: Joi.string().allow('').required().label('Device Name'),
+      deviceNumber: Joi.string().allow('').required().label('Device Number'),
+      deviceLocation: Joi.string().allow('').required().label('Device Location'),
     });
 
     const result = schema.validate(req.body);
@@ -441,12 +445,12 @@ exports.checkOutSubmit = async (req, res) => {
 
     const totaldistance = calculateDistance(decodedjwt.clientLat, decodedjwt.clientLong, req.body.latitude, req.body.longitude);
 
-    // if(totaldistance > 200)
-    //   return res.status(200).json({
-    //     statusText: 'FAIL',
-    //     statusValue: 400,
-    //     message: `User outside of geofencing area`,
-    //   });
+    if(totaldistance > range)
+      return res.status(200).json({
+        statusText: 'FAIL',
+        statusValue: 400,
+        message: `User outside of geofencing area`,
+      });
 
     const userData = await axios.post(
       `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
@@ -457,7 +461,7 @@ exports.checkOutSubmit = async (req, res) => {
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
-        message: `It seems you're not registered with us. Please contact your Company's SPOC`
+        message: `SPOC Internal Server Error. Please contact your Company's SPOC`
       });
 
     console.log(userData);
@@ -488,7 +492,7 @@ exports.checkOutSubmit = async (req, res) => {
     const dbConnection = getConnection();
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
       
-    const response = await attendenceMobileService.checkOutService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body.clockOutTime);
+    const response = await attendenceMobileService.checkOutService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body,decodedjwt);
       
     if(response.type == true){
       res.status(200).json({ 
@@ -511,6 +515,8 @@ exports.createJwtToken = async (req, res) => {
     const schema = Joi.object({
       bussinessId: Joi.string().allow('').required().label('bussinessId'),
       clientId: Joi.string().required().label('clientId'),
+      deviceId: Joi.string().allow('').required().label('deviceId'),
+      deviceName: Joi.string().allow('').required().label('deviceName'),
     });
     const result = schema.validate(req.body);
     if (result.error)
@@ -524,51 +530,37 @@ exports.createJwtToken = async (req, res) => {
     if (!adminDbConnection) return res.status(400).json({ message: 'The provided admin is not available' });
 
     const response = await attendenceMobileService.createJwtToken(adminDbConnection, req.body);
-
-    if (response.type == true) {
+      
+    if(response.type == true){
       let locationIdValue = '';
       let latValue = '';
       let longValue = '';
-      let clientLogo = 'https://s3-ap-southeast-1.amazonaws.com/smartworks-production/logo.jpg';
-
-      // get client logo
-      if (req.body.clientId != '') {
-        // call api to get logo
-        const resData = await axios.get(`${process.env.CLIENTSPOC}api/v1/basic-data/get-client-logo-by-companyid?companyId=${req.body.clientId}`);
-
-        if (resData.data.status != 'success') {
-          return res.status(200).json({
-            statusText: 'FAIL',
-            statusValue: 400,
-            message: `Unable to find logo`,
-          });
-        }
-        else
-          clientLogo = resData.data.logoData.logo;
-      }
-
-      if (req.body.bussinessId != '') {
-        const bussinessData = await axios.get(`${process.env.CLIENTSPOC}api/v1/basic-data/get-business-detail?business_id=${req.body.bussinessId}`);
+      let address = '';
+      let device_id = '';
+      let device_name = '';
+      if(req.body.bussinessId != '') {
+        const bussinessData = await axios.get(`${process.env.CLIENTSPOC}api/v1/basic-data/get-business-detail?business_id=${req.body.bussinessId}&device_id=${req.body.deviceId}&device_name=${req.body.deviceName}`);
+        
         if (bussinessData.data.status != 'success')
           return res.status(200).json({
             statusText: 'FAIL',
             statusValue: 400,
             message: `Latitude and Longitude not found`,
           });
+      
+        if (!dataValidation.isLatitude(bussinessData.data.data.lat) || bussinessData.data.data.lat == null)
+          return res.status(200).json({
+            statusText: 'FAIL',
+            statusValue: 400,
+            message: `Invalid Latitude`,
+          });
 
-        // if (!dataValidation.isLatitude(bussinessData.data.data.lat) || bussinessData.data.data.lat == null)
-        //   return res.status(200).json({
-        //     statusText: 'FAIL',
-        //     statusValue: 400,
-        //     message: `Invalid Latitude`,
-        //   });
-
-        // if (!dataValidation.isLongitude(bussinessData.data.data.lng) || bussinessData.data.data.lng == null)
-        //   return res.status(200).json({
-        //     statusText: 'FAIL',
-        //     statusValue: 400,
-        //     message: `Invalid Longitude`,
-        //   });
+        if (!dataValidation.isLongitude(bussinessData.data.data.lng) || bussinessData.data.data.lng == null)
+          return res.status(200).json({
+            statusText: 'FAIL',
+            statusValue: 400,
+            message: `Invalid Longitude`,
+          });
 
         if (bussinessData.data.data.location_id == 0)
           return res.status(200).json({
@@ -578,8 +570,11 @@ exports.createJwtToken = async (req, res) => {
           });
 
         locationIdValue = bussinessData.data.data.location_id;
-        latValue = dataValidation.isLatitude(bussinessData.data.data.lat) ? bussinessData.data.data.lat : 0;
-        longValue = dataValidation.isLongitude(bussinessData.data.data.lng) ? bussinessData.data.data.lng : 0;
+        latValue = bussinessData.data.data.lat;
+        longValue = bussinessData.data.data.lng;
+        address = bussinessData.data.data.address;
+        device_id = bussinessData.data.deviceData.rec_id;
+        device_name = bussinessData.data.deviceData.rec_id;
       }
       const attToken = jwt.sign({
         '_id': response.data._id,
@@ -589,21 +584,21 @@ exports.createJwtToken = async (req, res) => {
         'clientLong': longValue,
         'clientDbName': response.data.clientDbName
       }, process.env.JWTToken, { expiresIn: 800000 });
-      return res.status(200).json({
-        statusText: 'Success', statusValue: 200, message: 'Attendance token', data: { attToken, locationId: locationIdValue, clientLogo: clientLogo }
+      return res.status(200).json({ 
+        statusText: 'Success', statusValue: 200, message: 'Attendance token', data: {attToken, locationId: locationIdValue, address, device_id, device_name }
       });
-    } else if (response.type == false) {
+    } else if(response.type == false){
       return res.status(202).json({ statusText: 'FAIL', statusValue: 400, message: response.msg });
-    } else {
+    }else{
       return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `Went Something Wrong.` });
     }
 
   } catch (err) {
     console.log(err);
-    if (err.Code == 'InvalidParameterException') {
-      res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: 'No face detected. Please stand in the front of the camera.' });
+    if(err.Code == 'InvalidParameterException'){
+      res.status(400).json({statusText: 'FAIL', statusValue: 400, message: 'There are no faces in the image. Should be at least 1'});
     } else {
-      res.status(500).json({ statusText: 'ERROR', statusValue: 500, message: 'Somthing went wrong' });
+      res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'Somthing went erong'});
     }
   }
 };

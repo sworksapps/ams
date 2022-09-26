@@ -18,6 +18,12 @@ const attendenceSchema = async (dbconn) => {
     attendenceDetails: [{
       clockIn: { type: String, default: '' },
       clockOut: { type: String, default: '' },
+      deviceNameClockIn: { type: String, default: '' },
+      deviceNumberClockIn: { type: String, default: '' },
+      deviceLocationClockIn: { type: String, default: '' },
+      deviceNameClockOut: { type: String, default: '' },
+      deviceNumberClockOut: { type: String, default: '' },
+      deviceLocationClockOut: { type: String, default: '' },
     }]
   }, {
     timestamps: true
