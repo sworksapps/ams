@@ -57,26 +57,24 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
     let sortBy = '';
     if (sort_by === 'overTime')
-      sortBy = 'overTime';
+      sortBy = 'overTimeMin';
     else if (sort_by === 'name')
       sortBy = 'name';
-    else if (sort_by === 'userId')
-      sortBy = 'userId';
     else if (sort_by === 'status')
       sortBy = 'userStatus';
+    else if (sort_by === 'duration')
+      sortBy = 'durationMin';
 
     if (sort_by === 'firstEntry')
       sort_by = { firstEnrty: 1 };
     else if (sort_by === 'lastExit')
       sort_by = { lastExit: 1 };
-    else if (sort_by === 'recentEntry')
-      sort_by = { recentEnrty: 1 };
     else if (sort_by === 'shift')
       sort_by = { shiftStart: 1 };
     else
-      sort_by = { firstEnrty: 1 };
+      sort_by = { userId: 1 };
 
-    if (!sortBy)
+    if (!sortBy && Object.keys(sort_by)[0] == 'userId')
       sortBy = 'name';
 
     const query = [
@@ -154,7 +152,9 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       const overTime = totalSpendTime - totalShiftTime;
       // eslint-disable-next-line max-len
       resData[index]['overTime'] = item.shiftEnd && item.shiftStart && totalSpendTime > 0 && overTime > 0 ? new Date(overTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
+      resData[index]['overTimeMin'] = overTime;
       resData[index]['name'] = userObj.length > 0 ? userObj[0]['name'].trim() : '-';
+      resData[index]['durationMin'] = totalSpendTime;
       resData[index]['duration'] = totalSpendTime > 0 ? new Date(totalSpendTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
       resData[index]['firstEnrty'] = item['firstEnrty'] && item['firstEnrty'] > 0 ? format_time(item['firstEnrty']) : 'N/A';
       resData[index]['lastExit'] = item['lastExit'] && item['lastExit'] > 0 ? format_time(item['lastExit']) : 'N/A';
@@ -315,7 +315,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       resData[index]['shiftStart'] = item['shiftStart'] && item['shiftStart'] > 0 ? format_time(item['shiftStart']) : 'N/A';
       resData[index]['shiftEnd'] = item['shiftEnd'] && item['shiftEnd'] > 0 ? format_time(item['shiftEnd']) : 'N/A';
       // eslint-disable-next-line max-len
-      resData[index]['duration'] = totalSpendTime > 0 ? new Date(totalSpendTime * 60 * 1000).toISOString().substr(11, 5) : 0;
+      resData[index]['duration'] = totalSpendTime > 0 ? new Date(totalSpendTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
     });
 
     //sorting
