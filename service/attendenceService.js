@@ -247,9 +247,11 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
     else if (sort_by === 'clockOut')
       sortBy = 'clockOut';
     else if (sort_by === 'avgWork')
-      sortBy = 'working_hour';
+      sortBy = 'durationMin';
     else if (sort_by === 'status')
       sortBy = 'userStatus';
+    else if (sort_by === 'overTime')
+      sortBy = 'overTimeMin';
 
     if (sort_by === 'date')
       sort_by = { date: 1 };
@@ -308,12 +310,14 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
         const shiftDiff = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
         shiftDurationMin = shiftDurationMin + shiftDiff;
       }
+      resData[index]['overTimeMin'] = totalSpendTime - shiftDurationMin;
       // eslint-disable-next-line max-len
       resData[index]['overTime'] = shiftDurationMin > 0 && (totalSpendTime - shiftDurationMin) > 0 ? new Date((totalSpendTime - shiftDurationMin) * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
       resData[index]['clockIn'] = clockIn > 0 ? format_time(clockIn) : 'N/A';
       resData[index]['clockOut'] = clockOut > 0 ? format_time(clockOut) : 'N/A';
       resData[index]['shiftStart'] = item['shiftStart'] && item['shiftStart'] > 0 ? format_time(item['shiftStart']) : 'N/A';
       resData[index]['shiftEnd'] = item['shiftEnd'] && item['shiftEnd'] > 0 ? format_time(item['shiftEnd']) : 'N/A';
+      resData[index]['durationMin'] = totalSpendTime;
       // eslint-disable-next-line max-len
       resData[index]['duration'] = totalSpendTime > 0 ? new Date(totalSpendTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
     });
@@ -488,6 +492,8 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       resData[index]['absentCount'] = absentCount;
       resData[index]['leaveCount'] = leaveCount;
       resData[index]['holidayCount'] = holidayCount;
+      resData[index]['overTimeMin'] = workDurationMin - shiftDurationMin;
+      resData[index]['avgLateMin'] = lateInMin / presentCount;
       // eslint-disable-next-line max-len
       resData[index]['avgLate'] = (lateInMin / presentCount) > 0 ? new Date((lateInMin / presentCount) * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
       // eslint-disable-next-line max-len
@@ -497,6 +503,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       const avgDurationMin = (workDurationMin / presentCount) > 0 ? (workDurationMin / presentCount) : 0;
       // eslint-disable-next-line max-len
       resData[index]['avgDuration'] = avgDurationMin > 0 ? new Date(avgDurationMin * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
+      resData[index]['avgDurationMin'] = avgDurationMin;
     });
 
     // sorting
@@ -518,11 +525,11 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       else if (sort_by == 'holiday')
         resData = sortByKey(resData, 'holidayCount');
       else if (sort_by == 'avgLate')
-        resData = sortByKey(resData, 'avgLate');
+        resData = sortByKey(resData, 'avgLateMin');
       else if (sort_by == 'overtime')
-        resData = sortByKey(resData, 'overTimeHr');
+        resData = sortByKey(resData, 'overTimeMin');
       else if (sort_by == 'avgWork')
-        resData = sortByKey(resData, 'avgWorkHour');
+        resData = sortByKey(resData, 'avgDurationMin');
       else
         resData = sortByKey(resData, 'name');
     }
