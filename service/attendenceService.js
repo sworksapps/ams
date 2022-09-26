@@ -295,10 +295,10 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       item.attendenceDetails.forEach(element => {
         if (element.clockIn && element.clockIn > 0 && element.clockIn != '' && clockIn == 0)
           clockIn = element.clockIn;
-        
+
         if (element.clockOut && element.clockOut > 0 && element.clockOut != '')
           clockOut = element.clockOut;
-        
+
         if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0) {
           const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
           totalSpendTime = totalSpendTime + diff;
@@ -310,7 +310,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
         const shiftDiff = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
         shiftDurationMin = shiftDurationMin + shiftDiff;
       }
-      resData[index]['overTimeMin'] = totalSpendTime - shiftDurationMin;
+      resData[index]['overTimeMin'] = (totalSpendTime - shiftDurationMin) > 0 ? (totalSpendTime - shiftDurationMin) : 0;
       // eslint-disable-next-line max-len
       resData[index]['overTime'] = shiftDurationMin > 0 && (totalSpendTime - shiftDurationMin) > 0 ? new Date((totalSpendTime - shiftDurationMin) * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
       resData[index]['clockIn'] = clockIn > 0 ? format_time(clockIn) : 'N/A';
@@ -492,8 +492,8 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       resData[index]['absentCount'] = absentCount;
       resData[index]['leaveCount'] = leaveCount;
       resData[index]['holidayCount'] = holidayCount;
-      resData[index]['overTimeMin'] = workDurationMin - shiftDurationMin;
-      resData[index]['avgLateMin'] = lateInMin / presentCount;
+      resData[index]['overTimeMin'] = (workDurationMin - shiftDurationMin) > 0 ? (workDurationMin - shiftDurationMin) : 0;
+      resData[index]['avgLateMin'] = (lateInMin / presentCount) > 0 ? (lateInMin / presentCount) : 0;
       // eslint-disable-next-line max-len
       resData[index]['avgLate'] = (lateInMin / presentCount) > 0 ? new Date((lateInMin / presentCount) * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
       // eslint-disable-next-line max-len
