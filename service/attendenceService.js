@@ -288,17 +288,28 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       let clockIn = 0;
       let clockOut = 0;
       let totalSpendTime = 0;
+      let shiftDurationMin = 0;
 
       item.attendenceDetails.forEach(element => {
         if (element.clockIn && element.clockIn > 0 && element.clockIn != '' && clockIn == 0)
           clockIn = element.clockIn;
+        
         if (element.clockOut && element.clockOut > 0 && element.clockOut != '')
           clockOut = element.clockOut;
+        
         if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0) {
           const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
           totalSpendTime = totalSpendTime + diff;
         }
       });
+
+      //overTime
+      if (item.shiftStart && item.shiftStart > 0 && item.shiftEnd && item.shiftEnd > 0) {
+        const shiftDiff = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
+        shiftDurationMin = shiftDurationMin + shiftDiff;
+      }
+      // eslint-disable-next-line max-len
+      resData[index]['overTime'] = shiftDurationMin > 0 && (totalSpendTime - shiftDurationMin) > 0 ? new Date((totalSpendTime - shiftDurationMin) * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
       resData[index]['clockIn'] = clockIn > 0 ? format_time(clockIn) : 'N/A';
       resData[index]['clockOut'] = clockOut > 0 ? format_time(clockOut) : 'N/A';
       resData[index]['shiftStart'] = item['shiftStart'] && item['shiftStart'] > 0 ? format_time(item['shiftStart']) : 'N/A';
@@ -477,7 +488,8 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       resData[index]['absentCount'] = absentCount;
       resData[index]['leaveCount'] = leaveCount;
       resData[index]['holidayCount'] = holidayCount;
-      resData[index]['avgLate'] = parseInt(lateInMin / presentCount) ? parseInt(lateInMin / presentCount) : 'N/A';
+      // eslint-disable-next-line max-len
+      resData[index]['avgLate'] = (lateInMin / presentCount) > 0 ? new Date((lateInMin / presentCount) * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
       // eslint-disable-next-line max-len
       resData[index]['overTime'] = shiftDurationMin > 0 && (workDurationMin - shiftDurationMin) > 0 ? new Date((workDurationMin - shiftDurationMin) * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
       // eslint-disable-next-line max-len
