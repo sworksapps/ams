@@ -399,8 +399,7 @@ exports.checkInSubmit = async (req, res) => {
 
     const dbConnection = getConnection();
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
-  
-    const response = await attendenceMobileService.checkInService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body);
+    const response = await attendenceMobileService.checkInService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body, decodedjwt);
       
     if(response.type == true){
       res.status(200).json({ 
@@ -489,7 +488,7 @@ exports.checkOutSubmit = async (req, res) => {
     const dbConnection = getConnection();
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
       
-    const response = await attendenceMobileService.checkOutService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body);
+    const response = await attendenceMobileService.checkOutService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body,decodedjwt);
       
     if(response.type == true){
       res.status(200).json({ 
@@ -512,6 +511,8 @@ exports.createJwtToken = async (req, res) => {
     const schema = Joi.object({
       bussinessId: Joi.string().allow('').required().label('bussinessId'),
       clientId: Joi.string().required().label('clientId'),
+      deviceId: Joi.string().allow('').required().label('deviceId'),
+      deviceName: Joi.string().allow('').required().label('deviceName'),
     });
     const result = schema.validate(req.body);
     if (result.error)
@@ -530,8 +531,12 @@ exports.createJwtToken = async (req, res) => {
       let locationIdValue = '';
       let latValue = '';
       let longValue = '';
+      let address = '';
+      let device_id = '';
+      let device_name = '';
       if(req.body.bussinessId != '') {
-        const bussinessData = await axios.get(`${process.env.CLIENTSPOC}api/v1/basic-data/get-business-detail?business_id=${req.body.bussinessId}`);
+        const bussinessData = await axios.get(`${process.env.CLIENTSPOC}api/v1/basic-data/get-business-detail?business_id=${req.body.bussinessId}&device_id=${req.body.deviceId}&device_name=${req.body.deviceName}`);
+        
         if (bussinessData.data.status != 'success')
           return res.status(200).json({
             statusText: 'FAIL',
@@ -563,6 +568,9 @@ exports.createJwtToken = async (req, res) => {
         locationIdValue = bussinessData.data.data.location_id;
         latValue = bussinessData.data.data.lat;
         longValue = bussinessData.data.data.lng;
+        address = bussinessData.data.data.address;
+        device_id = bussinessData.data.deviceData.rec_id;
+        device_name = bussinessData.data.deviceData.rec_id;
       }
       const attToken = jwt.sign({
         '_id': response.data._id,
@@ -573,7 +581,7 @@ exports.createJwtToken = async (req, res) => {
         'clientDbName': response.data.clientDbName
       }, process.env.JWTToken, { expiresIn: 800000 });
       return res.status(200).json({ 
-        statusText: 'Success', statusValue: 200, message: 'Attendance token', data: {attToken, locationId: locationIdValue }
+        statusText: 'Success', statusValue: 200, message: 'Attendance token', data: {attToken, locationId: locationIdValue, address, device_id, device_name }
       });
     } else if(response.type == false){
       return res.status(202).json({ statusText: 'FAIL', statusValue: 400, message: response.msg });
@@ -582,6 +590,7 @@ exports.createJwtToken = async (req, res) => {
     }
 
   } catch (err) {
+    console.log(err);
     if(err.Code == 'InvalidParameterException'){
       res.status(400).json({statusText: 'FAIL', statusValue: 400, message: 'There are no faces in the image. Should be at least 1'});
     } else {
