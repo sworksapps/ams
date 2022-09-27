@@ -539,7 +539,11 @@ exports.createJwtToken = async (req, res) => {
       let device_name = '';
       if(req.body.bussinessId != '') {
         const bussinessData = await axios.get(`${process.env.CLIENTSPOC}api/v1/basic-data/get-business-detail?business_id=${req.body.bussinessId}&device_id=${req.body.deviceId}&device_name=${req.body.deviceName}`);
-        
+        return res.status(200).json({
+          statusText: 'FAIL',
+          statusValue: 400,
+          message: bussinessData.data,
+        });
         if (bussinessData.data.status != 'success')
           return res.status(200).json({
             statusText: 'FAIL',
@@ -574,11 +578,6 @@ exports.createJwtToken = async (req, res) => {
         address = bussinessData.data.data.address;
         device_id = bussinessData.data.deviceData.rec_id;
         device_name = bussinessData.data.deviceData.rec_id;
-        return res.status(200).json({
-          statusText: 'FAIL',
-          statusValue: 400,
-          message: bussinessData.data,
-        });
       }
       const attToken = jwt.sign({
         '_id': response.data._id,
