@@ -31,7 +31,7 @@ exports.checkInService = async (tenantDbConnection, userDetails, date, body, dec
       clockInTimeStamp = moment.unix(clockInTimeStamp).format('hh:mm a');
 
       if(decodedjwt.clientId == '2137')
-        await insertAttData(userDetails.user_dept_id,'',moment.unix(body.clockInTime).format('YYYY-MM-DD HH:MM:SS'),body.deviceName,body.deviceNumber,0,0,body.deviceLocation);
+        await insertAttData(tenantDbConnection,userDetails.user_dept_id,userDetails.emp_code,'',moment.unix(body.clockInTime).format('YYYY-MM-DD HH:MM:SS'),body.deviceName,body.deviceNumber,0,0,body.deviceLocation);
       return { type: true, msg: 'You have successfully Checked In', data: {userDetails, clockInTimeStamp, totalDuration} };
     }
     if (res.attendenceStatus == 'CLOCKIN')
@@ -61,7 +61,7 @@ exports.checkInService = async (tenantDbConnection, userDetails, date, body, dec
         clockInTimeStamp = moment.unix(res.attendenceDetails[0].clockIn).format('hh:mm a');
       
       if(decodedjwt.clientId == '2137')
-        await insertAttData(userDetails.user_dept_id,'',moment.unix(body.clockInTime).format('YYYY-MM-DD HH:MM:SS'),body.deviceName,body.deviceNumber,0,0,body.deviceLocation);
+        await insertAttData(tenantDbConnection,userDetails.user_dept_id,userDetails.emp_code,'',moment.unix(body.clockInTime).format('YYYY-MM-DD HH:MM:SS'),body.deviceName,body.deviceNumber,0,0,body.deviceLocation);
       return { type: true, msg: 'You have successfully Checked In', data: {userDetails, clockInTimeStamp, totalDuration} };
     }
   } catch (err) {
@@ -121,7 +121,7 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, body, de
       );
 
       if(decodedjwt.clientId == '2137')
-        await insertAttData(userDetails.user_dept_id,'',moment.unix(body.clockOutTime).format('YYYY-MM-DD HH:MM:SS'),body.deviceName,body.deviceNumber,1,0,body.deviceLocation);
+        await insertAttData(tenantDbConnection,userDetails.user_dept_id,userDetails.emp_code,'',moment.unix(body.clockOutTime).format('YYYY-MM-DD HH:MM:SS'),body.deviceName,body.deviceNumber,1,0,body.deviceLocation);
       return { 
         type: true, msg: 'You have successfully Checked Out', data: {userDetails, clockInTimeStamp, clockOutTimeStamp, totalDuration} 
       };
@@ -192,9 +192,10 @@ const getTimeDiff = (start, end, type) => {
   return 0;
 };
 
-const insertAttData = async (user_id,card_number,checkInOut,deviceName,deviceNumber,logStatus,logIndex,location) => {
+const insertAttData = async (tenantDbConnection,user_id,emp_code,card_number,checkInOut,deviceName,deviceNumber,logStatus,logIndex,location) => {
   const logodata = {
     user_id: user_id,
+    emp_code: emp_code,
     card_number: card_number,
     checkInOut: checkInOut,
     deviceName: deviceName,
@@ -203,6 +204,20 @@ const insertAttData = async (user_id,card_number,checkInOut,deviceName,deviceNum
     logIndex: logIndex,
     location: location,
   };
-  await query('INSERT INTO attendance_data SET ?', logodata);
-  // if(sqlData.affectedRows == 0) {}
+  const sqlData = await query('INSERT INTO attendance_data SET ?', logodata);
+  const logsModel = await tenantDbConnection.model('logs');
+  if(sqlData.affectedRows == 0) {
+    const insertData = {
+      user_id: user_id,
+      emp_code: emp_code,
+      card_number: card_number,
+      checkInOut: checkInOut,
+      deviceName: deviceName,
+      deviceNumber :deviceNumber,
+      logStatus: logStatus,
+      logIndex: logIndex,
+      location: location,
+    };
+    await logsModel(insertData).save();
+  }
 };

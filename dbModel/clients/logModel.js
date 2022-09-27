@@ -5,6 +5,7 @@ const logSchema = async (dbconn) => {
   const logModel = new Schema({
     user_id: { type: String, required: true },
     card_number: { type: String, default: '' },
+    emp_code: { type: String, default: '' },
     checkInOut: { type: String, default: '' },
     deviceNumber: { type: String, default: '' },
     deviceName: { type: String, default: '' },
