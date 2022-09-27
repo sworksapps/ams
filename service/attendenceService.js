@@ -152,7 +152,8 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       // eslint-disable-next-line max-len
       resData[index]['overTime'] = item.shiftEnd && item.shiftStart && totalSpendTime > 0 && overTime > 0 ? new Date(overTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
       resData[index]['overTimeMin'] = overTime;
-      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name'].trim() : '-';
+      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
+      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
       resData[index]['durationMin'] = totalSpendTime;
       resData[index]['duration'] = totalSpendTime > 0 ? new Date(totalSpendTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
       resData[index]['firstEnrty'] = item['firstEnrty'] && item['firstEnrty'] > 0 ? format_time(item['firstEnrty']) : 'N/A';
@@ -285,11 +286,24 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
     let resData = await attModel.aggregate([...query]);
     // let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
 
+    const userIds = resData.map(i => i.userId);
+    let userDetails = [];
+
+    // get user name
+    const userData = await axios.post(
+      `${process.env.CLIENTSPOC}api/v1/user/get-user-name`,
+      { rec_id: userIds }
+    );
+
+    if (userData.data.status == 200)
+      userDetails = userData.data.data;
+
     resData.map((item, index) => {
       let clockIn = 0;
       let clockOut = 0;
       let totalSpendTime = 0;
       let shiftDurationMin = 0;
+      const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
 
       item.attendenceDetails.forEach(element => {
         if (element.clockIn && element.clockIn > 0 && element.clockIn != '' && clockIn == 0)
@@ -309,6 +323,9 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
         const shiftDiff = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
         shiftDurationMin = shiftDurationMin + shiftDiff;
       }
+
+      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
+      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
       resData[index]['overTimeMin'] = (totalSpendTime - shiftDurationMin) > 0 ? (totalSpendTime - shiftDurationMin) : 0;
       // eslint-disable-next-line max-len
       resData[index]['overTime'] = shiftDurationMin > 0 && (totalSpendTime - shiftDurationMin) > 0 ? new Date((totalSpendTime - shiftDurationMin) * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
@@ -410,7 +427,8 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
     resData.map((item, index) => {
 
       const userObj = userDetails.filter(data => data.rec_id == item._id);
-      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name'].trim() : '-';
+      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
+      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
 
       let lateEntryCount = 0;
       let earlyExitCount = 0;
