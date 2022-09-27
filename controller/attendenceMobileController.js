@@ -542,7 +542,7 @@ exports.createJwtToken = async (req, res) => {
         return res.status(200).json({
           statusText: 'FAIL',
           statusValue: 400,
-          message: bussinessData,
+          message: bussinessData.data,
         });
         if (bussinessData.data.status != 'success')
           return res.status(200).json({
