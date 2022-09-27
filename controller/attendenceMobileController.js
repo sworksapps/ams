@@ -572,8 +572,10 @@ exports.createJwtToken = async (req, res) => {
         latValue = bussinessData.data.data.lat;
         longValue = bussinessData.data.data.lng;
         address = bussinessData.data.data.address;
-        device_id = bussinessData.data.deviceData.rec_id;
-        device_name = bussinessData.data.deviceData.rec_id;
+        // device_id = bussinessData.data.deviceData.rec_id;
+        // device_name = bussinessData.data.deviceData.rec_id;
+        device_id='';
+        device_name='';
       }
       const attToken = jwt.sign({
         '_id': response.data._id,
