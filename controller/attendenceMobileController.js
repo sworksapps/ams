@@ -574,12 +574,12 @@ exports.createJwtToken = async (req, res) => {
         address = bussinessData.data.data.address;
         device_id = bussinessData.data.deviceData.rec_id;
         device_name = bussinessData.data.deviceData.rec_id;
+        return res.status(200).json({
+          statusText: 'FAIL',
+          statusValue: 400,
+          message: bussinessData.data,
+        });
       }
-      return res.status(200).json({
-        statusText: 'FAIL',
-        statusValue: 400,
-        message: `sdfgh location Id`,
-      });
       const attToken = jwt.sign({
         '_id': response.data._id,
         'clientName': response.data.clientName,
