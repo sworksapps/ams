@@ -19,7 +19,6 @@ const awsMethods = require('../common/methods/awsMethods');
 const dataValidation = require('../common/methods/dataValidation');
 const { getConnection, getAdminConnection } = require('../connectionManager');
 const attendenceMobileService = require('../service/attendenceMobileService');
-const { request } = require('http');
 
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const radlat1 = (Math.PI * lat1) / 180;
