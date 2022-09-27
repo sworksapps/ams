@@ -515,8 +515,8 @@ exports.createJwtToken = async (req, res) => {
     const schema = Joi.object({
       bussinessId: Joi.string().allow('').required().label('bussinessId'),
       clientId: Joi.string().required().label('clientId'),
-      deviceId: Joi.string().allow('').required().label('deviceId'),
-      deviceName: Joi.string().allow('').required().label('deviceName'),
+      deviceId: Joi.string().allow('').optional().label('deviceId'),
+      deviceName: Joi.string().allow('').optional().label('deviceName'),
     });
     const result = schema.validate(req.body);
     if (result.error)
