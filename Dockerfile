@@ -16,4 +16,4 @@ RUN npm install
 COPY . .
 
 EXPOSE 9000
-CMD [ "npm", "run" , "prod"]
+CMD [ "npm", "run" , "dev"]
