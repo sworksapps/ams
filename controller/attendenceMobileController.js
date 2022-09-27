@@ -553,18 +553,18 @@ exports.createJwtToken = async (req, res) => {
             statusValue: 400,
             message: `Invalid Latitude`,
           });
-          return res.status(200).json({
-            statusText: 'FAIL',
-            statusValue: 400,
-            message: bussinessData.data,
-          });
+
         if (!dataValidation.isLongitude(bussinessData.data.data.lng) || bussinessData.data.data.lng == null)
           return res.status(200).json({
             statusText: 'FAIL',
             statusValue: 400,
             message: `Invalid Longitude`,
           });
-
+          return res.status(200).json({
+            statusText: 'FAIL',
+            statusValue: 400,
+            message: bussinessData.data,
+          });
         if (bussinessData.data.data.location_id == 0)
           return res.status(200).json({
             statusText: 'FAIL',
