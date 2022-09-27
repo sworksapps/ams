@@ -560,18 +560,14 @@ exports.createJwtToken = async (req, res) => {
             statusValue: 400,
             message: `Invalid Longitude`,
           });
-        
+
         if (bussinessData.data.data.location_id == 0)
           return res.status(200).json({
             statusText: 'FAIL',
             statusValue: 400,
             message: `Invalid location Id`,
           });
-          return res.status(200).json({
-            statusText: 'FAIL',
-            statusValue: 400,
-            message: bussinessData.data,
-          });
+
         locationIdValue = bussinessData.data.data.location_id;
         latValue = bussinessData.data.data.lat;
         longValue = bussinessData.data.data.lng;
