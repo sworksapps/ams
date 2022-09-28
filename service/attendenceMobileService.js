@@ -121,7 +121,7 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, body, de
       );
 
       if(decodedjwt.clientId == '2137')
-        await insertAttData(tenantDbConnection,userDetails.user_dept_id,userDetails.emp_code,'',moment.unix(body.clockOutTime).format('YYYY-MM-DD HH:MM:SS'),body.deviceName,body.deviceNumber,1,0,body.deviceLocation);
+        await insertAttData(tenantDbConnection,userDetails.user_dept_id,userDetails.emp_code,'',moment.unix(body.clockOutTime).format('YYYY-MM-DD HH:MM:SS'),'','',1,0,'');
       return { 
         type: true, msg: 'You have successfully Checked Out', data: {userDetails, clockInTimeStamp, clockOutTimeStamp, totalDuration} 
       };
