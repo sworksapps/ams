@@ -144,8 +144,11 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
         totalShiftTime = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
 
       // MISSINGCHECKOUT  
+      const dateTime = new Date();
+      dateTime.setHours(-5, -31, 0, 0); // set mid time as 23:59:00
+      const midTime = moment(dateTime).unix();
       const currentTime = moment().unix();
-      if (item.shiftEnd && item.shiftEnd > 0 && currentTime > item.shiftEnd && item.lastExit == '') {
+      if (item.shiftEnd && item.shiftEnd > 0 && currentTime > item.shiftEnd && currentTime > midTime && item.lastExit == '') {
         const param = { id: item._id.toString(), status: 'MISSINGCHECKOUT' };
         this.changeUserStatus(dbConnection, param);
       }
