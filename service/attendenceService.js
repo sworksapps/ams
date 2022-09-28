@@ -52,6 +52,9 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       if (filter.status) {
         dbQuery.push({ userStatus: filter.status });
       }
+      if (filter.location) {
+        dbQuery.push({ locationId: filter.location });
+      }
     }
 
     let sortBy = '';
