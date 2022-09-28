@@ -59,14 +59,14 @@ exports.checkIn = async (req, res) => {
     
     const decodedjwt = dataValidation.parseJwt(req.headers['authorization']);
 
-    const totaldistance = calculateDistance(decodedjwt.clientLat, decodedjwt.clientLong, req.body.latitude, req.body.longitude);
+    // const totaldistance = calculateDistance(decodedjwt.clientLat, decodedjwt.clientLong, req.body.latitude, req.body.longitude);
     
-    if(totaldistance > range)
-      return res.status(200).json({
-        statusText: 'FAIL',
-        statusValue: 400,
-        message: `User outside of geofencing area`,
-      });
+    // if(totaldistance > range)
+    //   return res.status(200).json({
+    //     statusText: 'FAIL',
+    //     statusValue: 400,
+    //     message: `User outside of geofencing area`,
+    //   });
 
     if (!req.file)
       return res.status(200).json({
@@ -195,14 +195,14 @@ exports.checkOut = async (req, res) => {
     
     const decodedjwt = dataValidation.parseJwt(req.headers['authorization']);
 
-    const totaldistance = calculateDistance(decodedjwt.clientLat, decodedjwt.clientLong, req.body.latitude, req.body.longitude);
+    // const totaldistance = calculateDistance(decodedjwt.clientLat, decodedjwt.clientLong, req.body.latitude, req.body.longitude);
 
-    if(totaldistance > range)
-      return res.status(200).json({
-        statusText: 'FAIL',
-        statusValue: 400,
-        message: `User outside of geofencing.`,
-      });
+    // if(totaldistance > range)
+    //   return res.status(200).json({
+    //     statusText: 'FAIL',
+    //     statusValue: 400,
+    //     message: `User outside of geofencing.`,
+    //   });
 
     if (!req.file)
       return res.status(200).json({
@@ -346,14 +346,14 @@ exports.checkInSubmit = async (req, res) => {
 
     const decodedjwt = dataValidation.parseJwt(req.headers['authorization']);
 
-    const totaldistance = calculateDistance(decodedjwt.clientLat, decodedjwt.clientLong, req.body.latitude, req.body.longitude);
+    // const totaldistance = calculateDistance(decodedjwt.clientLat, decodedjwt.clientLong, req.body.latitude, req.body.longitude);
       
-    if(totaldistance > range)
-      return res.status(200).json({
-        statusText: 'FAIL',
-        statusValue: 400,
-        message: `User outside of geofencing area`,
-      });
+    // if(totaldistance > range)
+    //   return res.status(200).json({
+    //     statusText: 'FAIL',
+    //     statusValue: 400,
+    //     message: `User outside of geofencing area`,
+    //   });
 
     const userData = await axios.post(
       `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
@@ -442,14 +442,14 @@ exports.checkOutSubmit = async (req, res) => {
     
     const decodedjwt = dataValidation.parseJwt(req.headers['authorization']);
 
-    const totaldistance = calculateDistance(decodedjwt.clientLat, decodedjwt.clientLong, req.body.latitude, req.body.longitude);
+    // const totaldistance = calculateDistance(decodedjwt.clientLat, decodedjwt.clientLong, req.body.latitude, req.body.longitude);
 
-    if(totaldistance > range)
-      return res.status(200).json({
-        statusText: 'FAIL',
-        statusValue: 400,
-        message: `User outside of geofencing area`,
-      });
+    // if(totaldistance > range)
+    //   return res.status(200).json({
+    //     statusText: 'FAIL',
+    //     statusValue: 400,
+    //     message: `User outside of geofencing area`,
+    //   });
 
     const userData = await axios.post(
       `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
