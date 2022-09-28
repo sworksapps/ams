@@ -470,7 +470,8 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
         // presentCount
         // eslint-disable-next-line max-len
         if (element.attendenceDetails.length > 0)
-          presentCount = element.attendenceDetails.length;
+        // presentCount = element.attendenceDetails.length;
+          presentCount = presentCount++;
 
         // absentCount 
         if (element.attendenceDetails.length == 0)
