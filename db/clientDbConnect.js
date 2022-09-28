@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 const { attendenceSchema } = require('../dbModel/clients/attendenceModel');
 const { holidayListSchema } = require('../dbModel/clients/holidayListModel');
+const { logSchema } = require('../dbModel/clients/logModel');
 
 // const clientOption = {
 //   socketTimeoutMS: 30000,
@@ -69,6 +70,7 @@ const initTenantDbConnection = (DB_URL) => {
     // require all schemas
     attendenceSchema(db);
     holidayListSchema(db);
+    logSchema(db);
 
     return db;
   } catch (error) {
