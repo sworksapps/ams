@@ -1,9 +1,6 @@
 /* eslint-disable max-len */
 // const mongoose = require('mongoose');
 const moment = require('moment');
-const sql = require('../db/sqlDB');
-const util = require('util');
-const query = util.promisify(sql.query).bind(sql);
 /*
  *------------User Service------------
  */
@@ -193,6 +190,9 @@ const getTimeDiff = (start, end, type) => {
 };
 
 const insertAttData = async (tenantDbConnection,user_id,emp_code,card_number,checkInOut,deviceName,deviceNumber,logStatus,logIndex,location) => {
+  const sql = require('../db/sqlDB');
+  const util = require('util');
+  const query = util.promisify(sql.query).bind(sql);
   // const logodata = {
   //   user_id: user_id,
   //   emp_code: emp_code,
