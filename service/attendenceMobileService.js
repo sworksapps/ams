@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
 // const mongoose = require('mongoose');
 const moment = require('moment');
-const sql = require('../db/mySQLdb');
+const sql = require('../db/sqlDB');
 const util = require('util');
 const query = util.promisify(sql.query).bind(sql);
 /*
