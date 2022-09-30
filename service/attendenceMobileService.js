@@ -197,7 +197,9 @@ const insertAttData = async (tenantDbConnection,user_id,emp_code,card_number,che
     const sqlconn = await sql.connect(sqlConfig);
     const util = require('util');
     const query = util.promisify(sqlconn.query).bind(sqlconn);
-    await query(`INSERT INTO attendance_data (user_id, emp_code, card_number, checkInOut, deviceName, deviceNumber, logStatus, logIndex,location) VALUES ('${user_id}', '${emp_code}', '${card_number}', '${checkInOut}', '${deviceName}', '${deviceNumber}', '${logStatus}', '${logIndex}', '${location}')`);
+    const device_name = deviceName.slice(0,9);
+    const device_number = deviceNumber.slice(0,9);
+    await query(`INSERT INTO attendance_data (user_id, emp_code, card_number, checkInOut, deviceName, deviceNumber, logStatus, logIndex,location) VALUES ('${user_id}', '${emp_code}', '${card_number}', '${checkInOut}', '${device_name}', '${device_number}', '${logStatus}', '${logIndex}', '${location}')`);
     console.log(checkInOut);
   } catch (err) {
     console.log(err);
