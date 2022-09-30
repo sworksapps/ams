@@ -4,8 +4,9 @@ const path = require('path');
 const helmet = require('helmet');
 const cors = require('cors');
 const mongoSanitize = require('express-mongo-sanitize');
+const cron = require('node-cron');
 
-const { connectAllDb } = require('./connectionManager');
+const { connectAllDb, getConnectionByTenant } = require('./connectionManager');
 
 /*
  *-----------------------Includes Routes----------------
@@ -43,6 +44,35 @@ app.get('/', async (req, res) => {
 
 app.use('/', attendenceRoutes);
 app.use('/', attendenceMobileRoutes);
+
+// Cron for prozo log
+cron.schedule('0 0 */3 * * *', async () => {
+  const connection = getConnectionByTenant(process.env.prozoDBName);
+  if (!connection) return console.log('Cron Stop Due to connection loss.');
+
+  const logsModel = await connection.model('logs');
+  const logData = await logsModel.find();
+  if(logData.length > 0) {
+    const sqlConfig = require('./db/sqlDB');
+    const sql = require('mssql');
+    logData.forEach( async element => {try {
+      const sqlconn = await sql.connect(sqlConfig);
+      const util = require('util');
+      const query = util.promisify(sqlconn.query).bind(sqlconn);
+      const device_name = element.deviceName.slice(0,9);
+      const device_number = element.deviceNumber.slice(0,9);
+      // eslint-disable-next-line max-len
+      const insertData = await query(`INSERT INTO attendance_data (user_id, emp_code, card_number, checkInOut, deviceName, deviceNumber, logStatus, logIndex,location) VALUES ('${element.user_id}', '${element.emp_code}', '${element.card_number}', '${element.checkInOut}', '${device_name}', '${device_number}', '${element.logStatus}', '${element.logIndex}', '${element.location}')`);
+      if(insertData.rowsAffected.length > 0) {
+        await logsModel.findByIdAndRemove(element._id);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+    });
+  }
+  console.log('running at every 3 hours');
+});
 
 /*-----------------------------*/
 app.use((req, res, next) => {
