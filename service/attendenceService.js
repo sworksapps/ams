@@ -381,9 +381,9 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
     if (filter) {
       filter = JSON.parse(filter);
 
-      // if (filter.status) {
-      //   dbQuery.push({ userStatus: filter.status });
-      // }
+      if (filter.status) {
+        dbQuery.push({ userStatus: filter.status });
+      }
       
       if (filter.location) {
         dbQuery.push({ locationId: filter.location });
