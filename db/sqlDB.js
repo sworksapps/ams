@@ -1,10 +1,10 @@
-const sql = require('mssql');
+// const sql = require('mssql');
 
 const sqlConfig = {
-  user: 'admin',
-  password: 'qLPrWak47yjdqN3c',
-  database: 'prozo',
-  server: '172.31.32.59',
+  user: process.env.sqlUser,
+  password: process.env.sqlpassword,
+  database: process.env.sqldb,
+  server: process.env.sqlHost,
   pool: {
     max: 10,
     min: 0,
@@ -16,11 +16,11 @@ const sqlConfig = {
   }
 };
 
-const connection = new sql.ConnectionPool(sqlConfig);
-connection.connect().then(function() {
-  console.log('Sql Connection');
-}).catch(function(err) {
-  console.error('SQL Error connection pool', err);
-});
+// const connection = new sql.ConnectionPool(sqlConfig);
+// connection.connect().then(function() {
+//   console.log('Sql Connection');
+// }).catch(function(err) {
+//   console.error('SQL Error connection pool', err);
+// });
 
-module.exports = connection;
+module.exports = sqlConfig;
