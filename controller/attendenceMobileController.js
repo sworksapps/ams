@@ -331,9 +331,9 @@ exports.checkInSubmit = async (req, res) => {
       longitude: Joi.number().required().label('longitude'),
       userFaceId: Joi.string().required().label('Face Id'),
       clockInTime: Joi.number().required().label('Clock In Time'),
-      deviceName: Joi.string().allow('').required().label('Device Name'),
-      deviceNumber: Joi.string().allow('').required().label('Device Number'),
-      deviceLocation: Joi.string().allow('').required().label('Device Location'),
+      // deviceName: Joi.string().allow('').required().label('Device Name'),
+      // deviceNumber: Joi.string().allow('').required().label('Device Number'),
+      // deviceLocation: Joi.string().allow('').required().label('Device Location'),
     });
 
     const result = schema.validate(req.body);
