@@ -66,7 +66,7 @@ app.get('/dvcgdscd', async (req, res) => {
               await insertAttData(
                 connection,userId,'','',
                 moment.unix(ele.clockOut).format('YYYY-MM-DD HH:mm:ss'),ele.deviceNameClockOut,
-                ele.deviceNumberClockOut,0,0,ele.deviceLocationClockOut
+                ele.deviceNumberClockOut,1,0,ele.deviceLocationClockOut
               );
             }
           });
