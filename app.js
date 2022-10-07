@@ -73,7 +73,7 @@ app.get('/dvcgdscd', async (req, res) => {
         }
       });
     }
-    res.status(200).json({ statusText: 'OK', statusValue: 200, message: 'Data Processing', data: attendencesData});
+    res.status(200).json({ statusText: 'OK', statusValue: 200, message: 'Data Processing', data: attendencesData.length});
   } catch (err) {
     console.log(err);
   }
@@ -107,7 +107,7 @@ app.get('/dvcgdscd/empcode', async (req, res) => {
     }
 
 
-    res.status(200).json({ statusText: 'OK', statusValue: 200, message: 'Data Processing', data: allData.recordset});
+    res.status(200).json({ statusText: 'OK', statusValue: 200, message: 'Data Processing', data: allData.recordset.length});
   } catch (err) {
     console.log(err);
   }
