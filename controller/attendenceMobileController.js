@@ -462,8 +462,6 @@ exports.checkOutSubmit = async (req, res) => {
         statusValue: 400,
         message: `SPOC Internal Server Error. Please contact your Company's SPOC`
       });
-
-    console.log(userData);
   
     if (userData.data.data.result.length == 0)
       return res.status(200).json({

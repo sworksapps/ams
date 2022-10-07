@@ -378,6 +378,18 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
     const dbQuery = [];
     const attModel = await dbConnection.model('attendences_data');
 
+    if (filter) {
+      filter = JSON.parse(filter);
+
+      if (filter.status) {
+        dbQuery.push({ userStatus: filter.status });
+      }
+      
+      if (filter.location) {
+        dbQuery.push({ locationId: filter.location });
+      }
+    }
+
     // filter between dates
     dbQuery.push({
       'date': {

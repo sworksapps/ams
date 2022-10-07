@@ -1,9 +1,7 @@
 /* eslint-disable max-len */
 // const mongoose = require('mongoose');
 const moment = require('moment');
-const sql = require('../db/mySQLdb');
-const util = require('util');
-const query = util.promisify(sql.query).bind(sql);
+const prozoClienId = process.env.prozoClienId;
 /*
  *------------User Service------------
  */
@@ -30,8 +28,8 @@ exports.checkInService = async (tenantDbConnection, userDetails, date, body, dec
       await attendenceModel(insertData).save();
       clockInTimeStamp = moment.unix(clockInTimeStamp).format('hh:mm a');
 
-      if(decodedjwt.clientId == '2137')
-        await insertAttData(tenantDbConnection,userDetails.user_dept_id,userDetails.emp_code,'',moment.unix(body.clockInTime).format('YYYY-MM-DD HH:MM:SS'),body.deviceName,body.deviceNumber,0,0,body.deviceLocation);
+      if(decodedjwt.clientId == prozoClienId)
+        await insertAttData(tenantDbConnection,userDetails.user_id,userDetails.emp_code,'',moment.unix(body.clockInTime).format('YYYY-MM-DD HH:mm:ss'),body.deviceName,body.deviceNumber,0,0,body.deviceLocation);
       return { type: true, msg: 'You have successfully Checked In', data: {userDetails, clockInTimeStamp, totalDuration} };
     }
     if (res.attendenceStatus == 'CLOCKIN')
@@ -60,8 +58,8 @@ exports.checkInService = async (tenantDbConnection, userDetails, date, body, dec
       if (res.attendenceStatus == 'CLOCKOUT')
         clockInTimeStamp = moment.unix(res.attendenceDetails[0].clockIn).format('hh:mm a');
       
-      if(decodedjwt.clientId == '2137')
-        await insertAttData(tenantDbConnection,userDetails.user_dept_id,userDetails.emp_code,'',moment.unix(body.clockInTime).format('YYYY-MM-DD HH:MM:SS'),body.deviceName,body.deviceNumber,0,0,body.deviceLocation);
+      if(decodedjwt.clientId == prozoClienId)
+        await insertAttData(tenantDbConnection,userDetails.user_id,userDetails.emp_code,'',moment.unix(body.clockInTime).format('YYYY-MM-DD HH:mm:ss'),body.deviceName,body.deviceNumber,0,0,body.deviceLocation);
       return { type: true, msg: 'You have successfully Checked In', data: {userDetails, clockInTimeStamp, totalDuration} };
     }
   } catch (err) {
@@ -120,8 +118,8 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, body, de
         { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKOUT', userStatus : userStatus }
       );
 
-      if(decodedjwt.clientId == '2137')
-        await insertAttData(tenantDbConnection,userDetails.user_dept_id,userDetails.emp_code,'',moment.unix(body.clockOutTime).format('YYYY-MM-DD HH:MM:SS'),'','',1,0,'');
+      if(decodedjwt.clientId == prozoClienId)
+        await insertAttData(tenantDbConnection,userDetails.user_id,userDetails.emp_code,'',moment.unix(body.clockOutTime).format('YYYY-MM-DD HH:mm:ss'),'','',1,0,'');
       return { 
         type: true, msg: 'You have successfully Checked Out', data: {userDetails, clockInTimeStamp, clockOutTimeStamp, totalDuration} 
       };
@@ -193,20 +191,19 @@ const getTimeDiff = (start, end, type) => {
 };
 
 const insertAttData = async (tenantDbConnection,user_id,emp_code,card_number,checkInOut,deviceName,deviceNumber,logStatus,logIndex,location) => {
-  const logodata = {
-    user_id: user_id,
-    emp_code: emp_code,
-    card_number: card_number,
-    checkInOut: checkInOut,
-    deviceName: deviceName,
-    deviceNumber :deviceNumber,
-    logStatus: logStatus,
-    logIndex: logIndex,
-    location: location,
-  };
-  const sqlData = await query('INSERT INTO attendance_data SET ?', logodata);
-  const logsModel = await tenantDbConnection.model('logs');
-  if(sqlData.affectedRows == 0) {
+  const sqlConfig = require('../db/sqlDB');
+  const sql = require('mssql');
+  try {
+    const sqlconn = await sql.connect(sqlConfig);
+    const util = require('util');
+    const query = util.promisify(sqlconn.query).bind(sqlconn);
+    const device_name = deviceName.slice(0,9);
+    const device_number = deviceNumber.slice(0,9);
+    await query(`INSERT INTO attendance_data (user_id, emp_code, card_number, checkInOut, deviceName, deviceNumber, logStatus, logIndex,location) VALUES ('${user_id}', '${emp_code}', '${card_number}', '${checkInOut}', '${device_name}', '${device_number}', '${logStatus}', '${logIndex}', '${location}')`);
+    console.log(checkInOut);
+  } catch (err) {
+    console.log(err);
+    const logsModel = await tenantDbConnection.model('logs');
     const insertData = {
       user_id: user_id,
       emp_code: emp_code,
