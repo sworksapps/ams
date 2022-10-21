@@ -536,7 +536,7 @@ exports.createJwtToken = async (req, res) => {
       let device_id = '';
       let device_name = '';
       if(req.body.bussinessId != '') {
-        const bussinessData = await axios.get(`${process.env.CLIENTSPOC}api/v1/basic-data/get-business-detail?business_id=${req.body.bussinessId}&device_id=${req.body.deviceId}&device_name=${req.body.deviceName}`);
+        const bussinessData = await axios.get(`${process.env.CLIENTSPOC}api/v1/basic-data/get-business-detail?business_id=${req.body.bussinessId}&device_id=${req.body.deviceId}&device_name=${req.body.deviceName}&company_id=${req.body.clientId}`);
         
         if (bussinessData.data.status != 'success')
           return res.status(200).json({
