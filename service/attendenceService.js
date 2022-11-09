@@ -915,12 +915,8 @@ const getTimeDiff = (start, end, type) => {
 };
 
 const sortByKey = (arr, key) => {
-  if (key == 'name' || key == 'userStatus') {
-    return arr.sort((a, b) => {
-      if (a[key] && b[key])
-        a[key].localeCompare(b[key]);
-    });
-  }
+  if (key == 'name' || key == 'userStatus')
+    return arr.sort((a, b) => a[key].localeCompare(b[key]));
   return arr.sort((a, b) => a[key] - b[key]);
 };
 
