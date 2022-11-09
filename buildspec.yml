@@ -1,0 +1,21 @@
+version: 0.2
+env:
+  shell: bash
+phases:
+  build:
+    commands:
+      - |
+        #!/bin/bash       
+          sed -i 's/ENV/'"${ENV_NAME}"'/g' $CODEBUILD_SRC_DIR/Dockerfile
+          sed -i 's/ENV/'"${ENV_NAME}"'/g' $CODEBUILD_SRC_DIR/scripts/docker_build.sh
+          sed -i 's/ENV/'"${ENV_NAME}"'/g' $CODEBUILD_SRC_DIR/scripts/docker_start.sh
+          sed -i 's/PORT/'"${PORT}"'/g' $CODEBUILD_SRC_DIR/scripts/docker_start.sh
+          sed -i 's/ENV/'"${ENV_NAME}"'/g' $CODEBUILD_SRC_DIR/scripts/docker_stop.sh 
+      - "echo ${ENV_NAME}"
+      - "echo ${PORT}"
+      - "echo $BRANCH_NAME"
+
+artifacts:
+  files:
+  - '**/*'
+  discard-paths: no

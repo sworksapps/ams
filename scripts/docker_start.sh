@@ -1,6 +1,6 @@
 #!/bin/bash
-docker run -d -p 3089:9000 --name attendance-management-uat attendance-management-uat:latest
-docker logs attendance-management-uat  
-#rm -rf /var/www/html/attendance-uat
-mkdir -p  /var/www/html/attendance-uat
+docker run  -d -p PORT:9000 --restart=always --name attendance-management-ENV attendance-management-ENV:latest
+docker logs attendance-management-ENV 
+rm -rf /var/www/html/attendance
+mkdir -p  /var/www/html/attendance
 

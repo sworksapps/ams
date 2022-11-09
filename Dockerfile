@@ -16,4 +16,4 @@ RUN npm install
 COPY . .
 
 EXPOSE 9000
-CMD [ "npm", "run" , "uat"]
+CMD [ "npm", "run" , "ENV"]
