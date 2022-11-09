@@ -276,8 +276,8 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
     });
 
     //sorting 
-    // if (sortBy != '' && resData.length > 0)
-    //   resData = sortByKey(resData, sortBy);
+    if (sortBy != '' && resData.length > 0)
+      resData = sortByKey(resData, sortBy);
 
     // const kpiRes = await calculateCountOfArr(resData);
     const total = await attModel.aggregate([...query, { $count: 'totalCount' }])
