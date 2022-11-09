@@ -276,7 +276,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
     });
 
     //sorting 
-    if (sortBy != '')
+    if (sortBy != '' && resData.length > 0)
       resData = sortByKey(resData, sortBy);
 
     // const kpiRes = await calculateCountOfArr(resData);
@@ -915,8 +915,12 @@ const getTimeDiff = (start, end, type) => {
 };
 
 const sortByKey = (arr, key) => {
-  if (key == 'name' || key == 'userStatus')
-    return arr.sort((a, b) => a[key].localeCompare(b[key]));
+  if (key == 'name' || key == 'userStatus') {
+    return arr.sort((a, b) => {
+      if (a[key] && b[key])
+        a[key].localeCompare(b[key]);
+    });
+  }
   return arr.sort((a, b) => a[key] - b[key]);
 };
 
