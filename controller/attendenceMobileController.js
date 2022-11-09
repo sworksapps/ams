@@ -152,12 +152,14 @@ exports.checkIn = async (req, res) => {
         message: `User doesn't map to this company.`,
       });
 
-    if(userDetails.location_id != req.body.locationId)
-      return res.status(200).json({
-        statusText: 'FAIL',
-        statusValue: 400,
-        message: `User doesn't map in this location.`,
-      });
+
+    if(userDetails.isGlobalCheckInOut != 1)
+      if(userDetails.location_id != req.body.locationId)
+        return res.status(200).json({
+          statusText: 'FAIL',
+          statusValue: 400,
+          message: `User doesn't map in this location.`,
+        });
 
     const clockInTime = moment().unix();
     const clockInTimeString  = moment.unix(clockInTime).format('hh:mm a');
@@ -288,12 +290,13 @@ exports.checkOut = async (req, res) => {
         message: `User doesn't map to this company.`,
       });
 
-    if(userDetails.location_id != req.body.locationId)
-      return res.status(200).json({
-        statusText: 'FAIL',
-        statusValue: 400,
-        message: `User doesn't map in this location.`,
-      });
+    if(userDetails.isGlobalCheckInOut != 1)
+      if(userDetails.location_id != req.body.locationId)
+        return res.status(200).json({
+          statusText: 'FAIL',
+          statusValue: 400,
+          message: `User doesn't map in this location.`,
+        });
 
     const dbConnection = getConnection();
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
@@ -331,9 +334,9 @@ exports.checkInSubmit = async (req, res) => {
       longitude: Joi.number().required().label('longitude'),
       userFaceId: Joi.string().required().label('Face Id'),
       clockInTime: Joi.number().required().label('Clock In Time'),
-      deviceName: Joi.string().allow('').required().label('Device Name'),
-      deviceNumber: Joi.string().allow('').required().label('Device Number'),
-      deviceLocation: Joi.string().allow('').required().label('Device Location'),
+      deviceName: Joi.string().required().label('Device Name'),
+      deviceNumber: Joi.string().required().label('Device Number'),
+      deviceLocation: Joi.string().required().label('Device Location'),
     });
 
     const result = schema.validate(req.body);
@@ -383,12 +386,13 @@ exports.checkInSubmit = async (req, res) => {
         message: `User doesn't map to this company.`,
       });
   
-    if(userDetails.location_id != req.body.locationId)
-      return res.status(200).json({
-        statusText: 'FAIL',
-        statusValue: 400,
-        message: `User doesn't map in this location`,
-      });
+    if(userDetails.isGlobalCheckInOut != 1)
+      if(userDetails.location_id != req.body.locationId)
+        return res.status(200).json({
+          statusText: 'FAIL',
+          statusValue: 400,
+          message: `User doesn't map in this location`,
+        });
 
     // if(!userDetails.user_dept_id)
     //   return res.status(200).json({
@@ -427,9 +431,9 @@ exports.checkOutSubmit = async (req, res) => {
       longitude: Joi.number().required().label('longitude'),
       userFaceId: Joi.string().required().label('Face Id'),
       clockOutTime: Joi.number().required().label('Clock Out Time'),
-      deviceName: Joi.string().allow('').optional().label('Device Name'),
-      deviceNumber: Joi.string().allow('').optional().label('Device Number'),
-      deviceLocation: Joi.string().allow('').optional().label('Device Location'),
+      deviceName: Joi.string().required().label('Device Name'),
+      deviceNumber: Joi.string().required().label('Device Number'),
+      deviceLocation: Joi.string().required().label('Device Location'),
     });
 
     const result = schema.validate(req.body);
@@ -479,12 +483,13 @@ exports.checkOutSubmit = async (req, res) => {
         message: `User doesn't map to this company.`,
       });
   
-    if(userDetails.location_id != req.body.locationId)
-      return res.status(200).json({
-        statusText: 'FAIL',
-        statusValue: 400,
-        message: `User doesn't map in this location.`,
-      });
+    if(userDetails.isGlobalCheckInOut != 1)
+      if(userDetails.location_id != req.body.locationId)
+        return res.status(200).json({
+          statusText: 'FAIL',
+          statusValue: 400,
+          message: `User doesn't map in this location.`,
+        });
   
     const dbConnection = getConnection();
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
@@ -536,7 +541,7 @@ exports.createJwtToken = async (req, res) => {
       let device_id = '';
       let device_name = '';
       if(req.body.bussinessId != '') {
-        const bussinessData = await axios.get(`${process.env.CLIENTSPOC}api/v1/basic-data/get-business-detail?business_id=${req.body.bussinessId}&device_id=${req.body.deviceId}&device_name=${req.body.deviceName}`);
+        const bussinessData = await axios.get(`${process.env.CLIENTSPOC}api/v1/basic-data/get-business-detail?business_id=${req.body.bussinessId}&device_id=${req.body.deviceId}&device_name=${req.body.deviceName}&company_id=${req.body.clientId}`);
         
         if (bussinessData.data.status != 'success')
           return res.status(200).json({

@@ -119,7 +119,7 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, body, de
       );
 
       if(decodedjwt.clientId == prozoClienId)
-        await insertAttData(tenantDbConnection,userDetails.user_id,userDetails.emp_code,'',moment.unix(body.clockOutTime).format('YYYY-MM-DD HH:mm:ss'),'','',1,0,'');
+        await insertAttData(tenantDbConnection,userDetails.user_id,userDetails.emp_code,'',moment.unix(body.clockOutTime).format('YYYY-MM-DD HH:mm:ss'),body.deviceName,body.deviceNumber,1,0,'');
       return { 
         type: true, msg: 'You have successfully Checked Out', data: {userDetails, clockInTimeStamp, clockOutTimeStamp, totalDuration} 
       };
