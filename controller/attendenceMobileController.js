@@ -151,8 +151,7 @@ exports.checkIn = async (req, res) => {
         statusValue: 400,
         message: `User doesn't map to this company.`,
       });
-
-
+      
     if(userDetails.isGlobalCheckInOut != 1)
       if(userDetails.location_id != req.body.locationId)
         return res.status(200).json({
@@ -318,7 +317,7 @@ exports.checkOut = async (req, res) => {
     if(err.Code == 'InvalidParameterException'){
       res.status(400).json({statusText: 'FAIL', statusValue: 400, message: 'No face detected. Please stand in the front of the camera.'});
     } else {
-      res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'Somthing went erong'});
+      res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'Somthing Went Wrong'});
     }
   }
 };

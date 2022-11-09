@@ -1,6 +1,8 @@
 const moment = require('moment');
 const axios = require('axios');
-
+// eslint-disable-next-line max-len
+const presentList = ['PRESENT', 'LATECHECKIN', 'ONTIME', 'WFH', 'EARLYEXIT', 'LATEEXIT', 'OVERTIME', 'HALFDAY', 'MISSINGCHECKOUT'];
+const absentList = ['ABSENT'];
 /* ---------------get daily report----------------------*/
 exports.insertShiftData = async (tenantDbConnection, bodyData) => {
   try {
@@ -8,6 +10,9 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
     const holidayModel = await tenantDbConnection.model('holiday_lists');
 
     for (const iterator of bodyData) {
+      const updateObj = {};
+      const insertObj = {};
+
       const holidayRes = await holidayModel.find({
         date: iterator.date,
         locationId: { $in: [iterator.locationId] }
@@ -15,23 +20,41 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
 
       if (holidayRes.length > 0) {
         const holidayId = holidayRes[0]['_id'].toString();
-        iterator.isHoliday = holidayId;
-        iterator.userStatus = 'HOLIDAY';
-        iterator.shiftStart = '-4';
-        iterator.shiftEnd = '-4';
+        Object.assign(updateObj, { 'isHoliday': holidayId });
+        Object.assign(insertObj, { 'userStatus': 'HOLIDAY' });
+        Object.assign(insertObj, { 'shiftStart': '-4' });
+        Object.assign(insertObj, { 'shiftEnd': '-4' });
+      }
+      else {
+        Object.assign(insertObj, { 'shiftStart': iterator.shiftStart });
+        Object.assign(insertObj, { 'shiftEnd': iterator.shiftEnd });
+        Object.assign(insertObj, { 'userStatus': 'N/A' });
       }
 
-      if (iterator.shiftStart == -1)
-        iterator.userStatus = 'WEEKOFF';
+      // update
+      Object.assign(updateObj, { 'userId': iterator.userId });
+      Object.assign(updateObj, { 'deptId': iterator.deptId });
+      Object.assign(updateObj, { 'locationId': iterator.locationId });
+      Object.assign(updateObj, { 'date': iterator.date });
 
-      if (iterator.shiftStart == -2)
-        iterator.userStatus = 'WFH';
+      // insert
+      if (iterator.shiftStart == -1 || iterator.shiftEnd == -1)
+        Object.assign(insertObj, { 'userStatus': 'WEEKOFF' });
 
-      if (iterator.shiftStart == -3)
-        iterator.userStatus = 'ONLEAVE';
+      if (iterator.shiftStart == -2 || iterator.shiftEnd == -2)
+        Object.assign(insertObj, { 'userStatus': 'WFH' });
 
-      await attModel.findOneAndUpdate(
-        { userId: iterator.userId, date: iterator.date }, { $set: iterator }, { upsert: true });
+      if (iterator.shiftStart == -3 || iterator.shiftEnd == -3)
+        Object.assign(insertObj, { 'userStatus': 'ONLEAVE' });
+
+      if (iterator.shiftStart == -4 || iterator.shiftEnd == -4)
+        Object.assign(insertObj, { 'userStatus': 'HOLIDAY' });
+
+      const update = {
+        $set: updateObj,
+        $push: insertObj
+      };
+      await attModel.findOneAndUpdate({ 'userId': iterator.userId, 'date': iterator.date }, update, { upsert: true });
     }
     return true;
   } catch (err) {
@@ -44,16 +67,52 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
 exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search, filter, dateChk, date) => {
   try {
     const dbQuery = [{ 'date': date }];
+    const dbQuery1 = {};
+    const dbQuery2 = [];
     const attModel = await dbConnection.model('attendences_data');
 
     if (filter) {
       filter = JSON.parse(filter);
 
-      if (filter.status) {
-        dbQuery.push({ userStatus: filter.status });
+
+      if (filter.location && filter.baseLocation) {
+        if (Array.isArray(filter.location))
+          dbQuery2.push({ locationId: { $in: filter.location } });
+        else
+          dbQuery2.push({ locationId: filter.location.toString() });
       }
+
       if (filter.location) {
-        dbQuery.push({ locationId: filter.location });
+        if (Array.isArray(filter.location))
+          dbQuery2.push({ checkedInLocationId: { $in: filter.location } });
+        else
+          dbQuery2.push({ checkedInLocationId: filter.location.toString() });
+      }
+
+      if (filter.status) {
+        if (Array.isArray(filter.status) && filter.status.length > 0)
+          dbQuery1.userStatus = { $in: filter.status };
+        else if (!Array.isArray(filter.status))
+          dbQuery1.userStatus = filter.status;
+      }
+
+      if (filter.kpiFilter) {
+        if (filter.kpiFilter === 'PRESENT')
+          dbQuery1.userStatus = { $in: presentList };
+        if (filter.kpiFilter === 'ABSENT')
+          dbQuery1.userStatus = { $in: absentList };
+        if (filter.kpiFilter === 'ONLEAVE')
+          dbQuery1.userStatus = filter.kpiFilter;
+        if (filter.kpiFilter === 'WFH')
+          dbQuery1.userStatus = filter.kpiFilter;
+        if (filter.kpiFilter === 'WEEKOFF')
+          dbQuery1.userStatus = filter.kpiFilter;
+        if (filter.kpiFilter === 'ONTIME')
+          dbQuery1.userStatus = filter.kpiFilter;
+        if (filter.kpiFilter === 'LATECHECKIN')
+          dbQuery1.userStatus = filter.kpiFilter;
+        if (filter.kpiFilter === 'CHECKEDIN')
+          dbQuery1.lastExit = '';
       }
     }
 
@@ -81,6 +140,9 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
     const query = [
       {
+        $match: {}
+      },
+      {
         $lookup: {
           from: 'holiday_lists',
           localField: 'isHoliday',
@@ -92,31 +154,43 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
         '$project': {
           '_id': 1,
           'userId': 1,
-          'userStatus': 1,
+          'userStatus': { '$arrayElemAt': ['$userStatus', -1] },
           'deptId': 1,
           'locationId': 1,
           'isHoliday': 1,
+          'attendenceDetails.clockIn': 1,
+          'attendenceDetails.clockOut': 1,
+          'attendenceDetails.actionBy': 1,
+          'attendenceDetails.deviceLocationClockIn': 1,
+          'attendenceDetails.actionByName': 1,
+          'attendenceDetails.actionById': 1,
+          'attendenceDetails.actionRemark': 1,
+          'attendenceDetails.actionByTimeStamp': 1,
+          'checkedInLocationId': { '$arrayElemAt': ['$attendenceDetails.deviceLocationIdClockIn', 0] },
           'holidayName': { '$arrayElemAt': ['$holiday.holidayName', 0] },
           'date': 1,
           'firstEnrty': { '$arrayElemAt': ['$attendenceDetails.clockIn', 0] },
           'lastExit': { '$arrayElemAt': ['$attendenceDetails.clockOut', -1] },
           'recentEnrty': { '$arrayElemAt': ['$attendenceDetails.clockIn', -1] },
-          'shiftStart': 1,
-          'shiftEnd': 1,
-          'attendenceDetails': 1
-        },
+          'shiftStart': { '$arrayElemAt': ['$shiftStart', -1] },
+          'shiftEnd': { '$arrayElemAt': ['$shiftEnd', -1] },
+        }
       },
       {
-        $match: {}
+        $match: dbQuery1 ? dbQuery1 : {}
       },
       { $sort: sort_by },
     ];
 
     if (dbQuery.length > 0)
-      query[2].$match.$and = dbQuery;
+      query[0].$match.$and = dbQuery;
+    if (dbQuery2.length > 0)
+      query[3].$match.$or = dbQuery2;
 
     let resData = await attModel.aggregate([...query]);
-    // let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
+
+    // calculate kpi
+    const kpiRes = await calculateCountOfArr(resData);
     const userIds = resData.map(i => i.userId);
     let userDetails = [];
 
@@ -129,42 +203,73 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
     if (userData.data.status == 200)
       userDetails = userData.data.data;
 
-    resData.map((item, index) => {
+    resData.map(async (item, index) => {
+      let clockIn = 0;
+      let clockOut = 0;
+      let clockInLocId;
       let totalSpendTime = 0;
       let totalShiftTime = 0;
+      let overTime = 0;
+      let totalSpendTimeByUser = 0;
+      let totalShiftTimeByAdmin = 0;
+      let flag = false;
 
       item.attendenceDetails.forEach(element => {
-        if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0) {
+        // eslint-disable-next-line max-len
+        if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && element.actionBy && element.actionBy == 'ADMIN') {
+          flag = true;
+          clockIn = element.clockIn;
+          clockOut = element.clockOut;
+          clockInLocId = item['checkedInLocationId'];
+          totalShiftTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
+        }
+        else if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && !flag) {
           const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
-          totalSpendTime = totalSpendTime + diff;
+          totalSpendTimeByUser = totalSpendTimeByUser + diff;
         }
       });
 
+      if (flag)
+        totalSpendTime = totalShiftTimeByAdmin;
+      else {
+        totalSpendTime = totalSpendTimeByUser;
+        clockIn = item['firstEnrty'];
+        clockOut = item['lastExit'];
+        clockInLocId = item['checkedInLocationId'];
+      }
+
+      // shiftTime
       if (item.shiftStart && item.shiftStart > 0 && item.shiftEnd && item.shiftEnd > 0)
         totalShiftTime = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
 
       // MISSINGCHECKOUT  
       const dateTime = new Date();
-      dateTime.setHours(18,29,0,0); // set time as 23:59:00
+      dateTime.setHours(18, 29, 0, 0); // set time as 23:59:00
       const midTime = moment(dateTime).unix();
       const currentTime = moment().unix();
-      if (item.shiftEnd && item.shiftEnd > 0 && currentTime > item.shiftEnd && currentTime > midTime && item.lastExit == '') {
-        const param = { id: item._id.toString(), status: 'MISSINGCHECKOUT' };
-        this.changeUserStatus(dbConnection, param);
-      }
+
+      if (item.shiftEnd && item.shiftEnd > 0 && currentTime > item.shiftEnd && currentTime > midTime && item.lastExit == '')
+        await attModel.findOneAndUpdate({ _id: item._id }, { $push: { userStatus: 'MISSINGCHECKOUT' } });
 
       const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
-      const overTime = totalSpendTime - totalShiftTime;
+
+      if (totalSpendTime > 0 && totalShiftTime > 0)
+        overTime = totalSpendTime - totalShiftTime;
       // eslint-disable-next-line max-len
-      resData[index]['overTime'] = item.shiftEnd && item.shiftStart && totalSpendTime > 0 && overTime > 0 ? new Date(overTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
+      resData[index]['overTime'] = overTime > 0 ? new Date(overTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
       resData[index]['overTimeMin'] = overTime;
       resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
       resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
       resData[index]['durationMin'] = totalSpendTime;
+      resData[index]['checkedInLocationId'] = clockInLocId ? clockInLocId : 'N/A';
+      resData[index]['clockIn'] = clockIn > 0 ? format_time(clockIn) : 'N/A';
+      resData[index]['clockOut'] = clockOut > 0 ? format_time(clockOut) : 'N/A';
+      resData[index]['clockInNum'] = clockIn;
+      resData[index]['clockOutNum'] = clockOut;
       resData[index]['duration'] = totalSpendTime > 0 ? new Date(totalSpendTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
-      resData[index]['firstEnrty'] = item['firstEnrty'] && item['firstEnrty'] > 0 ? format_time(item['firstEnrty']) : 'N/A';
-      resData[index]['lastExit'] = item['lastExit'] && item['lastExit'] > 0 ? format_time(item['lastExit']) : 'N/A';
       resData[index]['recentEnrty'] = item['recentEnrty'] && item['recentEnrty'] > 0 ? format_time(item['recentEnrty']) : 'N/A';
+      resData[index]['shiftStartNum'] = item['shiftStart'];
+      resData[index]['shiftEndNum'] = item['shiftEnd'];
       resData[index]['shiftStart'] = item['shiftStart'] && item['shiftStart'] > 0 ? format_time(item['shiftStart']) : 'N/A';
       resData[index]['shiftEnd'] = item['shiftEnd'] && item['shiftEnd'] > 0 ? format_time(item['shiftEnd']) : 'N/A';
       resData[index]['holidayName'] = resData[index]['holidayName'] ? resData[index]['holidayName'] : '';
@@ -174,10 +279,12 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
     if (sortBy != '')
       resData = sortByKey(resData, sortBy);
 
+    // const kpiRes = await calculateCountOfArr(resData);
     const total = await attModel.aggregate([...query, { $count: 'totalCount' }])
       .then(res => res.length > 0 ? res[0].totalCount : 0);
-    return { resData, total };
+    return { resData, total, kpiRes };
   } catch (err) {
+    console.log(err);
     return false;
   }
 };
@@ -215,10 +322,10 @@ exports.getUsersShiftData = async (tenantDbConnection, userData, startDate, endD
         if (element.userId == ele.user_id) {
           ele.dateArray.push({
             'shift_date': element.date,
-            'shift_start_time': element.shiftStart && element.shiftStart > 0 ? format_time(element.shiftStart) :
-              element.shiftStart ? element.shiftStart : '',
-            'shift_end_time': element.shiftEnd && element.shiftEnd > 0 ? format_time(element.shiftEnd) :
-              element.shiftEnd ? element.shiftEnd : ''
+            // eslint-disable-next-line max-len
+            'shift_start_time': element.shiftStart && element.shiftStart.length > 0 ? element.shiftStart[element.shiftStart.length - 1] > 0 ? format_time(element.shiftStart[element.shiftStart.length - 1]) : element.shiftStart[element.shiftStart.length - 1] : '',
+            // eslint-disable-next-line max-len
+            'shift_end_time': element.shiftEnd && element.shiftEnd.length > 0 ? element.shiftEnd[element.shiftEnd.length - 1] > 0 ? format_time(element.shiftEnd[element.shiftEnd.length - 1]) : element.shiftEnd[element.shiftEnd.length - 1] : ''
           });
         }
       }
@@ -236,6 +343,7 @@ exports.getUsersShiftData = async (tenantDbConnection, userData, startDate, endD
 exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, search, filter, dateChk, userId, startDate, endDate) => {
   try {
     const dbQuery = [];
+    const dbQuery1 = {};
     const attModel = await dbConnection.model('attendences_data');
 
     // filter by dates and user id
@@ -245,6 +353,25 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
         $lte: endDate,
       }
     });
+
+    if (filter) {
+      filter = JSON.parse(filter);
+
+      if (filter.location) {
+        if (Array.isArray(filter.location))
+          dbQuery1.checkedInLocationId = { $in: filter.location };
+        else
+          dbQuery1.checkedInLocationId = filter.location.toString();
+      }
+
+      if (filter.status) {
+        if (Array.isArray(filter.status) && filter.status.length > 0)
+          dbQuery1.userStatus = { $in: filter.status };
+        else if (!Array.isArray(filter.status))
+          dbQuery1.userStatus = filter.status;
+      }
+    }
+
     dbQuery.push({ userId: userId });
     let sortBy = '';
 
@@ -268,26 +395,35 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
 
     const query = [
       {
+        $match: {}
+      },
+      {
         '$project': {
           '_id': 1,
           'userId': 1,
           'deptId': 1,
           'locationId': 1,
           'date': 1,
-          'userStatus': 1,
-          'shiftStart': 1,
-          'shiftEnd': 1,
-          'attendenceDetails': 1
-        },
+          'userStatus': { '$arrayElemAt': ['$userStatus', -1] },
+          'shiftStart': { '$arrayElemAt': ['$shiftStart', -1] },
+          'shiftEnd': { '$arrayElemAt': ['$shiftEnd', -1] },
+          'checkedInLocationId': { '$arrayElemAt': ['$attendenceDetails.deviceLocationIdClockIn', 0] },
+          'firstEnrty': { '$arrayElemAt': ['$attendenceDetails.clockIn', 0] },
+          'lastExit': { '$arrayElemAt': ['$attendenceDetails.clockOut', -1] },
+          'attendenceDetails.clockIn': 1,
+          'attendenceDetails.clockOut': 1,
+          'attendenceDetails.actionBy': 1,
+          'attendenceDetails.deviceLocationClockIn': 1
+        }
       },
       {
-        $match: {}
+        $match: dbQuery1 ? dbQuery1 : {}
       },
       { $sort: sort_by },
     ];
 
     if (dbQuery.length > 0)
-      query[1].$match.$and = dbQuery;
+      query[0].$match.$and = dbQuery;
 
     let resData = await attModel.aggregate([...query]);
     // let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
@@ -307,24 +443,39 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
     resData.map((item, index) => {
       let clockIn = 0;
       let clockOut = 0;
+      let clockInLocId;
       let totalSpendTime = 0;
       let shiftDurationMin = 0;
+      let flag = false;
       const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
+      let totalSpendTimeByUser = 0;
+      let totalShiftTimeByAdmin = 0;
 
       item.attendenceDetails.forEach(element => {
-        if (element.clockIn && element.clockIn > 0 && element.clockIn != '' && clockIn == 0)
+        // eslint-disable-next-line max-len
+        if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && element.actionBy && element.actionBy == 'ADMIN') {
+          flag = true;
           clockIn = element.clockIn;
-
-        if (element.clockOut && element.clockOut > 0 && element.clockOut != '')
           clockOut = element.clockOut;
-
-        if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0) {
+          clockInLocId = item['checkedInLocationId'];
+          totalShiftTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
+        }
+        else if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && !flag) {
           const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
-          totalSpendTime = totalSpendTime + diff;
+          totalSpendTimeByUser = totalSpendTimeByUser + diff;
         }
       });
 
-      //overTime
+      if (flag)
+        totalSpendTime = totalShiftTimeByAdmin;
+      else {
+        totalSpendTime = totalSpendTimeByUser;
+        clockIn = item['firstEnrty'];
+        clockOut = item['lastExit'];
+        clockInLocId = item['checkedInLocationId'];
+      }
+
+      // shiftTime
       if (item.shiftStart && item.shiftStart > 0 && item.shiftEnd && item.shiftEnd > 0) {
         const shiftDiff = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
         shiftDurationMin = shiftDurationMin + shiftDiff;
@@ -332,11 +483,17 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
 
       resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
       resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
-      resData[index]['overTimeMin'] = (totalSpendTime - shiftDurationMin) > 0 ? (totalSpendTime - shiftDurationMin) : 0;
       // eslint-disable-next-line max-len
-      resData[index]['overTime'] = shiftDurationMin > 0 && (totalSpendTime - shiftDurationMin) > 0 ? new Date((totalSpendTime - shiftDurationMin) * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
+      resData[index]['overTimeMin'] = shiftDurationMin > 0 && totalSpendTime > 0 && (totalSpendTime - shiftDurationMin) > 0 ? (totalSpendTime - shiftDurationMin) : 0;
+      // eslint-disable-next-line max-len
+      resData[index]['overTime'] = shiftDurationMin > 0 && totalSpendTime > 0 && (totalSpendTime - shiftDurationMin) > 0 ? new Date((totalSpendTime - shiftDurationMin) * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
+      resData[index]['checkedInLocationId'] = clockInLocId ? clockInLocId : 'N/A';
       resData[index]['clockIn'] = clockIn > 0 ? format_time(clockIn) : 'N/A';
       resData[index]['clockOut'] = clockOut > 0 ? format_time(clockOut) : 'N/A';
+      resData[index]['clockInNum'] = clockIn;
+      resData[index]['clockOutNum'] = clockOut;
+      resData[index]['shiftStartNum'] = item['shiftStart'];
+      resData[index]['shiftEndNum'] = item['shiftEnd'];
       resData[index]['shiftStart'] = item['shiftStart'] && item['shiftStart'] > 0 ? format_time(item['shiftStart']) : 'N/A';
       resData[index]['shiftEnd'] = item['shiftEnd'] && item['shiftEnd'] > 0 ? format_time(item['shiftEnd']) : 'N/A';
       resData[index]['durationMin'] = totalSpendTime;
@@ -357,20 +514,60 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
   }
 };
 
-/* ---------------change user status----------------------*/
-exports.changeUserStatus = async (tenantDbConnection, bodyData) => {
+/* ---------------get details by _id----------------------*/
+exports.fetchDetailsById = async (dbConnection, id) => {
   try {
-    const attendenceModel = await tenantDbConnection.model('attendences_data');
-    const res = await attendenceModel.findOneAndUpdate({ _id: bodyData.id }, { $set: { userStatus: bodyData.status } });
-    if (res)
-      return true;
-    return false;
+    const attModel = await dbConnection.model('attendences_data');
+    const resData = await attModel.find({ _id: id });
+    return { resData };
   } catch (err) {
     console.log(err);
     return false;
   }
 };
 
+/* ---------------change user status----------------------*/
+exports.changeUserStatus = async (tenantDbConnection, bodyData) => {
+  try {
+    const attendenceModel = await tenantDbConnection.model('attendences_data');
+    const updatedObject = {};
+    const attObj = {};
+
+    if (bodyData.shiftStart)
+      Object.assign(updatedObject, { shiftStart: bodyData.shiftStart });
+
+    if (bodyData.shiftEnd)
+      Object.assign(updatedObject, { shiftEnd: bodyData.shiftEnd });
+
+    if (bodyData.status)
+      Object.assign(updatedObject, { userStatus: bodyData.status });
+
+    if (bodyData.clockIn)
+      Object.assign(attObj, { clockIn: bodyData.clockIn });
+
+    if (bodyData.clockOut)
+      Object.assign(attObj, { clockOut: bodyData.clockOut });
+
+    if (bodyData.clockIn || bodyData.clockOut)
+      Object.assign(attObj, { actionBy: 'ADMIN' });
+
+    Object.assign(attObj, { actionById: bodyData.spocId });
+    Object.assign(attObj, { actionByName: bodyData.spocName });
+    Object.assign(attObj, { actionRemark: bodyData.remark });
+    Object.assign(attObj, { actionByTimeStamp: new Date() });
+
+    if (attObj && Object.keys(attObj).length != 0)
+      Object.assign(updatedObject, { attendenceDetails: attObj });
+
+    if (updatedObject && Object.keys(updatedObject).length != 0)
+      await attendenceModel.findOneAndUpdate({ _id: bodyData.id }, { $push: updatedObject }, { new: true });
+
+    return true;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+};
 
 /* ---------------get daily report----------------------*/
 exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, search, filter, dateChk, startDate, endDate) => {
@@ -384,9 +581,12 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       if (filter.status) {
         dbQuery.push({ userStatus: filter.status });
       }
-      
+
       if (filter.location) {
-        dbQuery.push({ locationId: filter.location });
+        if (Array.isArray(filter.location))
+          dbQuery.push({ locationId: { $in: filter.location } });
+        else
+          dbQuery.push({ locationId: filter.location });
       }
     }
 
@@ -412,11 +612,11 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
               'locationId': '$locationId',
               'date': '$date',
               'userId': '$userId',
-              'userStatus': '$userStatus',
+              'userStatus': { '$arrayElemAt': ['$userStatus', -1] },
               'isHoliday': '$isHoliday',
-              'shiftStart': '$shiftStart',
-              'shiftEnd': '$shiftEnd',
-              'attendenceDetails': '$attendenceDetails',
+              'shiftStart': { '$arrayElemAt': ['$shiftStart', -1] },
+              'shiftEnd': { '$arrayElemAt': ['$shiftEnd', -1] },
+              'attendenceDetails': '$attendenceDetails'
             }
           }
         }
@@ -443,27 +643,63 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       userDetails = userData.data.data;
 
     resData.map((item, index) => {
-
-      const userObj = userDetails.filter(data => data.rec_id == item._id);
-      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
-      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
-
       let lateEntryCount = 0;
       let earlyExitCount = 0;
       let presentCount = 0;
       let absentCount = 0;
       let leaveCount = 0;
       let holidayCount = 0;
-      let workDurationMin = 0;
-      let shiftDurationMin = 0;
+      let totalSpendTimeMin = 0;
+      let totalShiftDurationMin = 0;
       let lateInMin = 0;
 
-      item.dataArr.forEach(element => {
+      const userObj = userDetails.filter(data => data.rec_id == item._id);
+      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
+      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
+
+      item.dataArr.forEach(itemObj => {
+        let clockIn = 0;
+        let clockOut = 0;
+        let spendTime = 0;
+        let shiftDurationMin = 0;
+        let flag = false;
+        let totalSpendTimeByUser = 0;
+        let totalShiftTimeByAdmin = 0;
+
+        itemObj.attendenceDetails.forEach(element => {
+          // eslint-disable-next-line max-len
+          if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && element.actionBy && element.actionBy == 'ADMIN') {
+            flag = true;
+            clockIn = element.clockIn;
+            clockOut = element.clockOut;
+            totalShiftTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
+          }
+          else if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && !flag) {
+            const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
+            totalSpendTimeByUser = totalSpendTimeByUser + diff;
+          }
+        });
+
+        if (flag)
+          spendTime = totalShiftTimeByAdmin;
+        else {
+          spendTime = totalSpendTimeByUser;
+          clockIn = itemObj['firstEnrty'];
+          clockOut = itemObj['lastExit'];
+        }
+
+        // shiftTime
+        if (itemObj.shiftStart && itemObj.shiftStart > 0 && itemObj.shiftEnd && itemObj.shiftEnd > 0) {
+          const shiftDiff = getTimeDiff(itemObj.shiftStart, itemObj.shiftEnd, 'minutes');
+          shiftDurationMin = shiftDurationMin + shiftDiff;
+        }
+
+        totalSpendTimeMin = totalSpendTimeMin + spendTime;
+        totalShiftDurationMin = totalShiftDurationMin + shiftDurationMin;
 
         // lateEntryCount
-        // eslint-disable-next-line max-len
-        if (element.shiftStart && element.shiftStart > 0 && element.attendenceDetails.length > 0 && element.attendenceDetails[0].clockIn && element.attendenceDetails[0].clockIn > 0) {
-          const diff = getTimeDiff(element.shiftStart, element.attendenceDetails[0].clockIn, 'minutes');
+        if (shiftDurationMin > 0 && clockIn > 0) {
+          const diff = getTimeDiff(itemObj.shiftStart, clockIn, 'minutes');
           if (diff > 15) {
             lateInMin = lateInMin + diff;
             lateEntryCount++;
@@ -471,54 +707,27 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
         }
 
         // EarlyExitCount
-        // eslint-disable-next-line max-len
-        if (element.shiftEnd && element.shiftEnd > 0 && element.attendenceDetails.length > 0 && element.attendenceDetails[element.attendenceDetails.length - 1].clockOut && element.attendenceDetails[element.attendenceDetails.length - 1].clockOut > 0) {
-          // eslint-disable-next-line max-len
-          const diff = getTimeDiff(element.shiftEnd, element.attendenceDetails[element.attendenceDetails.length - 1].clockOut, 'minutes');
+        if (shiftDurationMin > 0 && clockOut > 0) {
+          const diff = getTimeDiff(itemObj.shiftEnd, clockOut, 'minutes');
           if (diff < 0)
             earlyExitCount++;
         }
 
         // presentCount
-        // eslint-disable-next-line max-len
-        if (element.attendenceDetails.length > 0)
+        if (itemObj.attendenceDetails.length > 0)
           presentCount++;
 
         // absentCount 
-        if (element.attendenceDetails.length == 0)
+        if (itemObj.attendenceDetails.length == 0)
           absentCount++;
 
         //leaveCount 
-        if (element.shiftStart == -3 || element.shiftEnd == -3 || element.userStatus == 'ONLEAVE')
+        if (itemObj.shiftStart == -3 || itemObj.shiftEnd == -3 || itemObj.userStatus == 'ONLEAVE')
           leaveCount++;
 
-        //avgLate
-
-        //overTime
-        if (element.shiftStart && element.shiftStart > 0 && element.shiftEnd && element.shiftEnd > 0) {
-          const shiftDiff = getTimeDiff(element.shiftStart, element.shiftEnd, 'minutes');
-          shiftDurationMin = shiftDurationMin + shiftDiff;
-        }
-
         // holidayCount
-        if (element['isHoliday'] || element.userStatus == 'HOLIDAY')
+        if (itemObj['isHoliday'] || itemObj.userStatus == 'HOLIDAY')
           holidayCount++;
-
-        // avgWorkHour
-        // if (element.attendenceDetails.length > 0) {
-        //   // eslint-disable-next-line max-len
-        //   const attDiff = getTimeDiff(element.attendenceDetails[0].clockIn,
-        //  element.attendenceDetails[element.attendenceDetails.length - 1].clockOut, 'minutes');
-        //   workDurationMin = workDurationMin + attDiff;
-        // }
-
-        // avgWorkHour
-        element.attendenceDetails.forEach(elm => {
-          if (elm.clockIn && elm.clockIn > 0 && elm.clockOut && elm.clockOut > 0) {
-            const attDiff = getTimeDiff(elm.clockIn, elm.clockOut, 'minutes');
-            workDurationMin = workDurationMin + attDiff;
-          }
-        });
       });
 
       resData[index]['lateEntryCount'] = lateEntryCount;
@@ -527,15 +736,16 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       resData[index]['absentCount'] = absentCount;
       resData[index]['leaveCount'] = leaveCount;
       resData[index]['holidayCount'] = holidayCount;
-      resData[index]['overTimeMin'] = (workDurationMin - shiftDurationMin) > 0 ? (workDurationMin - shiftDurationMin) : 0;
+      // eslint-disable-next-line max-len
+      resData[index]['overTimeMin'] = totalShiftDurationMin > 0 && totalSpendTimeMin > 0 && (totalSpendTimeMin - totalShiftDurationMin) > 0 ? (totalSpendTimeMin - totalShiftDurationMin) : 0;
+      // eslint-disable-next-line max-len
+      resData[index]['overTime'] = totalShiftDurationMin > 0 && totalSpendTimeMin > 0 && (totalShiftDurationMin - totalSpendTimeMin) > 0 ? new Date((totalShiftDurationMin - totalSpendTimeMin) * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
       resData[index]['avgLateMin'] = (lateInMin / presentCount) > 0 ? (lateInMin / presentCount) : 0;
       // eslint-disable-next-line max-len
       resData[index]['avgLate'] = (lateInMin / presentCount) > 0 ? new Date((lateInMin / presentCount) * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
       // eslint-disable-next-line max-len
-      resData[index]['overTime'] = shiftDurationMin > 0 && (workDurationMin - shiftDurationMin) > 0 ? new Date((workDurationMin - shiftDurationMin) * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
-      // eslint-disable-next-line max-len
-      resData[index]['duration'] = workDurationMin > 0 ? new Date(workDurationMin * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
-      const avgDurationMin = (workDurationMin / presentCount) > 0 ? (workDurationMin / presentCount) : 0;
+      resData[index]['duration'] = totalSpendTimeMin > 0 ? new Date(totalSpendTimeMin * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
+      const avgDurationMin = (totalSpendTimeMin / presentCount) > 0 ? (totalSpendTimeMin / presentCount) : 0;
       // eslint-disable-next-line max-len
       resData[index]['avgDuration'] = avgDurationMin > 0 ? new Date(avgDurationMin * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
       resData[index]['avgDurationMin'] = avgDurationMin;
@@ -580,6 +790,124 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
   }
 };
 
+const calculateCountOfArr = async (resData) => {
+  let checkedInCount = 0;
+  let lateEntryCount = 0;
+  let presentCount = 0;
+  let absentCount = 0;
+  let leaveCount = 0;
+  let wfhCount = 0;
+  let weekOffCount = 0;
+  // let onTimeCount = 0;
+  // let lateInMin = 0;
+  // let overTimeMin = 0;
+
+  resData.map(item => {
+    // let workDurationMin = 0;
+    // let shiftDurationMin = 0;
+    // let clockIn = 0;
+    // let clockOut = 0;
+
+    //  CheckedInCount
+    if (item.firstEnrty > 0 && item.lastExit == '')
+      checkedInCount++;
+
+    // presentCount
+    if (presentList.includes(item.userStatus))
+      presentCount++;
+
+    // absentCount 
+    if (absentList.includes(item.userStatus))
+      absentCount++;
+
+    //leaveCount 
+    if (item.userStatus == 'ONLEAVE')
+      leaveCount++;
+
+    //wfhCount
+    if (item.userStatus == 'WFH')
+      wfhCount++;
+
+    //weekOffCount
+    if (item.userStatus == 'WEEKOFF')
+      weekOffCount++;
+
+    if (item.userStatus == 'LATECHECKIN')
+      lateEntryCount++;
+
+    //shiftTimeDiff
+    // if (item.shiftStart && item.shiftStart > 0 && item.shiftEnd && item.shiftEnd > 0) {
+    //   shiftDurationMin = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
+    // }
+
+    // overTime
+    // let totalSpendTimeByUser = 0;
+    // let totalShiftTimeByAdmin = 0;
+    // let flag = false;
+
+    // item.attendenceDetails.forEach(element => {
+    //   eslint-disable-next-line max-len
+    //   if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && element.actionBy && element.actionBy == 'ADMIN') {
+    //     flag = true;
+    //     clockIn = element.clockIn;
+    //     // clockOut = element.clockOut;
+    //     totalShiftTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
+    //   }
+    //   else if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && !flag) {
+    //     const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
+    //     totalSpendTimeByUser = totalSpendTimeByUser + diff;
+    //   }
+    // });
+
+    // if (flag)
+    //   workDurationMin = totalShiftTimeByAdmin;
+    // else {
+    //   workDurationMin = totalSpendTimeByUser;
+    //   // clockIn = item['firstEnrty'];
+    //   // clockOut = item['lastExit'];
+    // }
+
+    // //overTime
+    // if (workDurationMin > 0 && shiftDurationMin > 0) {
+    //   const calOverTime = workDurationMin - shiftDurationMin;
+    //   if (calOverTime > 0)
+    //     overTimeMin = overTimeMin + calOverTime;
+    // }
+
+    // lateEntryCount
+    // if (shiftDurationMin > 0 && clockIn > 0) {
+    //   const diff = getTimeDiff(item.shiftStart, clockIn, 'minutes');
+    //   if (diff > 15) {
+    //     lateInMin = lateInMin + diff;
+    //     lateEntryCount++;
+    //   }
+    // }
+
+    //onTimeCount 
+    // if (item.shiftStart && clockIn > 0) {
+    //   const diffTime = getTimeDiff(item.shiftStart, clockIn, 'minutes');
+    //   if (diffTime <= 15 && diffTime >= -15)
+    //     onTimeCount++;
+    // }
+    // else 
+    // if (item.userStatus == 'ONTIME')
+    //   onTimeCount++;
+  });
+
+  const calObj = {
+    'totalCheckedInCount': checkedInCount,
+    'presentCount': presentCount,
+    'absentCount': absentCount,
+    'leaveCount': leaveCount,
+    'wfhCount': wfhCount,
+    'weekOffCount': weekOffCount,
+    'lateEntryCount': lateEntryCount,
+    // 'onTimeCount': onTimeCount,
+    // 'totalOverTime': overTimeMin > 0 ? new Date((overTimeMin) * 60 * 1000).toISOString().substr(11, 5) : 'N/A'
+  };
+  return calObj;
+};
+
 const getTimeDiff = (start, end, type) => {
   if (start && end && start != '' && end != '')
     return moment.unix(end).startOf(type).diff(moment.unix(start).startOf(type), type);
@@ -604,11 +932,11 @@ function format_time(s) {
     return 'N/A';
 }
 
-function getTimeDiffInHours(stTime, endTime) {
-  if (stTime && endTime && stTime != '' && endTime != '')
-    return moment.utc(moment(endTime, 'HH:mm:ss').diff(moment(stTime, 'HH:mm:ss'))).format('hh:mm');
-  return 0;
-}
+// function getTimeDiffInHours(stTime, endTime) {
+//   if (stTime && endTime && stTime != '' && endTime != '')
+//     return moment.utc(moment(endTime, 'HH:mm:ss').diff(moment(stTime, 'HH:mm:ss'))).format('hh:mm');
+//   return 0;
+// }
 
 
 

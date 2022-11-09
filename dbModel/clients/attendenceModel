@@ -7,22 +7,29 @@ const attendenceSchema = async (dbconn) => {
     locationId: { type: String, required: true },
     userId: { type: String, required: true },
     date: { type: String, required: true },
-    shiftStart: { type: String, default: '' },
-    shiftEnd: { type: String, default: '' },
-    userStatus: {
+    shiftStart: [{ type: String, default: '' }],
+    shiftEnd: [{ type: String, default: '' }],
+    userStatus: [{
       type: String, enum: ['N/A', 'PRESENT', 'ABSENT', 'LATECHECKIN', 'ONLEAVE', 'ONTIME',
         'EARLYEXIT', 'LATEEXIT', 'WEEKOFF', 'WFH', 'HOLIDAY', 'OVERTIME', 'HALFDAY', 'MISSINGCHECKOUT'], default: 'N/A'
-    },
+    }],
     isHoliday: { type: Schema.Types.ObjectId, default: null },
     attendenceStatus: { type: String, enum: ['N/A', 'CLOCKIN', 'CLOCKOUT'], default: 'N/A' },
     attendenceDetails: [{
       clockIn: { type: String, default: '' },
       clockOut: { type: String, default: '' },
+      actionBy : { type: String, enum: ['', 'ADMIN', 'USER'], default: '' },
+      actionByName : { type: String, default: '' },
+      actionById : { type: String, default: '' },
+      actionRemark : { type: String, default: '' },
+      actionByTimeStamp: { type: Date, default: '' },
       deviceNameClockIn: { type: String, default: '' },
       deviceNumberClockIn: { type: String, default: '' },
+      deviceLocationIdClockIn: { type: String, default: '' },
       deviceLocationClockIn: { type: String, default: '' },
       deviceNameClockOut: { type: String, default: '' },
       deviceNumberClockOut: { type: String, default: '' },
+      deviceLocationIdClockOut: { type: String, default: '' },
       deviceLocationClockOut: { type: String, default: '' },
     }]
   }, {

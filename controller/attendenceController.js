@@ -82,7 +82,7 @@ exports.dailyReport = async (req, res) => {
 
     const dataRes = await attendenceService.fetchDailyReportData(dbConnection, limit, page, sort_by, search, filter, dateChk, date);
     if (dataRes)
-      return res.status(200).json({ statusText: 'OK', statusValue: 200, data: dataRes.resData, total: dataRes.total });
+      return res.status(200).json({ statusText: 'OK', statusValue: 200, data: dataRes.resData, total: dataRes.total, kpiData: dataRes.kpiRes });    
     else
       return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: 'No Data Found' });
   } catch (err) {
@@ -148,6 +148,34 @@ exports.userReport = async (req, res) => {
     const dataRes = await attendenceService.fetchUserSpecReportData(dbConnection, limit, page, sort_by, search, filter, dateChk, userId, startDate, endDate);
     if (dataRes)
       return res.status(200).json({ statusText: 'OK', statusValue: 200, data: dataRes.resData, total: dataRes.total });
+    else
+      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: 'No Data Found' });
+  } catch (err) {
+    res.status(500).json({ statusText: 'ERROR', statusValue: 500, message: 'Unable to Process your Request' });
+  }
+};
+
+/*----------------Get details by _id------------*/
+exports.getDetailsById = async (req, res) => {
+  try {
+    const dbConnection = getConnection();
+    if (!dbConnection) {
+      return res.status(400)
+        .json({ statusText: 'FAIL', statusValue: 400, message: 'The provided Client is not available' });
+    }
+
+    const { _id } = req.query;
+
+    if (!dataValidation.isMongoId(_id))
+      return res.status(400).json({
+        statusText: 'FAIL',
+        statusValue: 400,
+        message: 'Please provide valid Id',
+      });
+
+    const dataRes = await attendenceService.fetchDetailsById(dbConnection, _id);
+    if (dataRes)
+      return res.status(200).json({ statusText: 'OK', statusValue: 200, data: dataRes.resData });
     else
       return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: 'No Data Found' });
   } catch (err) {
@@ -235,12 +263,19 @@ exports.changeUserStatus = async (req, res) => {
   try {
     const schema = Joi.object({
       id: Joi.string().required().length(24).label('Id'),
-      status: Joi.string().required().valid('PRESENT', 'ABSENT', 'HALFDAY', 'ONLEAVE').label('Status')
+      status: Joi.string().valid('PRESENT', 'ABSENT', 'HALFDAY', 'ONLEAVE').label('Status'),
+      clockIn: Joi.string().label('Clock In'),
+      clockOut: Joi.string().label('Clock Out'),
+      shiftStart: Joi.string().label('Shift Start'),
+      shiftEnd: Joi.string().label('Shift End'),
+      spocId: Joi.string().required().label('Spoc Id'),
+      spocName: Joi.string().required().label('Spoc Name'),
+      remark: Joi.string().required().label('Remark'),
     });
 
     const result = schema.validate(req.body);
     if (result.error)
-      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: 'Provide valid Status or Id' });
+      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: result.error.details[0].message });
 
     const dbConnection = getConnection();
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
@@ -250,7 +285,7 @@ exports.changeUserStatus = async (req, res) => {
     if (response)
       res.status(200).json({ statusText: 'Success', statusValue: 200, message: 'Status Updated Successfully' });
     else
-      return res.status(400).json({ statusText: 'Failed', statusValue: 400, message: `Unable to change Status` });
+      return res.status(400).json({ statusText: 'Failed', statusValue: 400, message: `Unable to Update Data` });
   } catch (err) {
     console.log(err);
     res.status(500).json({ statusText: 'ERROR', statusValue: 500, message: 'Unable to Process your Request' });

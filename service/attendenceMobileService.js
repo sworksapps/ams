@@ -22,8 +22,8 @@ exports.checkInService = async (tenantDbConnection, userDetails, date, body, dec
         userId: userDetails.user_id,
         date: date,
         attendenceStatus: 'CLOCKIN',
-        userStatus: 'PRESENT',
-        attendenceDetails: [{ clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: body.deviceName, deviceNumberClockIn: body.deviceNumber, deviceLocationClockIn: body.deviceLocation }],
+        userStatus: ['PRESENT'],
+        attendenceDetails: [{ clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: body.deviceName, deviceNumberClockIn: body.deviceNumber, deviceLocationClockIn: body.deviceLocation, deviceLocationIdClockIn: body.locationId }],
       };
       await attendenceModel(insertData).save();
       clockInTimeStamp = moment.unix(clockInTimeStamp).format('hh:mm a');
@@ -37,17 +37,20 @@ exports.checkInService = async (tenantDbConnection, userDetails, date, body, dec
 
     if (res.attendenceStatus == 'CLOCKOUT' || res.attendenceStatus == 'N/A') {
       const attendenceDetails = res.attendenceDetails;
-      attendenceDetails.push({ clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: body.deviceName, deviceNumberClockIn: body.deviceNumber, deviceLocationClockIn: body.deviceLocation });
-      let userStatus = res.userStatus;
+      attendenceDetails.push({ clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: body.deviceName, deviceNumberClockIn: body.deviceNumber, deviceLocationClockIn: body.deviceLocation, deviceLocationIdClockIn: body.locationId });
+      const userStatus = res.userStatus;
+
+      if (!userStatus.includes('PRESENT'))
+        userStatus.push('PRESENT');
       
-      if(res.shiftStart)
+      if(res.shiftStart && res.shiftStart.length > 0)
       {
-        const diffTime = getTimeDiff(res.shiftStart, clockInTimeStamp, 'minutes');
+        const diffTime = getTimeDiff(res.shiftStart[res.shiftStart.length -1], clockInTimeStamp, 'minutes');
         if(diffTime <= 15  && diffTime >= -15)
-          userStatus = 'ONTIME';
+          userStatus.push('ONTIME');
         
         if(diffTime > 15)
-          userStatus = 'LATECHECKIN';
+          userStatus.push('LATECHECKIN');
       }
 
       await attendenceModel.findOneAndUpdate(
@@ -95,22 +98,23 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, body, de
       attendenceDetails[objIndex].deviceNameClockOut = body.deviceName;
       attendenceDetails[objIndex].deviceNumberClockOut = body.deviceNumber;
       attendenceDetails[objIndex].deviceLocationClockOut = body.deviceLocation;
+      attendenceDetails[objIndex].deviceLocationIdClockOut = body.locationId;
       attendenceDetails = attendenceDetails.reverse();
       const diff = moment.unix(clockOutTimeStamp).startOf('minutes').diff(moment.unix(res.attendenceDetails[0].clockIn).startOf('minutes'), 'minutes');
       totalDuration = Math.floor(diff / 60) + 'hrs ' + diff % 60+ 'min' ;
       clockInTimeStamp = moment.unix(res.attendenceDetails[0].clockIn).format('hh:mm a');
       clockOutTimeStamp = moment.unix(clockOutTimeStamp).format('hh:mm a');
 
-      let userStatus = res.userStatus;
+      const userStatus = res.userStatus;
       
-      if(res.shiftEnd && moment().unix() >= (res.shiftEnd - 15))
+      if(res.shiftEnd && res.shiftEnd.length > 0 && moment().unix() >= (res.shiftEnd[res.shiftEnd.length -1] - 15))
       {
-        const diffTime = getTimeDiff(res.shiftEnd, clockOutTimeStamp, 'minutes');
+        const diffTime = getTimeDiff(res.shiftEnd[res.shiftEnd.length -1], clockOutTimeStamp, 'minutes');
         if(diffTime > -15)
-          userStatus = 'EARLYEXIT';
+          userStatus.push('EARLYEXIT');
         
         if(diffTime > 15)
-          userStatus = 'LATEEXIT';
+          userStatus.push('LATEEXIT');
       }
 
       await attendenceModel.findOneAndUpdate(
