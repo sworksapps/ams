@@ -1,7 +1,7 @@
 const moment = require('moment');
 const axios = require('axios');
 // eslint-disable-next-line max-len
-const presentList = ['PRESENT', 'LATECHECKIN', 'ONTIME', 'WFH', 'EARLYEXIT', 'LATEEXIT', 'OVERTIME', 'HALFDAY', 'MISSINGCHECKOUT'];
+const presentList = ['PRESENT', 'LATECHECKIN', 'ONTIME', 'EARLYEXIT', 'LATEEXIT', 'OVERTIME', 'HALFDAY', 'MISSINGCHECKOUT'];
 const absentList = ['ABSENT'];
 /* ---------------get daily report----------------------*/
 exports.insertShiftData = async (tenantDbConnection, bodyData) => {
@@ -161,7 +161,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
           'attendenceDetails.clockIn': 1,
           'attendenceDetails.clockOut': 1,
           'attendenceDetails.actionBy': 1,
-          'attendenceDetails.deviceLocationClockIn': 1,
+          'attendenceDetails.deviceLocationIdClockIn': 1,
           'attendenceDetails.actionByName': 1,
           'attendenceDetails.actionById': 1,
           'attendenceDetails.actionRemark': 1,
@@ -189,8 +189,12 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
     let resData = await attModel.aggregate([...query]);
 
+    query[3] = { $match: {} };
+    query[3].$match.$or = dbQuery2;
+    const kpiData = await attModel.aggregate([...query]);
+
     // calculate kpi
-    const kpiRes = await calculateCountOfArr(resData);
+    const kpiRes = await calculateCountOfArr(kpiData);
     const userIds = resData.map(i => i.userId);
     let userDetails = [];
 
