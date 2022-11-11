@@ -220,7 +220,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
           flag = true;
           clockIn = element.clockIn;
           clockOut = element.clockOut;
-          clockInLocId = item['checkedInLocationId'];
+          clockInLocId = element.deviceLocationIdClockIn;
           totalShiftTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
         }
         else if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && !flag) {
@@ -457,7 +457,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
           flag = true;
           clockIn = element.clockIn;
           clockOut = element.clockOut;
-          clockInLocId = item['checkedInLocationId'];
+          clockInLocId = element.deviceLocationIdClockIn;
           totalShiftTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
         }
         else if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && !flag) {
@@ -555,6 +555,17 @@ exports.changeUserStatus = async (tenantDbConnection, bodyData) => {
     Object.assign(attObj, { actionByName: bodyData.spocName });
     Object.assign(attObj, { actionRemark: bodyData.remark });
     Object.assign(attObj, { actionByTimeStamp: new Date() });
+
+    const DataObj = await attendenceModel.findOne({ _id: bodyData.id }).select({ locationId: 1, attendenceDetails: 1 });
+    let checkedInLocId = '';
+
+    if (DataObj && DataObj['attendenceDetails'].length > 0)
+      checkedInLocId = DataObj['attendenceDetails'][0]['deviceLocationIdClockIn'];
+
+    if (checkedInLocId == '')
+      checkedInLocId = DataObj['locationId'];
+
+    Object.assign(attObj, { deviceLocationIdClockIn: checkedInLocId });
 
     if (attObj && Object.keys(attObj).length != 0)
       Object.assign(updatedObject, { attendenceDetails: attObj });
