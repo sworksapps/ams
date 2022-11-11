@@ -189,12 +189,8 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
     let resData = await attModel.aggregate([...query]);
 
-    query[3] = { $match: {} };
-    query[3].$match.$or = dbQuery2;
-    const kpiData = await attModel.aggregate([...query]);
-
     // calculate kpi
-    const kpiRes = await calculateCountOfArr(kpiData);
+    const kpiRes = await calculateCountOfArr(resData);
     const userIds = resData.map(i => i.userId);
     let userDetails = [];
 
