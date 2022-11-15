@@ -239,12 +239,12 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       let flag = false;
 
       item.attendenceDetails.forEach(element => {
-        // eslint-disable-next-line max-len
+        clockIn = element.clockIn;
+        clockOut = element.clockOut;
+        clockInLocId = element.deviceLocationIdClockIn;
+
         if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && element.actionBy && element.actionBy == 'ADMIN') {
           flag = true;
-          clockIn = element.clockIn;
-          clockOut = element.clockOut;
-          clockInLocId = element.deviceLocationIdClockIn;
           totalShiftTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
         }
         else if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && !flag) {
@@ -476,12 +476,12 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       let totalShiftTimeByAdmin = 0;
 
       item.attendenceDetails.forEach(element => {
-        // eslint-disable-next-line max-len
+        clockIn = element.clockIn;
+        clockOut = element.clockOut;
+        clockInLocId = element.deviceLocationIdClockIn;
+
         if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && element.actionBy && element.actionBy == 'ADMIN') {
           flag = true;
-          clockIn = element.clockIn;
-          clockOut = element.clockOut;
-          clockInLocId = element.deviceLocationIdClockIn;
           totalShiftTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
         }
         else if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && !flag) {
@@ -554,17 +554,18 @@ exports.fetchDetailsById = async (dbConnection, id) => {
 exports.changeUserStatus = async (tenantDbConnection, bodyData) => {
   try {
     const attendenceModel = await tenantDbConnection.model('attendences_data');
-    const updatedObject = {};
+    const pushedObject = {};
+    const updateObject = {};
     const attObj = {};
 
     if (bodyData.shiftStart)
-      Object.assign(updatedObject, { shiftStart: bodyData.shiftStart });
+      Object.assign(pushedObject, { shiftStart: bodyData.shiftStart });
 
     if (bodyData.shiftEnd)
-      Object.assign(updatedObject, { shiftEnd: bodyData.shiftEnd });
+      Object.assign(pushedObject, { shiftEnd: bodyData.shiftEnd });
 
     if (bodyData.status)
-      Object.assign(updatedObject, { userStatus: bodyData.status });
+      Object.assign(pushedObject, { userStatus: bodyData.status });
 
     if (bodyData.clockIn)
       Object.assign(attObj, { clockIn: bodyData.clockIn });
@@ -574,6 +575,12 @@ exports.changeUserStatus = async (tenantDbConnection, bodyData) => {
 
     if (bodyData.clockIn || bodyData.clockOut)
       Object.assign(attObj, { actionBy: 'ADMIN' });
+
+    if (bodyData.clockOut)
+      Object.assign(updateObject, { attendenceStatus: 'CLOCKOUT' });
+
+    if (bodyData.clockIn && !bodyData.clockOut)
+      Object.assign(updateObject, { attendenceStatus: 'CLOCKIN' });
 
     Object.assign(attObj, { actionById: bodyData.spocId });
     Object.assign(attObj, { actionByName: bodyData.spocName });
@@ -592,10 +599,16 @@ exports.changeUserStatus = async (tenantDbConnection, bodyData) => {
     Object.assign(attObj, { deviceLocationIdClockIn: checkedInLocId });
 
     if (attObj && Object.keys(attObj).length != 0)
-      Object.assign(updatedObject, { attendenceDetails: attObj });
+      Object.assign(pushedObject, { attendenceDetails: attObj });
 
-    if (updatedObject && Object.keys(updatedObject).length != 0)
-      await attendenceModel.findOneAndUpdate({ _id: bodyData.id }, { $push: updatedObject }, { new: true });
+    // if (pushedObject && Object.keys(pushedObject).length != 0)
+
+    const update = {
+      $set: updateObject,
+      $push: pushedObject
+    };
+
+    await attendenceModel.findOneAndUpdate({ _id: bodyData.id }, update, { new: true });
 
     return true;
   } catch (err) {
