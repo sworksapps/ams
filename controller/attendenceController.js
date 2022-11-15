@@ -30,8 +30,12 @@ exports.addShift = async (req, res) => {
 
     const resData = await attendenceService.insertShiftData(dbConnection, req.body);
 
-    if (resData)
-      res.status(200).json({ statusText: 'Success', statusValue: 200, message: 'Data Saved Successfully' });
+    if (resData) {
+      if (Array.isArray(resData))
+        res.status(200).json({ statusText: 'Success', statusValue: 200, message: `Shift ${resData.length == 1 ? 'is' : 'are'} overlapping on ${resData.join(', ')}`});
+      else
+        res.status(200).json({ statusText: 'Success', statusValue: 200, message: 'Data Saved Successfully' });
+    }
     else
       res.status(202).json({ statusText: 'Failed', statusValue: 202, message: 'Unable to Save Data' });
   } catch (err) {
@@ -82,7 +86,7 @@ exports.dailyReport = async (req, res) => {
 
     const dataRes = await attendenceService.fetchDailyReportData(dbConnection, limit, page, sort_by, search, filter, dateChk, date);
     if (dataRes)
-      return res.status(200).json({ statusText: 'OK', statusValue: 200, data: dataRes.resData, total: dataRes.total, kpiData: dataRes.kpiRes });    
+      return res.status(200).json({ statusText: 'OK', statusValue: 200, data: dataRes.resData, total: dataRes.total, kpiData: dataRes.kpiRes });
     else
       return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: 'No Data Found' });
   } catch (err) {
@@ -285,7 +289,7 @@ exports.changeUserStatus = async (req, res) => {
     if (response)
       res.status(200).json({ statusText: 'Success', statusValue: 200, message: 'Status Updated Successfully' });
     else
-      return res.status(400).json({ statusText: 'Failed', statusValue: 400, message: `Unable to Update Data` });
+      return res.status(200).json({ statusText: 'Failed', statusValue: 400, message: `Unable to Update Data` });
   } catch (err) {
     console.log(err);
     res.status(500).json({ statusText: 'ERROR', statusValue: 500, message: 'Unable to Process your Request' });

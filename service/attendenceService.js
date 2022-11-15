@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 const moment = require('moment');
 const axios = require('axios');
 // eslint-disable-next-line max-len
@@ -8,54 +9,73 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
   try {
     const attModel = await tenantDbConnection.model('attendences_data');
     const holidayModel = await tenantDbConnection.model('holiday_lists');
+    const overlapArr = [];
 
     for (const iterator of bodyData) {
-      const updateObj = {};
-      const insertObj = {};
+      let isShiftOverlap = false;
+      const yesterDay = moment(iterator.date).subtract(1, 'days').format('YYYY-MM-DD').toString();
+      const tomarrow = moment(iterator.date).add(1, 'days').format('YYYY-MM-DD').toString();
+      const resData = await attModel.find({ date: { $in: [yesterDay, tomarrow] }, userId: iterator.userId }).select({ shiftStart: 1, shiftEnd: 1, date: 1 });
 
-      const holidayRes = await holidayModel.find({
-        date: iterator.date,
-        locationId: { $in: [iterator.locationId] }
-      }).select({ _id: 1 });
-
-      if (holidayRes.length > 0) {
-        const holidayId = holidayRes[0]['_id'].toString();
-        Object.assign(updateObj, { 'isHoliday': holidayId });
-        Object.assign(insertObj, { 'userStatus': 'HOLIDAY' });
-        Object.assign(insertObj, { 'shiftStart': '-4' });
-        Object.assign(insertObj, { 'shiftEnd': '-4' });
-      }
-      else {
-        Object.assign(insertObj, { 'shiftStart': iterator.shiftStart });
-        Object.assign(insertObj, { 'shiftEnd': iterator.shiftEnd });
-        Object.assign(insertObj, { 'userStatus': 'N/A' });
+      if (resData && resData.length > 0) {
+        const newShift = { shiftStart: iterator.shiftStart, shiftEnd: iterator.shiftEnd };
+        isShiftOverlap = isShiftOverlapping(resData, newShift);
       }
 
-      // update
-      Object.assign(updateObj, { 'userId': iterator.userId });
-      Object.assign(updateObj, { 'deptId': iterator.deptId });
-      Object.assign(updateObj, { 'locationId': iterator.locationId });
-      Object.assign(updateObj, { 'date': iterator.date });
+      if (!isShiftOverlap) {
+        const updateObj = {};
+        const insertObj = {};
 
-      // insert
-      if (iterator.shiftStart == -1 || iterator.shiftEnd == -1)
-        Object.assign(insertObj, { 'userStatus': 'WEEKOFF' });
+        const holidayRes = await holidayModel.find({
+          date: iterator.date,
+          locationId: { $in: [iterator.locationId] }
+        }).select({ _id: 1 });
 
-      if (iterator.shiftStart == -2 || iterator.shiftEnd == -2)
-        Object.assign(insertObj, { 'userStatus': 'WFH' });
+        if (holidayRes.length > 0) {
+          const holidayId = holidayRes[0]['_id'].toString();
+          Object.assign(updateObj, { 'isHoliday': holidayId });
+          Object.assign(insertObj, { 'userStatus': 'HOLIDAY' });
+          Object.assign(insertObj, { 'shiftStart': '-4' });
+          Object.assign(insertObj, { 'shiftEnd': '-4' });
+        }
+        else {
+          Object.assign(insertObj, { 'shiftStart': iterator.shiftStart });
+          Object.assign(insertObj, { 'shiftEnd': iterator.shiftEnd });
+          Object.assign(insertObj, { 'userStatus': 'N/A' });
+        }
 
-      if (iterator.shiftStart == -3 || iterator.shiftEnd == -3)
-        Object.assign(insertObj, { 'userStatus': 'ONLEAVE' });
+        // update
+        Object.assign(updateObj, { 'userId': iterator.userId });
+        Object.assign(updateObj, { 'deptId': iterator.deptId });
+        Object.assign(updateObj, { 'locationId': iterator.locationId });
+        Object.assign(updateObj, { 'date': iterator.date });
 
-      if (iterator.shiftStart == -4 || iterator.shiftEnd == -4)
-        Object.assign(insertObj, { 'userStatus': 'HOLIDAY' });
+        // insert
+        if (iterator.shiftStart == -1 || iterator.shiftEnd == -1)
+          Object.assign(insertObj, { 'userStatus': 'WEEKOFF' });
 
-      const update = {
-        $set: updateObj,
-        $push: insertObj
-      };
-      await attModel.findOneAndUpdate({ 'userId': iterator.userId, 'date': iterator.date }, update, { upsert: true });
+        if (iterator.shiftStart == -2 || iterator.shiftEnd == -2)
+          Object.assign(insertObj, { 'userStatus': 'WFH' });
+
+        if (iterator.shiftStart == -3 || iterator.shiftEnd == -3)
+          Object.assign(insertObj, { 'userStatus': 'ONLEAVE' });
+
+        if (iterator.shiftStart == -4 || iterator.shiftEnd == -4)
+          Object.assign(insertObj, { 'userStatus': 'HOLIDAY' });
+
+        const update = {
+          $set: updateObj,
+          $push: insertObj
+        };
+        await attModel.findOneAndUpdate({ 'userId': iterator.userId, 'date': iterator.date }, update, { upsert: true });
+      }
+      else
+        overlapArr.push(iterator.date);
     }
+
+    if (overlapArr.length > 0)
+      return overlapArr.sort();
+
     return true;
   } catch (err) {
     console.log(err);
@@ -949,5 +969,17 @@ function format_time(s) {
 //   return 0;
 // }
 
+const isShiftOverlapping = (intervals, newInterval) => {
+  const a = newInterval.shiftStart;
+  const b = newInterval.shiftEnd;
 
+  for (const interval of intervals) {
+    const c = interval.shiftStart[interval.shiftStart.length - 1];
+    const d = interval.shiftEnd[interval.shiftEnd.length - 1];
+
+    if (a < d && b > c)
+      return true;
+  }
+  return false;
+};
 
