@@ -279,7 +279,7 @@ exports.changeUserStatus = async (req, res) => {
 
     const result = schema.validate(req.body);
     if (result.error)
-      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: result.error.details[0].message });
+      return res.status(200).json({ statusText: 'FAIL', statusValue: 400, message: result.error.details[0].message });
 
     const dbConnection = getConnection();
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
