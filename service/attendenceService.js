@@ -211,7 +211,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
     // calculate kpi
     query[3] = { $match: {} };
-    query[3].$match.$or = [{ locationId: { $in: filter.location } }];
+    query[3].$match.$or = [{ checkedInLocationId: { $in: filter.location } }];
     const kpiData = await attModel.aggregate([...query]);
     const kpiRes = await calculateCountOfArr(kpiData);
 
