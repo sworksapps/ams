@@ -5,34 +5,66 @@ const prozoClienId = process.env.prozoClienId;
 /*
  *------------User Service------------
  */
-exports.checkInService = async (tenantDbConnection, userDetails, date, body, decodedjwt) => {
+exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body, decodedjwt) => {
   try {
     const attendenceModel = await tenantDbConnection.model('attendences_data');
-    // check last checkin
-    const lastAttData = await attendenceModel.find({
-      userId: userDetails.user_id,
-      date: {$lte: date}
-    }).sort({ date : -1 });
-    let isLastCheckOut = false;
-    for (let i = 0; i < lastAttData.length; i++) {
-      const lastAtt = lastAttData[i];
-      if(lastAtt.attendenceStatus == 'CLOCKIN') {
-        isLastCheckOut = true;
-      }
-      if(isLastCheckOut == true) break;
-    }
-    if(isLastCheckOut == true)
-      return { type: false, msg: 'You have Already Checked in', data: '' };
-    // check last checkin end
-
+    const date = dateValue;
     let clockInTimeStamp = body.clockInTime;
     const totalDuration = '00:00';
     // check today checkin start
-    const res = await attendenceModel.findOne({
+    let res = await attendenceModel.findOne({
       userId: userDetails.user_id,
       date: date,
     });
+    if(res) {
+      let shiftStartValue = '';
+      let shiftEndValue = '';
+      if(res.shiftStart.length > 0)
+        shiftStartValue = res.shiftStart[res.shiftStart.length - 1];
+      if(res.shiftEnd.length > 0)
+        shiftEndValue = res.shiftEnd[res.shiftEnd.length - 1];
+      if(decodedjwt.clientId == '1471') {
+        if(shiftStartValue == '')
+          return { type: false, msg: 'Shift not found', data: '' };
+        if(shiftEndValue == '')
+          return { type: false, msg: 'Shift not found', data: '' };
+      }
+      if(shiftStartValue !== '' && shiftEndValue !=='') {
+        if(moment.unix(shiftStartValue).format('YYYY-MM-DD') != moment.unix(shiftEndValue).format('YYYY-MM-DD')) {
+          const prvDate = moment(date).subtract(1, 'days').format('YYYY-MM-DD');
+          const prvDateRes = await attendenceModel.findOne({
+            userId: userDetails.user_id,
+            date: prvDate,
+          });
+          if(prvDateRes) {
+            let prvShiftEndValue = '';
+            if(prvDateRes.shiftStart.length > 0)
+              prvShiftEndValue = prvDateRes.shiftStart[prvDateRes.shiftStart.length - 1];
+
+            if(prvShiftEndValue) {
+              if(clockInTimeStamp < prvShiftEndValue)
+                res = prvDateRes;
+            }
+          }
+        }
+      }
+      console.log(res);
+    }
     // check today checkin end
+    // check last checkin
+    const lastAttData = await attendenceModel.findOne({
+      userId: userDetails.user_id,
+      '$or': [
+        { 'attendenceStatus': 'CLOCKIN' },
+        { 'attendenceStatus': 'CLOCKOUT' }
+      ],
+      date: {$lte: date}
+    }).sort({ date : -1 });
+    if(lastAttData) {
+      if(lastAttData.attendenceStatus == 'CLOCKIN')
+        return { type: false, msg: 'You have Already Checked in', data: '' };
+    }
+    // check last checkin end
     if (!res) {
       const insertData = {
         deptId: userDetails.user_dept_id,
@@ -94,12 +126,29 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, body, de
     const attendenceModel = await tenantDbConnection.model('attendences_data');
     let clockInTimeStamp = moment().unix();
     let clockOutTimeStamp = body.clockOutTime;
-    // let clockOutTimeStamp = moment().unix();
+    let res = null;
     let totalDuration = '00:00';
-    const res = await attendenceModel.findOne({
+    // check last checkin
+    const lastAttData = await attendenceModel.findOne({
       userId: userDetails.user_id,
-      date: date,
-    });
+      '$or': [
+        { 'attendenceStatus': 'CLOCKIN' },
+        { 'attendenceStatus': 'CLOCKOUT' }
+      ],
+      date: {$lte: date}
+    }).sort({ date : -1 });
+    if(lastAttData) {
+      if(lastAttData.attendenceStatus == 'CLOCKIN') {
+        res = lastAttData;
+      }
+    }
+    // check last checkin end
+    if(!res) {
+      res = await attendenceModel.findOne({
+        userId: userDetails.user_id,
+        date: date,
+      });
+    }
     if (!res)
       return { type: false, msg: 'Its Seems you are not check in today so please checkin first', data: '' };
     if (res.attendenceStatus == 'CLOCKOUT' || res.attendenceStatus == 'N/A')
