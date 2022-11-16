@@ -24,10 +24,17 @@ exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body
       if(res.shiftEnd.length > 0)
         shiftEndValue = res.shiftEnd[res.shiftEnd.length - 1];
       if(decodedjwt.clientId == '1471') {
+        const checkHours= '10800';
         if(shiftStartValue == '')
           return { type: false, msg: 'Shift not found', data: '' };
         if(shiftEndValue == '')
           return { type: false, msg: 'Shift not found', data: '' };
+        
+        if((parseInt(shiftStartValue)+parseInt(checkHours)) < parseInt(clockInTimeStamp))
+          return { type: false, msg: 'Shift not found', data: '' };
+        if((parseInt(shiftStartValue)-parseInt(checkHours)) > parseInt(clockInTimeStamp))
+          return { type: false, msg: 'Shift not found', data: '' };
+        
       }
       if(shiftStartValue !== '' && shiftEndValue !=='') {
         if(moment.unix(shiftStartValue).format('YYYY-MM-DD') != moment.unix(shiftEndValue).format('YYYY-MM-DD')) {
