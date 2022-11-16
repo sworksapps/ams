@@ -32,7 +32,7 @@ exports.addShift = async (req, res) => {
 
     if (resData) {
       if (Array.isArray(resData))
-        res.status(200).json({ statusText: 'Success', statusValue: 200, message: `Shift ${resData.length == 1 ? 'is' : 'are'} overlapping on ${resData.join(', ')}`});
+        res.status(200).json({ statusText: 'Success', statusValue: 400, message: `Shift ${resData.length == 1 ? 'is' : 'are'} overlapping on ${resData.join(', ')}`});
       else
         res.status(200).json({ statusText: 'Success', statusValue: 200, message: 'Data Saved Successfully' });
     }

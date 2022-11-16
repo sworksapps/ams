@@ -286,16 +286,16 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
       resData[index]['durationMin'] = totalSpendTime;
       resData[index]['checkedInLocationId'] = clockInLocId ? clockInLocId : 'N/A';
-      resData[index]['clockIn'] = clockIn > 0 ? format_time(clockIn) : 'N/A';
-      resData[index]['clockOut'] = clockOut > 0 ? format_time(clockOut) : 'N/A';
+      resData[index]['clockIn'] = clockIn > 0 ? moment.unix(clockIn).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
+      resData[index]['clockOut'] = clockOut > 0 ? moment.unix(clockOut).format('YYYY-MM-DD HH:mm:ss')  : 'N/A';
       resData[index]['clockInNum'] = clockIn;
       resData[index]['clockOutNum'] = clockOut;
       resData[index]['duration'] = totalSpendTime > 0 ? new Date(totalSpendTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
-      resData[index]['recentEnrty'] = item['recentEnrty'] && item['recentEnrty'] > 0 ? format_time(item['recentEnrty']) : 'N/A';
+      resData[index]['recentEnrty'] = item['recentEnrty'] && item['recentEnrty'] > 0 ?  moment.unix(item['recentEnrty']).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['shiftStartNum'] = item['shiftStart'];
       resData[index]['shiftEndNum'] = item['shiftEnd'];
-      resData[index]['shiftStart'] = item['shiftStart'] && item['shiftStart'] > 0 ? format_time(item['shiftStart']) : 'N/A';
-      resData[index]['shiftEnd'] = item['shiftEnd'] && item['shiftEnd'] > 0 ? format_time(item['shiftEnd']) : 'N/A';
+      resData[index]['shiftStart'] = item['shiftStart'] && item['shiftStart'] > 0 ? moment.unix(item['shiftStart']).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
+      resData[index]['shiftEnd'] = item['shiftEnd'] && item['shiftEnd'] > 0 ? moment.unix(item['shiftEnd']).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['holidayName'] = resData[index]['holidayName'] ? resData[index]['holidayName'] : '';
     });
 
@@ -512,14 +512,14 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       // eslint-disable-next-line max-len
       resData[index]['overTime'] = shiftDurationMin > 0 && totalSpendTime > 0 && (totalSpendTime - shiftDurationMin) > 0 ? new Date((totalSpendTime - shiftDurationMin) * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
       resData[index]['checkedInLocationId'] = clockInLocId ? clockInLocId : 'N/A';
-      resData[index]['clockIn'] = clockIn > 0 ? format_time(clockIn) : 'N/A';
-      resData[index]['clockOut'] = clockOut > 0 ? format_time(clockOut) : 'N/A';
+      resData[index]['clockIn'] = clockIn > 0 ? moment.unix(clockIn).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
+      resData[index]['clockOut'] = clockOut > 0 ? moment.unix(clockOut).format('YYYY-MM-DD HH:mm:ss')  : 'N/A';
       resData[index]['clockInNum'] = clockIn;
       resData[index]['clockOutNum'] = clockOut;
       resData[index]['shiftStartNum'] = item['shiftStart'];
       resData[index]['shiftEndNum'] = item['shiftEnd'];
-      resData[index]['shiftStart'] = item['shiftStart'] && item['shiftStart'] > 0 ? format_time(item['shiftStart']) : 'N/A';
-      resData[index]['shiftEnd'] = item['shiftEnd'] && item['shiftEnd'] > 0 ? format_time(item['shiftEnd']) : 'N/A';
+      resData[index]['shiftStart'] = item['shiftStart'] && item['shiftStart'] > 0 ? moment.unix(item['shiftStart']).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
+      resData[index]['shiftEnd'] = item['shiftEnd'] && item['shiftEnd'] > 0 ? moment.unix(item['shiftEnd']).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['durationMin'] = totalSpendTime;
       // eslint-disable-next-line max-len
       resData[index]['duration'] = totalSpendTime > 0 ? new Date(totalSpendTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
