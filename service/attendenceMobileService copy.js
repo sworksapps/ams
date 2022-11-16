@@ -5,66 +5,16 @@ const prozoClienId = process.env.prozoClienId;
 /*
  *------------User Service------------
  */
-exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body, decodedjwt) => {
+exports.checkInService = async (tenantDbConnection, userDetails, date, body, decodedjwt) => {
   try {
     const attendenceModel = await tenantDbConnection.model('attendences_data');
-    const date = dateValue;
     let clockInTimeStamp = body.clockInTime;
+    // let clockInTimeStamp = moment().unix();
     const totalDuration = '00:00';
-    // check today checkin start
-    let res = await attendenceModel.findOne({
+    const res = await attendenceModel.findOne({
       userId: userDetails.user_id,
       date: date,
     });
-    if(res) {
-      let shiftStartValue = '';
-      let shiftEndValue = '';
-      if(res.shiftStart.length > 0)
-        shiftStartValue = res.shiftStart[res.shiftStart.length - 1];
-      if(res.shiftEnd.length > 0)
-        shiftEndValue = res.shiftEnd[res.shiftEnd.length - 1];
-      if(decodedjwt.clientId == '1471') {
-        if(shiftStartValue == '')
-          return { type: false, msg: 'Shift not found', data: '' };
-        if(shiftEndValue == '')
-          return { type: false, msg: 'Shift not found', data: '' };
-      }
-      if(shiftStartValue !== '' && shiftEndValue !=='') {
-        if(moment.unix(shiftStartValue).format('YYYY-MM-DD') != moment.unix(shiftEndValue).format('YYYY-MM-DD')) {
-          const prvDate = moment(date).subtract(1, 'days').format('YYYY-MM-DD');
-          const prvDateRes = await attendenceModel.findOne({
-            userId: userDetails.user_id,
-            date: prvDate,
-          });
-          if(prvDateRes) {
-            let prvShiftEndValue = '';
-            if(prvDateRes.shiftStart.length > 0)
-              prvShiftEndValue = prvDateRes.shiftStart[prvDateRes.shiftStart.length - 1];
-
-            if(prvShiftEndValue) {
-              if(clockInTimeStamp < prvShiftEndValue)
-                res = prvDateRes;
-            }
-          }
-        }
-      }
-      console.log(res);
-    }
-    // check today checkin end
-    // check last checkin
-    const lastAttData = await attendenceModel.findOne({
-      userId: userDetails.user_id,
-      '$or': [
-        { 'attendenceStatus': 'CLOCKIN' },
-        { 'attendenceStatus': 'CLOCKOUT' }
-      ],
-      date: {$lte: date}
-    }).sort({ date : -1 });
-    if(lastAttData) {
-      if(lastAttData.attendenceStatus == 'CLOCKIN')
-        return { type: false, msg: 'You have Already Checked in', data: '' };
-    }
-    // check last checkin end
     if (!res) {
       const insertData = {
         deptId: userDetails.user_dept_id,
@@ -89,20 +39,20 @@ exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body
       const attendenceDetails = res.attendenceDetails;
       attendenceDetails.push({ clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: body.deviceName, deviceNumberClockIn: body.deviceNumber, deviceLocationClockIn: body.deviceLocation, deviceLocationIdClockIn: body.locationId });
       const userStatus = res.userStatus;
-  
+
       if (!userStatus.includes('PRESENT'))
         userStatus.push('PRESENT');
-        
+      
       if(res.shiftStart && res.shiftStart.length > 0)
       {
         const diffTime = getTimeDiff(res.shiftStart[res.shiftStart.length -1], clockInTimeStamp, 'minutes');
         if(diffTime <= 15  && diffTime >= -15)
           userStatus.push('ONTIME');
-          
+        
         if(diffTime > 15)
           userStatus.push('LATECHECKIN');
       }
-  
+
       await attendenceModel.findOneAndUpdate(
         { _id: res._id },
         { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKIN', userStatus: userStatus }
@@ -110,7 +60,7 @@ exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body
       clockInTimeStamp = moment.unix(clockInTimeStamp).format('hh:mm a');
       if (res.attendenceStatus == 'CLOCKOUT')
         clockInTimeStamp = moment.unix(res.attendenceDetails[0].clockIn).format('hh:mm a');
-        
+      
       if(decodedjwt.clientId == prozoClienId)
         await insertAttData(tenantDbConnection,userDetails.user_id,userDetails.emp_code,'',moment.unix(body.clockInTime).format('YYYY-MM-DD HH:mm:ss'),body.deviceName,body.deviceNumber,0,0,body.deviceLocation);
       return { type: true, msg: 'You have successfully Checked In', data: {userDetails, clockInTimeStamp, totalDuration} };
@@ -126,29 +76,12 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, body, de
     const attendenceModel = await tenantDbConnection.model('attendences_data');
     let clockInTimeStamp = moment().unix();
     let clockOutTimeStamp = body.clockOutTime;
-    let res = null;
+    // let clockOutTimeStamp = moment().unix();
     let totalDuration = '00:00';
-    // check last checkin
-    const lastAttData = await attendenceModel.findOne({
+    const res = await attendenceModel.findOne({
       userId: userDetails.user_id,
-      '$or': [
-        { 'attendenceStatus': 'CLOCKIN' },
-        { 'attendenceStatus': 'CLOCKOUT' }
-      ],
-      date: {$lte: date}
-    }).sort({ date : -1 });
-    if(lastAttData) {
-      if(lastAttData.attendenceStatus == 'CLOCKIN') {
-        res = lastAttData;
-      }
-    }
-    // check last checkin end
-    if(!res) {
-      res = await attendenceModel.findOne({
-        userId: userDetails.user_id,
-        date: date,
-      });
-    }
+      date: date,
+    });
     if (!res)
       return { type: false, msg: 'Its Seems you are not check in today so please checkin first', data: '' };
     if (res.attendenceStatus == 'CLOCKOUT' || res.attendenceStatus == 'N/A')
