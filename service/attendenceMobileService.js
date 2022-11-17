@@ -5,6 +5,47 @@ const prozoClienId = process.env.prozoClienId;
 /*
  *------------User Service------------
  */
+exports.preCheckInService = async (tenantDbConnection, userDetails, dateValue, body, decodedjwt) => {
+  try {
+    const attendenceModel = await tenantDbConnection.model('attendences_data');
+    const date = dateValue;
+    const clockInTimeStamp = body.clockInTime;
+    // check today checkin start
+    const res = await attendenceModel.findOne({
+      userId: userDetails.user_id,
+      date: date,
+    });
+    if(!res) {
+      return { type: false, msg: 'Shift not found', data: '' };
+    }
+    if(res) {
+      let shiftStartValue = '';
+      let shiftEndValue = '';
+      if(res.shiftStart.length > 0)
+        shiftStartValue = res.shiftStart[res.shiftStart.length - 1];
+      if(res.shiftEnd.length > 0)
+        shiftEndValue = res.shiftEnd[res.shiftEnd.length - 1];
+      if(decodedjwt.clientId == '1471') {
+        const checkHours= '10800';
+        if(shiftStartValue == '')
+          return { type: false, msg: 'Shift not found', data: '' };
+        if(shiftEndValue == '')
+          return { type: false, msg: 'Shift not found', data: '' };
+        
+        if((parseInt(shiftStartValue)+parseInt(checkHours)) < parseInt(clockInTimeStamp))
+          return { type: false, msg: 'Shift not found', data: '' };
+        if((parseInt(shiftStartValue)-parseInt(checkHours)) > parseInt(clockInTimeStamp))
+          return { type: false, msg: 'Shift not found', data: '' };
+        
+      }
+    }
+    return null;
+    // check today checkin end
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+};
 exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body, decodedjwt) => {
   try {
     const attendenceModel = await tenantDbConnection.model('attendences_data');
