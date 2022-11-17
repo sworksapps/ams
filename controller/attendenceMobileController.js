@@ -165,7 +165,7 @@ exports.checkIn = async (req, res) => {
 
     const dbConnection = getConnection();
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
-    const response = await attendenceMobileService.checkInService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body, decodedjwt);
+    const response = await attendenceMobileService.preCheckInService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body, decodedjwt);
       
     if(response && response.type == false){
       res.status(203).json({ statusText: 'FAIL', statusValue: 203, message: response.msg });
