@@ -267,7 +267,7 @@ exports.changeUserStatus = async (req, res) => {
   try {
     const schema = Joi.object({
       id: Joi.string().required().length(24).label('Id'),
-      status: Joi.string().valid('PRESENT', 'ABSENT', 'HALFDAY', 'ONLEAVE').label('Status'),
+      status: Joi.string().valid('PRESENT', 'ABSENT', 'HALFDAY', 'ONLEAVE', 'WOP', 'HOP', 'WEEKOFF', 'LOP', 'SL', 'CL', 'HO', 'CO', 'SP', 'WFH').label('Status'),
       clockIn: Joi.string().label('Clock In'),
       clockOut: Joi.string().label('Clock Out'),
       shiftStart: Joi.string().label('Shift Start'),
