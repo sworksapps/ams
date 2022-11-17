@@ -175,6 +175,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
           '_id': 1,
           'userId': 1,
           'userStatus': { '$arrayElemAt': ['$userStatus', -1] },
+          'primaryStatus': 1,
           'deptId': 1,
           'locationId': 1,
           'isHoliday': 1,
@@ -232,10 +233,10 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       let clockOut = 0;
       let clockInLocId;
       let totalSpendTime = 0;
-      let totalShiftTime = 0;
+      // let totalShiftTime = 0;
       let overTime = 0;
       let totalSpendTimeByUser = 0;
-      let totalShiftTimeByAdmin = 0;
+      let totalSpendTimeByAdmin = 0;
       let flag = false;
 
       item.attendenceDetails.forEach(element => {
@@ -245,7 +246,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
         if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && element.actionBy && element.actionBy == 'ADMIN') {
           flag = true;
-          totalShiftTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
+          totalSpendTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
         }
         else if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && !flag) {
           const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
@@ -254,7 +255,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       });
 
       if (flag)
-        totalSpendTime = totalShiftTimeByAdmin;
+        totalSpendTime = totalSpendTimeByAdmin;
       else {
         totalSpendTime = totalSpendTimeByUser;
         clockIn = item['firstEnrty'];
@@ -263,8 +264,8 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       }
 
       // shiftTime
-      if (item.shiftStart && item.shiftStart > 0 && item.shiftEnd && item.shiftEnd > 0)
-        totalShiftTime = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
+      // if (item.shiftStart && item.shiftStart > 0 && item.shiftEnd && item.shiftEnd > 0)
+      //   totalShiftTime = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
 
       // MISSINGCHECKOUT  
       const dateTime = new Date();
@@ -277,21 +278,27 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
       const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
 
-      if (totalSpendTime > 0 && totalShiftTime > 0)
-        overTime = totalSpendTime - totalShiftTime;
+      // overTime
+      if (clockIn, clockOut, item.shiftStart, item.shiftEnd)
+        overTime = getOverTime(clockIn, clockOut, item.shiftStart, item.shiftEnd);
+
+      // if (totalSpendTime > 0 && totalShiftTime > 0)
+      //   overTime = totalSpendTime - totalShiftTime;
       // eslint-disable-next-line max-len
-      resData[index]['overTime'] = overTime > 0 ? new Date(overTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
-      resData[index]['overTimeMin'] = overTime;
+      // resData[index]['overTime'] = overTime > 0 ? new Date(overTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
+      // resData[index]['overTimeMin'] = overTime > 0 overTime : 'N/A';
+
+      resData[index]['overTime'] = overTime ? overTime : 'N/A';
       resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
       resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
       resData[index]['durationMin'] = totalSpendTime;
       resData[index]['checkedInLocationId'] = clockInLocId ? clockInLocId : 'N/A';
       resData[index]['clockIn'] = clockIn > 0 ? moment.unix(clockIn).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
-      resData[index]['clockOut'] = clockOut > 0 ? moment.unix(clockOut).format('YYYY-MM-DD HH:mm:ss')  : 'N/A';
+      resData[index]['clockOut'] = clockOut > 0 ? moment.unix(clockOut).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['clockInNum'] = clockIn;
       resData[index]['clockOutNum'] = clockOut;
       resData[index]['duration'] = totalSpendTime > 0 ? new Date(totalSpendTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
-      resData[index]['recentEnrty'] = item['recentEnrty'] && item['recentEnrty'] > 0 ?  moment.unix(item['recentEnrty']).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
+      resData[index]['recentEnrty'] = item['recentEnrty'] && item['recentEnrty'] > 0 ? moment.unix(item['recentEnrty']).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['shiftStartNum'] = item['shiftStart'];
       resData[index]['shiftEndNum'] = item['shiftEnd'];
       resData[index]['shiftStart'] = item['shiftStart'] && item['shiftStart'] > 0 ? moment.unix(item['shiftStart']).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
@@ -513,7 +520,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       resData[index]['overTime'] = shiftDurationMin > 0 && totalSpendTime > 0 && (totalSpendTime - shiftDurationMin) > 0 ? new Date((totalSpendTime - shiftDurationMin) * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
       resData[index]['checkedInLocationId'] = clockInLocId ? clockInLocId : 'N/A';
       resData[index]['clockIn'] = clockIn > 0 ? moment.unix(clockIn).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
-      resData[index]['clockOut'] = clockOut > 0 ? moment.unix(clockOut).format('YYYY-MM-DD HH:mm:ss')  : 'N/A';
+      resData[index]['clockOut'] = clockOut > 0 ? moment.unix(clockOut).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['clockInNum'] = clockIn;
       resData[index]['clockOutNum'] = clockOut;
       resData[index]['shiftStartNum'] = item['shiftStart'];
@@ -578,6 +585,9 @@ exports.changeUserStatus = async (tenantDbConnection, bodyData) => {
 
     if (bodyData.clockOut)
       Object.assign(updateObject, { attendenceStatus: 'CLOCKOUT' });
+
+    if (bodyData.primaryStatus)
+      Object.assign(updateObject, { primaryStatus: bodyData.primaryStatus });
 
     if (bodyData.clockIn && !bodyData.clockOut)
       Object.assign(updateObject, { attendenceStatus: 'CLOCKIN' });
@@ -1000,3 +1010,91 @@ const isShiftOverlapping = (intervals, newInterval) => {
   return false;
 };
 
+const overtimeData = [
+  {
+    rangeStartMin: 0,
+    rangeEndMin: 30,
+    rangeHr: '00:00'
+  },
+  {
+    rangeStartMin: 31,
+    rangeEndMin: 90,
+    rangeHr: '01:00'
+  },
+  {
+    rangeStartMin: 91,
+    rangeEndMin: 150,
+    rangeHr: '02:00'
+  },
+  {
+    rangeStartMin: 151,
+    rangeEndMin: 210,
+    rangeHr: '03:00'
+  },
+  {
+    rangeStartMin: 211,
+    rangeEndMin: 270,
+    rangeHr: '04:00'
+  },
+  {
+    rangeStartMin: 271,
+    rangeEndMin: 330,
+    rangeHr: '05:00'
+  },
+  {
+    rangeStartMin: 331,
+    rangeEndMin: 390,
+    rangeHr: '06:00'
+  },
+  {
+    rangeStartMin: 391,
+    rangeEndMin: 450,
+    rangeHr: '07:00'
+  },
+  {
+    rangeStartMin: 451,
+    rangeEndMin: 510,
+    rangeHr: '08:00'
+  },
+  {
+    rangeStartMin: 511,
+    rangeEndMin: 570,
+    rangeHr: '09:00'
+  },
+  {
+    rangeStartMin: 571,
+    rangeEndMin: 630,
+    rangeHr: '10:00'
+  },
+  {
+    rangeStartMin: 631,
+    rangeEndMin: 690,
+    rangeHr: '11:00'
+  },
+  {
+    rangeStartMin: 691,
+    rangeEndMin: 720,
+    rangeHr: '12:00'
+  }
+];
+
+function getOverTime(shiftStart, shiftEnd, checkIn, checkout) {
+  if (!Number(shiftStart) > 0 || !Number(shiftEnd) > 0 || !Number(checkIn) > 0 || !Number(checkout) > 0)
+    return 'N/A';
+
+  const totalShiftMin = getTimeDiff(shiftStart, shiftEnd, 'minutes');
+  const totalWorkingMin = getTimeDiff(checkIn, checkout, 'minutes');
+  if (totalShiftMin > totalWorkingMin) return 'N/A';
+
+  const totalTimeDiff = totalWorkingMin - totalShiftMin;
+  let chkOvertime = null;
+
+  overtimeData.forEach((a) => {
+    if (a.rangeStartMin <= totalTimeDiff) {
+      chkOvertime = a;
+    }
+  });
+
+  if (!chkOvertime) return 'N/A';
+  return chkOvertime.rangeHr;
+}

@@ -1,3 +1,4 @@
+/* eslint-disable max-len */
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
@@ -9,19 +10,20 @@ const attendenceSchema = async (dbconn) => {
     date: { type: String, required: true },
     shiftStart: [{ type: String, default: '' }],
     shiftEnd: [{ type: String, default: '' }],
+    primaryStatus: { type: String, enum: ['N/A', 'PRESENT', 'ABSENT'], default: 'N/A' },
     userStatus: [{
       type: String, enum: ['N/A', 'PRESENT', 'ABSENT', 'LATECHECKIN', 'ONLEAVE', 'ONTIME',
-        'EARLYEXIT', 'LATEEXIT', 'WEEKOFF', 'WFH', 'HOLIDAY', 'OVERTIME', 'HALFDAY', 'MISSINGCHECKOUT'], default: 'N/A'
+        'EARLYEXIT', 'LATEEXIT', 'WEEKOFF', 'WFH', 'HOLIDAY', 'OVERTIME', 'HALFDAY', 'MISSINGCHECKOUT', 'WOP', 'HOP', 'LOP', 'SL', 'CL', 'HO', 'CO', 'SP'], default: 'N/A'
     }],
     isHoliday: { type: Schema.Types.ObjectId, default: null },
     attendenceStatus: { type: String, enum: ['N/A', 'CLOCKIN', 'CLOCKOUT'], default: 'N/A' },
     attendenceDetails: [{
       clockIn: { type: String, default: '' },
       clockOut: { type: String, default: '' },
-      actionBy : { type: String, enum: ['', 'ADMIN', 'USER'], default: '' },
-      actionByName : { type: String, default: '' },
-      actionById : { type: String, default: '' },
-      actionRemark : { type: String, default: '' },
+      actionBy: { type: String, enum: ['', 'ADMIN', 'USER'], default: '' },
+      actionByName: { type: String, default: '' },
+      actionById: { type: String, default: '' },
+      actionRemark: { type: String, default: '' },
       actionByTimeStamp: { type: Date, default: '' },
       deviceNameClockIn: { type: String, default: '' },
       deviceNumberClockIn: { type: String, default: '' },

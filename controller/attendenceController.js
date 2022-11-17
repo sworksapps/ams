@@ -275,6 +275,7 @@ exports.changeUserStatus = async (req, res) => {
       spocId: Joi.string().required().label('Spoc Id'),
       spocName: Joi.string().required().label('Spoc Name'),
       remark: Joi.string().required().label('Remark'),
+      primaryStatus: Joi.string().valid('PRESENT', 'ABSENT', 'N/A').label('Attendance Status'),
     });
 
     const result = schema.validate(req.body);
