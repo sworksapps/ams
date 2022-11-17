@@ -162,6 +162,15 @@ exports.checkIn = async (req, res) => {
 
     const clockInTime = moment().unix();
     const clockInTimeString  = moment.unix(clockInTime).format('hh:mm a');
+
+    const dbConnection = getConnection();
+    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
+    const response = await attendenceMobileService.checkInService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body, decodedjwt);
+      
+    if(response && response.type == false){
+      res.status(203).json({ statusText: 'FAIL', statusValue: 203, message: response.msg });
+    }
+     
     
     return res.status(200).json({ 
       statusText: 'Success', statusValue: 200, message: 'Proceed to Check-in.', data: {
