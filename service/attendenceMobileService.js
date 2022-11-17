@@ -215,10 +215,28 @@ exports.getCheckInTimeByUser = async (tenantDbConnection, userDetails, date) => 
     //let clockInTimeStamp = moment().unix();
     const clockOutTimeStamp = moment().unix();
     let totalDuration = '00:00';
-    const res = await attendenceModel.findOne({
+    let res = null;
+    // check last checkin
+    const lastAttData = await attendenceModel.findOne({
       userId: userDetails.user_id,
-      date: date,
-    });
+      '$or': [
+        { 'attendenceStatus': 'CLOCKIN' },
+        { 'attendenceStatus': 'CLOCKOUT' }
+      ],
+      date: {$lte: date}
+    }).sort({ date : -1 });
+    if(lastAttData) {
+      if(lastAttData.attendenceStatus == 'CLOCKIN') {
+        res = lastAttData;
+      }
+    }
+    // check last checkin end
+    if(!res) {
+      res = await attendenceModel.findOne({
+        userId: userDetails.user_id,
+        date: date,
+      });
+    }
     if (!res)
       return { type: false, msg: 'Its Seems you are not check in today so please checkin first', data: '' };
     if (res.attendenceStatus == 'CLOCKOUT' || res.attendenceStatus == 'N/A')

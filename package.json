@@ -7,7 +7,7 @@
     "prod": "env-cmd -f .env.prod node app.js",
     "dev": "env-cmd -f .env.dev nodemon app.js",
     "qa": "env-cmd -f .env.qa node app.js",
-    "uat": "env-cmd -f .env.uat node app.js"
+    "uat": "env-cmd -f .env.uat nodemon app.js"
   },
   "author": "Smartworks",
   "license": "ISC",
