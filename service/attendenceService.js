@@ -374,6 +374,7 @@ exports.getUsersShiftData = async (tenantDbConnection, userData, startDate, endD
 exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, search, filter, dateChk, userId, startDate, endDate) => {
   try {
     const dbQuery = [];
+    const dbQuery2 = [];
     const dbQuery1 = {};
     const attModel = await dbConnection.model('attendences_data');
 
@@ -388,11 +389,18 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
     if (filter) {
       filter = JSON.parse(filter);
 
+      if (filter.location && filter.baseLocation) {
+        if (Array.isArray(filter.location))
+          dbQuery2.push({ locationId: { $in: filter.location } });
+        else
+          dbQuery2.push({ locationId: filter.location.toString() });
+      }
+
       if (filter.location) {
         if (Array.isArray(filter.location))
-          dbQuery1.checkedInLocationId = { $in: filter.location };
+          dbQuery2.push({ checkedInLocationId: { $in: filter.location } });
         else
-          dbQuery1.checkedInLocationId = filter.location.toString();
+          dbQuery2.push({ checkedInLocationId: filter.location.toString() });
       }
 
       if (filter.status) {
@@ -444,7 +452,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
           'attendenceDetails.clockIn': 1,
           'attendenceDetails.clockOut': 1,
           'attendenceDetails.actionBy': 1,
-          'attendenceDetails.deviceLocationClockIn': 1
+          'attendenceDetails.deviceLocationIdClockIn': 1
         }
       },
       {
@@ -455,10 +463,11 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
 
     if (dbQuery.length > 0)
       query[0].$match.$and = dbQuery;
+    if (dbQuery2.length > 0)
+      query[2].$match.$or = dbQuery2;
 
     let resData = await attModel.aggregate([...query]);
     // let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
-
     const userIds = resData.map(i => i.userId);
     let userDetails = [];
 
