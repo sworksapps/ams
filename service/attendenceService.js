@@ -263,6 +263,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
         clockInLocId = item['checkedInLocationId'];
       }
 
+      const autoStatusRes = autoCalculateStatus(item.shiftStart, item.shiftEnd, clockIn, clockOut);
       // shiftTime
       // if (item.shiftStart && item.shiftStart > 0 && item.shiftEnd && item.shiftEnd > 0)
       //   totalShiftTime = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
@@ -289,7 +290,8 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       // resData[index]['overTimeMin'] = overTime > 0 overTime : 'N/A';
 
       resData[index]['primaryStatusDB'] = resData[index]['primaryStatus'];
-      resData[index]['primaryStatus'] = presentList.includes(resData[index]['userStatus']) ? 'PRESENT' : 'ABSENT';
+      resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
+      resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
       resData[index]['overTime'] = overTime ? overTime : 'N/A';
       resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
       resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
@@ -376,7 +378,7 @@ exports.getUsersShiftData = async (tenantDbConnection, userData, startDate, endD
 exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, search, filter, dateChk, userId, startDate, endDate) => {
   try {
     const dbQuery = [];
-    const dbQuery2 = [];
+    // const dbQuery2 = [];
     const dbQuery1 = {};
     const attModel = await dbConnection.model('attendences_data');
 
@@ -391,19 +393,19 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
     if (filter) {
       filter = JSON.parse(filter);
 
-      if (filter.location && filter.baseLocation) {
-        if (Array.isArray(filter.location))
-          dbQuery2.push({ locationId: { $in: filter.location } });
-        else
-          dbQuery2.push({ locationId: filter.location.toString() });
-      }
+      // if (filter.location && filter.baseLocation) {
+      //   if (Array.isArray(filter.location))
+      //     dbQuery2.push({ locationId: { $in: filter.location } });
+      //   else
+      //     dbQuery2.push({ locationId: filter.location.toString() });
+      // }
 
-      if (filter.location) {
-        if (Array.isArray(filter.location))
-          dbQuery2.push({ checkedInLocationId: { $in: filter.location } });
-        else
-          dbQuery2.push({ checkedInLocationId: filter.location.toString() });
-      }
+      // if (filter.location) {
+      //   if (Array.isArray(filter.location))
+      //     dbQuery2.push({ checkedInLocationId: { $in: filter.location } });
+      //   else
+      //     dbQuery2.push({ checkedInLocationId: filter.location.toString() });
+      // }
 
       if (filter.status) {
         if (Array.isArray(filter.status) && filter.status.length > 0)
@@ -465,8 +467,8 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
 
     if (dbQuery.length > 0)
       query[0].$match.$and = dbQuery;
-    if (dbQuery2.length > 0)
-      query[2].$match.$or = dbQuery2;
+    // if (dbQuery2.length > 0)
+    //   query[2].$match.$or = dbQuery2;
 
     let resData = await attModel.aggregate([...query]);
     // let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
@@ -1109,3 +1111,77 @@ function getOverTime(shiftStart, shiftEnd, checkIn, checkout) {
   if (!chkOvertime) return 'N/A';
   return chkOvertime.rangeHr;
 }
+
+const autoCalculateStatus = (shiftStart, shiftEnd, checkIn, checkOut) => {
+  let superStatus = 'N/A', subStatus = 'N/A', minHoursForFullPresent = 0, startRangeForHalfDay = 0, endRangeForHalfDay = 0;
+  if (!shiftStart && !shiftEnd && !checkIn && !checkOut) {
+    return {
+      superStatus,
+      subStatus,
+    };
+  } else if (shiftStart && shiftEnd && !checkIn && !checkOut) {
+    return {
+      superStatus,
+      subStatus,
+    };
+  }
+  const shiftDiff = moment.unix(shiftEnd).startOf('hour').diff(moment.unix(shiftStart).startOf('hour'), 'hour');
+  const workingHoursDiff = moment.unix(checkOut).startOf('hour').diff(moment.unix(checkIn).startOf('hour'), 'hour');
+  if (shiftDiff == 12) {
+    minHoursForFullPresent = 10;
+    startRangeForHalfDay = 5;
+    endRangeForHalfDay = 10;
+  } else if (shiftDiff == 8) {
+    minHoursForFullPresent = 7;
+    startRangeForHalfDay = 4;
+    endRangeForHalfDay = 7;
+  } else if (shiftDiff == 9) {
+    minHoursForFullPresent = 7;
+    startRangeForHalfDay = 5;
+    endRangeForHalfDay = 8;
+  } else if (shiftDiff == 10) {
+    startRangeForHalfDay = 5;
+    endRangeForHalfDay = 8;
+  } else if (shiftDiff == 7) {
+    startRangeForHalfDay = 4;
+    endRangeForHalfDay = 6;
+  }
+  if (workingHoursDiff >= minHoursForFullPresent) {
+    superStatus = 'PRESENT';
+    subStatus = 'PRESENT';
+  } else if (workingHoursDiff >= startRangeForHalfDay && workingHoursDiff <= endRangeForHalfDay) {
+    superStatus = 'PRESENT';
+    subStatus = 'HALFDAY';
+  } else if (checkIn && !checkOut) {
+    superStatus = 'ABSENT';
+    subStatus = 'SP';
+  } else if (shiftStart == -1 && shiftEnd == -1 && checkIn && checkOut) {
+    superStatus = 'PRESENT';
+    subStatus = 'WOP';
+  } else if (shiftStart == -1 && shiftEnd == -1) {
+    superStatus = 'ABSENT';
+    subStatus = 'WEEKOFF';
+  } else if (shiftStart == -2 && shiftEnd == -2) {
+    superStatus = 'ABSENT';
+    subStatus = 'WFH';
+  } else if (shiftStart == -3 && shiftEnd == -3) {
+    superStatus = 'ABSENT';
+    subStatus = 'CL';
+  } else if (shiftStart == -4 && shiftEnd == -4 && checkIn && checkOut) {
+    superStatus = 'PRESENT';
+    subStatus = 'HOP';
+  } else if (shiftStart == -4 && shiftEnd == -4) {
+    superStatus = 'ABSENT';
+    subStatus = 'HO';
+  } else if (checkIn && checkOut) {
+    superStatus = 'PRESENT';
+    subStatus = 'PRESENT';
+  } else {
+    superStatus = 'ABSENT';
+    subStatus = 'ABSENT';
+  }
+  return {
+    superStatus,
+    subStatus,
+  };
+};
