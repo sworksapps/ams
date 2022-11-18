@@ -989,8 +989,13 @@ const getTimeDiff = (start, end, type) => {
 };
 
 const sortByKey = (arr, key) => {
-  if (key == 'name' || key == 'userStatus')
-    return arr.sort((a, b) => a[key].localeCompare(b[key]));
+  if (key == 'name' || key == 'userStatus') {
+    return arr.sort((a, b) => {
+      a = a[key] || '';
+      b = b[key] || '';
+      a?.localeCompare(b);
+    });
+  }
   return arr.sort((a, b) => a[key] - b[key]);
 };
 
@@ -1117,17 +1122,17 @@ function getOverTime(shiftStart, shiftEnd, checkIn, checkout) {
 
 const autoCalculateStatus = (shiftStart, shiftEnd, checkIn, checkOut) => {
   let superStatus = 'N/A', subStatus = 'N/A', minHoursForFullPresent = 0, startRangeForHalfDay = 0, endRangeForHalfDay = 0;
-  if (!shiftStart && !shiftEnd && !checkIn && !checkOut) {
+  if (!shiftStart && !shiftEnd && !checkIn && !checkOut)
     return {
       superStatus,
       subStatus,
     };
-  } else if (shiftStart && shiftEnd && !checkIn && !checkOut) {
-    return {
-      superStatus,
-      subStatus,
-    };
-  }
+  // } else if (shiftStart && shiftEnd && !checkIn && !checkOut) {
+  //   return {
+  //     superStatus,
+  //     subStatus,
+  //   };
+  // }
   const shiftDiff = moment.unix(shiftEnd).startOf('hour').diff(moment.unix(shiftStart).startOf('hour'), 'hour');
   const workingHoursDiff = moment.unix(checkOut).startOf('hour').diff(moment.unix(checkIn).startOf('hour'), 'hour');
   if (shiftDiff == 12) {
