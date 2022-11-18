@@ -296,8 +296,8 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
       resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
       resData[index]['overTime'] = overTime ? overTime : 'N/A';
-      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
-      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
+      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '';
+      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '';
       resData[index]['durationMin'] = totalSpendTime;
       resData[index]['checkedInLocationId'] = clockInLocId ? clockInLocId : 'N/A';
       resData[index]['clockIn'] = clockIn > 0 ? moment.unix(clockIn).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
@@ -988,13 +988,20 @@ const getTimeDiff = (start, end, type) => {
   return 0;
 };
 
+// const sortByKey = (arr, key) => {
+//   if (key == 'name' || key == 'userStatus') {
+//     return arr.sort((a, b) => {
+//       if(a[key] < b[key]) { return -1; }
+//       if(a[key] > b[key]) { return 1; }
+//       return 0;
+//     });
+//   }
+//   return arr.sort((a, b) => a[key] - b[key]);
+// };
+
 const sortByKey = (arr, key) => {
   if (key == 'name' || key == 'userStatus') {
-    return arr.sort((a, b) => {
-      if(a[key] < b[key]) { return -1; }
-      if(a[key] > b[key]) { return 1; }
-      return 0;
-    });
+    arr.sort((a,b) => a[key].toLowerCase().localeCompare(b[key].toLowerCase()));
   }
   return arr.sort((a, b) => a[key] - b[key]);
 };
