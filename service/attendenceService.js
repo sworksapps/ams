@@ -581,31 +581,31 @@ exports.changeUserStatus = async (tenantDbConnection, bodyData) => {
     const updateObject = {};
     const attObj = {};
 
-    if (bodyData.shiftStart)
+    if (bodyData.shiftStart && !isNaN(bodyData.shiftStart))
       Object.assign(pushedObject, { shiftStart: bodyData.shiftStart });
 
-    if (bodyData.shiftEnd)
+    if (bodyData.shiftEnd && !isNaN(bodyData.shiftEnd))
       Object.assign(pushedObject, { shiftEnd: bodyData.shiftEnd });
 
     if (bodyData.status)
       Object.assign(pushedObject, { userStatus: bodyData.status });
 
-    if (bodyData.clockIn)
+    if (bodyData.clockIn && !isNaN(bodyData.clockIn))
       Object.assign(attObj, { clockIn: bodyData.clockIn });
 
-    if (bodyData.clockOut)
+    if (bodyData.clockOut && !isNaN(bodyData.clockOut))
       Object.assign(attObj, { clockOut: bodyData.clockOut });
 
-    if (bodyData.clockIn || bodyData.clockOut)
+    if (bodyData.clockIn && !isNaN(bodyData.clockIn) || bodyData.clockOut && !isNaN(bodyData.clockOut))
       Object.assign(attObj, { actionBy: 'ADMIN' });
 
-    if (bodyData.clockOut)
+    if (bodyData.clockOut && !isNaN(bodyData.clockOut))
       Object.assign(updateObject, { attendenceStatus: 'CLOCKOUT' });
 
     if (bodyData.primaryStatus)
       Object.assign(updateObject, { primaryStatus: bodyData.primaryStatus });
 
-    if (bodyData.clockIn && !bodyData.clockOut)
+    if (bodyData.clockIn && !isNaN(bodyData.clockIn) && !bodyData.clockOut)
       Object.assign(updateObject, { attendenceStatus: 'CLOCKIN' });
 
     Object.assign(attObj, { actionById: bodyData.spocId });
@@ -991,9 +991,9 @@ const getTimeDiff = (start, end, type) => {
 const sortByKey = (arr, key) => {
   if (key == 'name' || key == 'userStatus') {
     return arr.sort((a, b) => {
-      a = a[key] || '';
-      b = b[key] || '';
-      a?.localeCompare(b);
+      if(a[key] < b[key]) { return -1; }
+      if(a[key] > b[key]) { return 1; }
+      return 0;
     });
   }
   return arr.sort((a, b) => a[key] - b[key]);
