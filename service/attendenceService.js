@@ -2,7 +2,7 @@
 const moment = require('moment');
 const axios = require('axios');
 // eslint-disable-next-line max-len
-const presentList = ['PRESENT', 'LATECHECKIN', 'ONTIME', 'EARLYEXIT', 'LATEEXIT', 'OVERTIME', 'HALFDAY', 'MISSINGCHECKOUT'];
+const presentList = ['PRESENT', 'LATECHECKIN', 'ONTIME', 'EARLYEXIT', 'LATEEXIT', 'OVERTIME', 'HALFDAY', 'WOP', 'HOP'];
 const absentList = ['ABSENT'];
 /* ---------------get daily report----------------------*/
 exports.insertShiftData = async (tenantDbConnection, bodyData) => {
@@ -288,6 +288,8 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       // resData[index]['overTime'] = overTime > 0 ? new Date(overTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
       // resData[index]['overTimeMin'] = overTime > 0 overTime : 'N/A';
 
+      resData[index]['primaryStatusDB'] = resData[index]['primaryStatus'];
+      resData[index]['primaryStatus'] = presentList.includes(resData[index]['userStatus']) ? 'PRESENT' : 'ABSENT';
       resData[index]['overTime'] = overTime ? overTime : 'N/A';
       resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
       resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
