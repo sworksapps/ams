@@ -254,8 +254,9 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
         }
       });
 
-      if (flag)
+      if (flag) {
         totalSpendTime = totalSpendTimeByAdmin;
+      }
       else {
         totalSpendTime = totalSpendTimeByUser;
         clockIn = item['firstEnrty'];
@@ -263,7 +264,9 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
         clockInLocId = item['checkedInLocationId'];
       }
 
+      // auto status
       const autoStatusRes = autoCalculateStatus(item.shiftStart, item.shiftEnd, clockIn, clockOut);
+
       // shiftTime
       // if (item.shiftStart && item.shiftStart > 0 && item.shiftEnd && item.shiftEnd > 0)
       //   totalShiftTime = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
@@ -280,8 +283,8 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
 
       // overTime
-      if (clockIn, clockOut, item.shiftStart, item.shiftEnd)
-        overTime = getOverTime(clockIn, clockOut, item.shiftStart, item.shiftEnd);
+      if (clockIn && clockOut && item.shiftStart && item.shiftEnd)
+        overTime = getOverTime(item.shiftStart, item.shiftEnd, clockIn, clockOut);
 
       // if (totalSpendTime > 0 && totalShiftTime > 0)
       //   overTime = totalSpendTime - totalShiftTime;
@@ -1173,7 +1176,7 @@ const autoCalculateStatus = (shiftStart, shiftEnd, checkIn, checkOut) => {
   } else if (shiftStart == -4 && shiftEnd == -4) {
     superStatus = 'ABSENT';
     subStatus = 'HO';
-  } else if (checkIn && checkOut) {
+  } else if (checkIn && checkOut && !shiftStart && !shiftEnd) {
     superStatus = 'PRESENT';
     subStatus = 'PRESENT';
   } else {
