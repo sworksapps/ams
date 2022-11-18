@@ -168,7 +168,11 @@ exports.checkIn = async (req, res) => {
     const response = await attendenceMobileService.preCheckInService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body, decodedjwt);
       
     if(response && response.type == false){
-      res.status(203).json({ statusText: 'FAIL', statusValue: 203, message: response.msg });
+      return res.status(203).json({ 
+        statusText: 'Success', statusValue: 203, message: 'Shift not found', data: {
+          userDetails, clockInTime, clockInTimeString
+        }
+      });
     }
      
     
