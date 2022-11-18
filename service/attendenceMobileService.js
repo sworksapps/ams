@@ -9,7 +9,7 @@ exports.preCheckInService = async (tenantDbConnection, userDetails, dateValue, b
   try {
     const attendenceModel = await tenantDbConnection.model('attendences_data');
     const date = dateValue;
-    const clockInTimeStamp = body.clockInTime;
+    const clockInTimeStamp = moment().unix();
     // check today checkin start
 
     if(decodedjwt.clientId == '1471') {
@@ -60,6 +60,22 @@ exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body
     if(res) {
       let shiftStartValue = '';
       let shiftEndValue = '';
+      if(decodedjwt.clientId == '1471') {
+        if(res.shiftStart.length > 0)
+          shiftStartValue = res.shiftStart[res.shiftStart.length - 1];
+        if(res.shiftEnd.length > 0)
+          shiftEndValue = res.shiftEnd[res.shiftEnd.length - 1];
+        const checkHours= '7200';
+        if(shiftStartValue == '')
+          return { type: false, msg: 'Shift not found', data: '' };
+        if(shiftEndValue == '')
+          return { type: false, msg: 'Shift not found', data: '' };
+        
+        if((parseInt(shiftStartValue)+parseInt(checkHours)) < parseInt(clockInTimeStamp))
+          return { type: false, msg: 'Shift not found', data: '' };
+        if((parseInt(shiftStartValue)-parseInt(checkHours)) > parseInt(clockInTimeStamp))
+          return { type: false, msg: 'Shift not found', data: '' };
+      }
       if(res.shiftStart.length > 0)
         shiftStartValue = res.shiftStart[res.shiftStart.length - 1];
       if(res.shiftEnd.length > 0)
