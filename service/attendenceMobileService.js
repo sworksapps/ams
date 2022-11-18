@@ -72,9 +72,9 @@ exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body
           return { type: false, msg: 'Shift not found', data: '' };
         
         if((parseInt(shiftStartValue)+parseInt(checkHours)) < parseInt(clockInTimeStamp))
-          return { type: false, msg: 'Shift not found', data: '' };
+          return { type: false, msg: 'Checkin is not allowed before two hours of Shift start', data: '' };
         if((parseInt(shiftStartValue)-parseInt(checkHours)) > parseInt(clockInTimeStamp))
-          return { type: false, msg: 'Shift not found', data: '' };
+          return { type: false, msg: 'CheckIn is not allowed after two hours of Shift start', data: '' };
       }
       if(res.shiftStart.length > 0)
         shiftStartValue = res.shiftStart[res.shiftStart.length - 1];
