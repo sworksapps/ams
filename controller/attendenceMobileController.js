@@ -102,7 +102,7 @@ exports.checkIn = async (req, res) => {
 
     const params = {
       CollectionId: process.env.COLLECTIONID,
-      FaceMatchThreshold: 95,
+      FaceMatchThreshold: 80,
       Image: {
         S3Object: {
           Bucket: process.env.BUCKETNAME,
@@ -252,7 +252,7 @@ exports.checkOut = async (req, res) => {
 
     const params = {
       CollectionId: process.env.COLLECTIONID,
-      FaceMatchThreshold: 95,
+      FaceMatchThreshold: 80,
       Image: {
         S3Object: {
           Bucket: process.env.BUCKETNAME,
@@ -361,6 +361,32 @@ exports.checkInSubmit = async (req, res) => {
 
     const decodedjwt = dataValidation.parseJwt(req.headers['authorization']);
 
+    if(decodedjwt.clientId == '2137') {
+      const amsDeviceDetails = await axios.post(
+        `${process.env.CLIENTSPOC}api/v1/basic-data/get-ams-device-detail`,
+        { userid: req.body.deviceNumber }
+      );
+      if (amsDeviceDetails.data.status != 'success')
+        return res.status(200).json({
+          statusText: 'FAIL',
+          statusValue: 400,
+          message: `Device is not registered with us. Please contact your Company's SPOC`
+        });
+      if (!amsDeviceDetails.data.data)
+        return res.status(200).json({
+          statusText: 'FAIL',
+          statusValue: 400,
+          message: `Device is not registered with us. Please contact your Company's SPOC`
+        });
+
+      if (amsDeviceDetails.data.data.is_whitelist == 0)
+        return res.status(200).json({
+          statusText: 'FAIL',
+          statusValue: 400,
+          message: `This device is not whitelisted. Please contact your Company's SPOC`
+        });
+    }
+
     // const totaldistance = calculateDistance(decodedjwt.clientLat, decodedjwt.clientLong, req.body.latitude, req.body.longitude);
       
     // if(totaldistance > range)
@@ -457,6 +483,32 @@ exports.checkOutSubmit = async (req, res) => {
       });
     
     const decodedjwt = dataValidation.parseJwt(req.headers['authorization']);
+
+    if(decodedjwt.clientId == '2137') {
+      const amsDeviceDetails = await axios.post(
+        `${process.env.CLIENTSPOC}api/v1/basic-data/get-ams-device-detail`,
+        { userid: req.body.deviceNumber }
+      );
+      if (amsDeviceDetails.data.status != 'success')
+        return res.status(200).json({
+          statusText: 'FAIL',
+          statusValue: 400,
+          message: `Device is not registered with us. Please contact your Company's SPOC`
+        });
+      if (!amsDeviceDetails.data.data)
+        return res.status(200).json({
+          statusText: 'FAIL',
+          statusValue: 400,
+          message: `Device is not registered with us. Please contact your Company's SPOC`
+        });
+
+      if (amsDeviceDetails.data.data.is_whitelist == 0)
+        return res.status(200).json({
+          statusText: 'FAIL',
+          statusValue: 400,
+          message: `This device is not whitelisted. Please contact your Company's SPOC`
+        });
+    }
 
     // const totaldistance = calculateDistance(decodedjwt.clientLat, decodedjwt.clientLong, req.body.latitude, req.body.longitude);
 
