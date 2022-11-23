@@ -227,17 +227,10 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       { rec_id: userIds }
     );
 
-    if (userData.data.status == 200) {
+    if (userData.data.status == 200)
       userDetails = userData.data.data;
 
-      resData.map(async (item, index) => {
-        const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
-        resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
-        resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
-      });
-    }
-
-    resData.map(async (item, index) => {
+    for (const [index, item] of resData.entries() || []) {
       let clockIn = 0;
       let clockOut = 0;
       let clockInLocId;
@@ -294,6 +287,11 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       if (clockIn && clockOut && item.shiftStart && item.shiftEnd)
         overTime = getOverTime(item.shiftStart, item.shiftEnd, clockIn, clockOut);
 
+      // find user name and empId
+      const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
+
+      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
+      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
       resData[index]['primaryStatusDB'] = resData[index]['primaryStatus'];
       resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
       resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
@@ -311,7 +309,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       resData[index]['shiftStart'] = item['shiftStart'] && item['shiftStart'] > 0 ? moment.unix(item['shiftStart']).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['shiftEnd'] = item['shiftEnd'] && item['shiftEnd'] > 0 ? moment.unix(item['shiftEnd']).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['holidayName'] = resData[index]['holidayName'] ? resData[index]['holidayName'] : '';
-    });
+    }
 
     //sorting 
     if (sortBy != '' && resData.length > 0)
@@ -486,15 +484,9 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
 
     if (userData.data.status == 200) {
       userDetails = userData.data.data;
-
-      resData.map(async (item, index) => {
-        const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
-        resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
-        resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
-      });
     }
 
-    resData.map(async (item, index) => {
+    for (const [index, item] of resData.entries() || []) {
       let clockIn = 0;
       let overTime = 0;
       let clockOut = 0;
@@ -545,6 +537,11 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       // auto status
       const autoStatusRes = await autoCalculateStatus(item.shiftStart, item.shiftEnd, clockIn, clockOut);
 
+      // get username and empCode
+      const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
+
+      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
+      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
       resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
       resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
       resData[index]['overTimeMin'] = shiftDurationMin > 0 && totalSpendTime > 0 && (totalSpendTime - shiftDurationMin) > 0 ? (totalSpendTime - shiftDurationMin) : 0;
@@ -560,7 +557,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       resData[index]['shiftEnd'] = item['shiftEnd'] && item['shiftEnd'] > 0 ? moment.unix(item['shiftEnd']).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['durationMin'] = totalSpendTime;
       resData[index]['duration'] = totalSpendTime > 0 ? new Date(totalSpendTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
-    });
+    }
 
     //sorting
     if (sortBy != '')
@@ -729,15 +726,10 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
 
     if (userData.data.status == 200) {
       userDetails = userData.data.data;
-
-      resData.map(async (item, index) => {
-        const userObj = userDetails.filter(data => data.rec_id == item._id);
-        resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
-        resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
-      });
     }
 
-    resData.map((item, index) => {
+    for (const [index, item] of resData.entries() || []) {
+      // resData.map((item, index) => {
       let lateEntryCount = 0;
       let earlyExitCount = 0;
       let presentCount = 0;
@@ -748,8 +740,9 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       let totalSpendTimeMin = 0;
       let totalShiftDurationMin = 0;
       let lateInMin = 0;
-
-      item.dataArr.forEach(itemObj => {
+      
+      for (const itemObj of item.dataArr) {
+        // item.dataArr.forEach(itemObj => {
         let clockIn = 0;
         let clockOut = 0;
         let spendTime = 0;
@@ -763,7 +756,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
           // eslint-disable-next-line max-len
           clockIn = element.clockIn;
           clockOut = element.clockOut;
-          
+
           if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && element.actionBy && element.actionBy == 'ADMIN') {
             flag = true;
             totalShiftTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
@@ -834,8 +827,13 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
         // holidayCount
         if (itemObj['isHoliday'] || itemObj.userStatus == 'HOLIDAY')
           holidayCount++;
-      });
+      }
 
+      // get user name and empCode
+      const userObj = userDetails.filter(data => data.rec_id == item._id);
+
+      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
+      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
       resData[index]['lateEntryCount'] = lateEntryCount;
       resData[index]['earlyExitCount'] = earlyExitCount;
       resData[index]['presentCount'] = presentCount;
@@ -855,7 +853,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       // eslint-disable-next-line max-len
       resData[index]['avgDuration'] = avgDurationMin > 0 ? new Date(avgDurationMin * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
       resData[index]['avgDurationMin'] = avgDurationMin;
-    });
+    }
 
     // sorting
     if (sort_by && sort_by != '') {
