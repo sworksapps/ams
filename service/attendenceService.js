@@ -851,7 +851,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       resData[index]['duration'] = totalSpendTimeMin > 0 ? formatMinutesToHHMM(totalSpendTimeMin)  : 'N/A';
       const avgDurationMin = (totalSpendTimeMin / presentCount) > 0 ? (totalSpendTimeMin / presentCount) : 0;
       // eslint-disable-next-line max-len
-      resData[index]['avgDuration'] = avgDurationMin > 0 ? new Date(avgDurationMin * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
+      resData[index]['avgDuration'] = avgDurationMin > 0 ? formatMinutesToHHMM(avgDurationMin) : 'N/A';
       resData[index]['avgDurationMin'] = avgDurationMin;
     }
 
@@ -1255,8 +1255,8 @@ const autoCalculateStatus = async (shiftStart, shiftEnd, checkIn, checkOut) => {
 };
 
 const formatMinutesToHHMM = (minutes) => {
-  const m = minutes % 60;
-  const h = (minutes - m) / 60;
+  const m = parseInt(minutes % 60);
+  const h = parseInt((minutes - m) / 60);
   const HHMM = (h < 10 ? '0' : '') + h.toString() + ':' + (m < 10 ? '0' : '') + m.toString();
   return HHMM;
 };
