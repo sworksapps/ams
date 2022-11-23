@@ -302,7 +302,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       resData[index]['clockOut'] = clockOut > 0 ? moment.unix(clockOut).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['clockInNum'] = clockIn;
       resData[index]['clockOutNum'] = clockOut;
-      resData[index]['duration'] = totalSpendTime > 0 ? new Date(totalSpendTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
+      resData[index]['duration'] = totalSpendTime > 0 ? formatMinutesToHHMM(totalSpendTime) : 'N/A';
       resData[index]['recentEnrty'] = item['recentEnrty'] && item['recentEnrty'] > 0 ? moment.unix(item['recentEnrty']).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['shiftStartNum'] = item['shiftStart'];
       resData[index]['shiftEndNum'] = item['shiftEnd'];
@@ -556,7 +556,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       resData[index]['shiftStart'] = item['shiftStart'] && item['shiftStart'] > 0 ? moment.unix(item['shiftStart']).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['shiftEnd'] = item['shiftEnd'] && item['shiftEnd'] > 0 ? moment.unix(item['shiftEnd']).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['durationMin'] = totalSpendTime;
-      resData[index]['duration'] = totalSpendTime > 0 ? new Date(totalSpendTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
+      resData[index]['duration'] = totalSpendTime > 0 ? formatMinutesToHHMM(totalSpendTime) : 'N/A';
     }
 
     //sorting
@@ -848,7 +848,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       // eslint-disable-next-line max-len
       resData[index]['avgLate'] = (lateInMin / presentCount) > 0 ? new Date((lateInMin / presentCount) * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
       // eslint-disable-next-line max-len
-      resData[index]['duration'] = totalSpendTimeMin > 0 ? new Date(totalSpendTimeMin * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
+      resData[index]['duration'] = totalSpendTimeMin > 0 ? formatMinutesToHHMM(totalSpendTimeMin)  : 'N/A';
       const avgDurationMin = (totalSpendTimeMin / presentCount) > 0 ? (totalSpendTimeMin / presentCount) : 0;
       // eslint-disable-next-line max-len
       resData[index]['avgDuration'] = avgDurationMin > 0 ? new Date(avgDurationMin * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
@@ -1252,4 +1252,11 @@ const autoCalculateStatus = async (shiftStart, shiftEnd, checkIn, checkOut) => {
     superStatus,
     subStatus,
   };
+};
+
+const formatMinutesToHHMM = (minutes) => {
+  const m = minutes % 60;
+  const h = (minutes - m) / 60;
+  const HHMM = (h < 10 ? '0' : '') + h.toString() + ':' + (m < 10 ? '0' : '') + m.toString();
+  return HHMM;
 };
