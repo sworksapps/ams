@@ -731,7 +731,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       userDetails = userData.data.data;
 
       resData.map(async (item, index) => {
-        const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
+        const userObj = userDetails.filter(data => data.rec_id == item._id);
         resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
         resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
       });
