@@ -212,7 +212,9 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
     // calculate kpi
     query[3] = { $match: {} };
-    query[3].$match.$or = [{ checkedInLocationId: { $in: filter.location } }];
+    if (filter && filter.location)
+      query[3].$match.$or = [{ checkedInLocationId: { $in: filter.location } }];
+
     const kpiData = await attModel.aggregate([...query]);
     const kpiRes = await calculateCountOfArr(kpiData);
 
@@ -225,17 +227,24 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       { rec_id: userIds }
     );
 
-    if (userData.data.status == 200)
+    if (userData.data.status == 200) {
       userDetails = userData.data.data;
+
+      resData.map(async (item, index) => {
+        const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
+        resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
+        resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
+      });
+    }
 
     resData.map(async (item, index) => {
       let clockIn = 0;
       let clockOut = 0;
       let clockInLocId;
       let totalSpendTime = 0;
-      // let totalShiftTime = 0;
+      let totalShiftTime = 0;
       let overTime = 0;
-      let totalSpendTimeByUser = 0;
+      // let totalSpendTimeByUser = 0;
       let totalSpendTimeByAdmin = 0;
       let flag = false;
 
@@ -248,28 +257,29 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
           flag = true;
           totalSpendTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
         }
-        else if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && !flag) {
-          const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
-          totalSpendTimeByUser = totalSpendTimeByUser + diff;
-        }
+        // else if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && !flag) {
+        //   const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
+        //   totalSpendTimeByUser = totalSpendTimeByUser + diff;
+        // }
       });
 
       if (flag) {
         totalSpendTime = totalSpendTimeByAdmin;
       }
       else {
-        totalSpendTime = totalSpendTimeByUser;
         clockIn = item['firstEnrty'];
         clockOut = item['lastExit'];
         clockInLocId = item['checkedInLocationId'];
+        if (clockIn && clockIn != '' && clockOut && clockOut != '')
+          totalSpendTime = getTimeDiff(clockIn, clockOut, 'minutes');
       }
 
       // auto status
-      const autoStatusRes = autoCalculateStatus(item.shiftStart, item.shiftEnd, clockIn, clockOut);
+      const autoStatusRes = await autoCalculateStatus(item.shiftStart, item.shiftEnd, clockIn, clockOut);
 
       // shiftTime
-      // if (item.shiftStart && item.shiftStart > 0 && item.shiftEnd && item.shiftEnd > 0)
-      //   totalShiftTime = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
+      if (item.shiftStart && item.shiftStart > 0 && item.shiftEnd && item.shiftEnd > 0)
+        totalShiftTime = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
 
       // MISSINGCHECKOUT  
       const dateTime = new Date();
@@ -280,24 +290,14 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       if (item.shiftEnd && item.shiftEnd > 0 && currentTime > item.shiftEnd && currentTime > midTime && item.lastExit == '')
         await attModel.findOneAndUpdate({ _id: item._id }, { $push: { userStatus: 'MISSINGCHECKOUT' } });
 
-      const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
-
       // overTime
       if (clockIn && clockOut && item.shiftStart && item.shiftEnd)
         overTime = getOverTime(item.shiftStart, item.shiftEnd, clockIn, clockOut);
 
-      // if (totalSpendTime > 0 && totalShiftTime > 0)
-      //   overTime = totalSpendTime - totalShiftTime;
-      // eslint-disable-next-line max-len
-      // resData[index]['overTime'] = overTime > 0 ? new Date(overTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
-      // resData[index]['overTimeMin'] = overTime > 0 overTime : 'N/A';
-
       resData[index]['primaryStatusDB'] = resData[index]['primaryStatus'];
       resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
       resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
-      resData[index]['overTime'] = overTime ? overTime : 'N/A';
-      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '';
-      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '';
+      resData[index]['overTime'] = totalShiftTime > 0 && clockIn > 0 ? overTime : 'N/A';
       resData[index]['durationMin'] = totalSpendTime;
       resData[index]['checkedInLocationId'] = clockInLocId ? clockInLocId : 'N/A';
       resData[index]['clockIn'] = clockIn > 0 ? moment.unix(clockIn).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
@@ -484,18 +484,25 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       { rec_id: userIds }
     );
 
-    if (userData.data.status == 200)
+    if (userData.data.status == 200) {
       userDetails = userData.data.data;
 
-    resData.map((item, index) => {
+      resData.map(async (item, index) => {
+        const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
+        resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
+        resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
+      });
+    }
+
+    resData.map(async (item, index) => {
       let clockIn = 0;
+      let overTime = 0;
       let clockOut = 0;
       let clockInLocId;
       let totalSpendTime = 0;
       let shiftDurationMin = 0;
       let flag = false;
-      const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
-      let totalSpendTimeByUser = 0;
+      // let totalSpendTimeByUser = 0;
       let totalShiftTimeByAdmin = 0;
 
       item.attendenceDetails.forEach(element => {
@@ -507,19 +514,22 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
           flag = true;
           totalShiftTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
         }
-        else if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && !flag) {
-          const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
-          totalSpendTimeByUser = totalSpendTimeByUser + diff;
-        }
+        // else if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && !flag) {
+        //   const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
+        //   totalSpendTimeByUser = totalSpendTimeByUser + diff;
+        // }
       });
 
       if (flag)
         totalSpendTime = totalShiftTimeByAdmin;
       else {
-        totalSpendTime = totalSpendTimeByUser;
+        // totalSpendTime = totalSpendTimeByUser;
         clockIn = item['firstEnrty'];
         clockOut = item['lastExit'];
         clockInLocId = item['checkedInLocationId'];
+
+        if (clockIn && clockIn != '' && clockOut && clockOut != '')
+          totalSpendTime = getTimeDiff(clockIn, clockOut, 'minutes');
       }
 
       // shiftTime
@@ -528,12 +538,17 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
         shiftDurationMin = shiftDurationMin + shiftDiff;
       }
 
-      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
-      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
-      // eslint-disable-next-line max-len
+      // overTime
+      if (item.shiftStart && item.shiftEnd && clockIn && clockOut)
+        overTime = getOverTime(item.shiftStart, item.shiftEnd, clockIn, clockOut);
+
+      // auto status
+      const autoStatusRes = await autoCalculateStatus(item.shiftStart, item.shiftEnd, clockIn, clockOut);
+
+      resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
+      resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
       resData[index]['overTimeMin'] = shiftDurationMin > 0 && totalSpendTime > 0 && (totalSpendTime - shiftDurationMin) > 0 ? (totalSpendTime - shiftDurationMin) : 0;
-      // eslint-disable-next-line max-len
-      resData[index]['overTime'] = shiftDurationMin > 0 && totalSpendTime > 0 && (totalSpendTime - shiftDurationMin) > 0 ? new Date((totalSpendTime - shiftDurationMin) * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
+      resData[index]['overTime'] = shiftDurationMin > 0 && overTime > 0 ? overTime : 'N/A';
       resData[index]['checkedInLocationId'] = clockInLocId ? clockInLocId : 'N/A';
       resData[index]['clockIn'] = clockIn > 0 ? moment.unix(clockIn).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['clockOut'] = clockOut > 0 ? moment.unix(clockOut).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
@@ -544,7 +559,6 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       resData[index]['shiftStart'] = item['shiftStart'] && item['shiftStart'] > 0 ? moment.unix(item['shiftStart']).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['shiftEnd'] = item['shiftEnd'] && item['shiftEnd'] > 0 ? moment.unix(item['shiftEnd']).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['durationMin'] = totalSpendTime;
-      // eslint-disable-next-line max-len
       resData[index]['duration'] = totalSpendTime > 0 ? new Date(totalSpendTime * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
     });
 
@@ -713,8 +727,15 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       { rec_id: userIds }
     );
 
-    if (userData.data.status == 200)
+    if (userData.data.status == 200) {
       userDetails = userData.data.data;
+
+      resData.map(async (item, index) => {
+        const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
+        resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
+        resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
+      });
+    }
 
     resData.map((item, index) => {
       let lateEntryCount = 0;
@@ -723,49 +744,60 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       let absentCount = 0;
       let leaveCount = 0;
       let holidayCount = 0;
+      let totalOverTime = 0;
       let totalSpendTimeMin = 0;
       let totalShiftDurationMin = 0;
       let lateInMin = 0;
-
-      const userObj = userDetails.filter(data => data.rec_id == item._id);
-      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
-      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
 
       item.dataArr.forEach(itemObj => {
         let clockIn = 0;
         let clockOut = 0;
         let spendTime = 0;
+        let overTime = 0;
         let shiftDurationMin = 0;
         let flag = false;
-        let totalSpendTimeByUser = 0;
+        // let totalSpendTimeByUser = 0;
         let totalShiftTimeByAdmin = 0;
 
         itemObj.attendenceDetails.forEach(element => {
           // eslint-disable-next-line max-len
+          clockIn = element.clockIn;
+          clockOut = element.clockOut;
+          
           if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && element.actionBy && element.actionBy == 'ADMIN') {
             flag = true;
-            clockIn = element.clockIn;
-            clockOut = element.clockOut;
             totalShiftTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
           }
-          else if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && !flag) {
-            const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
-            totalSpendTimeByUser = totalSpendTimeByUser + diff;
-          }
+          // else if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && !flag) {
+          //   const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
+          //   totalSpendTimeByUser = totalSpendTimeByUser + diff;
+          // }
         });
 
         if (flag)
           spendTime = totalShiftTimeByAdmin;
         else {
-          spendTime = totalSpendTimeByUser;
+          // spendTime = totalSpendTimeByUser;
           clockIn = itemObj['firstEnrty'];
           clockOut = itemObj['lastExit'];
+          if (clockIn && clockIn != '' && clockOut && clockOut != '')
+            spendTime = getTimeDiff(clockIn, clockOut, 'minutes');
         }
 
         // shiftTime
         if (itemObj.shiftStart && itemObj.shiftStart > 0 && itemObj.shiftEnd && itemObj.shiftEnd > 0) {
           const shiftDiff = getTimeDiff(itemObj.shiftStart, itemObj.shiftEnd, 'minutes');
           shiftDurationMin = shiftDurationMin + shiftDiff;
+        }
+
+        // overTime
+        if (clockIn && clockOut && itemObj.shiftStart && itemObj.shiftEnd) {
+          overTime = getOverTime(item.shiftStart, item.shiftEnd, clockIn, clockOut);
+
+          if (totalOverTime == 0)
+            totalOverTime = overTime;
+          else if (overTime && overTime != 'N/A' && totalOverTime != 0)
+            totalOverTime = addTimeCalculation(totalOverTime, overTime);
         }
 
         totalSpendTimeMin = totalSpendTimeMin + spendTime;
@@ -813,7 +845,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       // eslint-disable-next-line max-len
       resData[index]['overTimeMin'] = totalShiftDurationMin > 0 && totalSpendTimeMin > 0 && (totalSpendTimeMin - totalShiftDurationMin) > 0 ? (totalSpendTimeMin - totalShiftDurationMin) : 0;
       // eslint-disable-next-line max-len
-      resData[index]['overTime'] = totalShiftDurationMin > 0 && totalSpendTimeMin > 0 && (totalShiftDurationMin - totalSpendTimeMin) > 0 ? new Date((totalShiftDurationMin - totalSpendTimeMin) * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
+      resData[index]['overTime'] = totalShiftDurationMin > 0 && totalOverTime > 0 ? totalOverTime : 'N/A';
       resData[index]['avgLateMin'] = (lateInMin / presentCount) > 0 ? (lateInMin / presentCount) : 0;
       // eslint-disable-next-line max-len
       resData[index]['avgLate'] = (lateInMin / presentCount) > 0 ? new Date((lateInMin / presentCount) * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
@@ -1001,7 +1033,7 @@ const getTimeDiff = (start, end, type) => {
 
 const sortByKey = (arr, key) => {
   if (key == 'name' || key == 'userStatus') {
-    arr.sort((a,b) => a[key].toLowerCase().localeCompare(b[key].toLowerCase()));
+    arr.sort((a, b) => a[key].toLowerCase().localeCompare(b[key].toLowerCase()));
   }
   return arr.sort((a, b) => a[key] - b[key]);
 };
@@ -1127,7 +1159,15 @@ function getOverTime(shiftStart, shiftEnd, checkIn, checkout) {
   return chkOvertime.rangeHr;
 }
 
-const autoCalculateStatus = (shiftStart, shiftEnd, checkIn, checkOut) => {
+const addTimeCalculation = ((oldTime, newTime) => {
+  const splitTime = newTime.split(':');
+  const hours = parseInt(splitTime[0]);
+  const minutes = parseInt(splitTime[1]);
+  const calTime = moment(oldTime, 'HH:mm').add(hours, 'hours').add(minutes, 'minutes');
+  return calTime.format('HH:mm');
+});
+
+const autoCalculateStatus = async (shiftStart, shiftEnd, checkIn, checkOut) => {
   let superStatus = 'N/A', subStatus = 'N/A', minHoursForFullPresent = 0, startRangeForHalfDay = 0, endRangeForHalfDay = 0;
   if (!shiftStart && !shiftEnd && !checkIn && !checkOut)
     return {
@@ -1168,8 +1208,23 @@ const autoCalculateStatus = (shiftStart, shiftEnd, checkIn, checkOut) => {
     superStatus = 'PRESENT';
     subStatus = 'HALFDAY';
   } else if (checkIn && !checkOut) {
-    superStatus = 'ABSENT';
-    subStatus = 'SP';
+    if (shiftEnd > 0 && (shiftEnd + 24 * 60 * 60) > moment().unix()) {
+      superStatus = 'PRESENT';
+      subStatus = 'PRESENT';
+    }
+    else {
+      superStatus = 'ABSENT';
+      subStatus = 'SP';
+    }
+  } else if (shiftStart > 0 && shiftEnd > 0 && checkIn > 0 && checkOut > 0) {
+    if (shiftEnd > 0 && (shiftEnd + 24 * 60 * 60) < moment().unix()) {
+      superStatus = 'ABSENT';
+      subStatus = 'SP';
+    }
+    if (shiftEnd > 0 && (shiftEnd + 24 * 60 * 60) > moment().unix()) {
+      superStatus = 'PRESENT';
+      subStatus = 'SP';
+    }
   } else if (shiftStart == -1 && shiftEnd == -1 && checkIn && checkOut) {
     superStatus = 'PRESENT';
     subStatus = 'WOP';
