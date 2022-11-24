@@ -269,7 +269,6 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
       // auto status
       const autoStatusRes = await autoCalculateStatus(item.shiftStart, item.shiftEnd, clockIn, clockOut);
-
       // shiftTime
       if (item.shiftStart && item.shiftStart > 0 && item.shiftEnd && item.shiftEnd > 0)
         totalShiftTime = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
@@ -1207,7 +1206,7 @@ const autoCalculateStatus = async (shiftStart, shiftEnd, checkIn, checkOut) => {
     superStatus = 'PRESENT';
     subStatus = 'HALFDAY';
   } else if (checkIn && !checkOut) {
-    if (shiftEnd > 0 && (shiftEnd + 24 * 60 * 60) > moment().unix()) {
+    if (shiftEnd > 0 && (parseInt(shiftEnd) + 86400) > moment().unix()) {
       superStatus = 'PRESENT';
       subStatus = 'PRESENT';
     }
@@ -1216,11 +1215,11 @@ const autoCalculateStatus = async (shiftStart, shiftEnd, checkIn, checkOut) => {
       subStatus = 'SP';
     }
   } else if (shiftStart > 0 && shiftEnd > 0 && checkIn > 0 && checkOut > 0) {
-    if (shiftEnd > 0 && (shiftEnd + 24 * 60 * 60) < moment().unix()) {
+    if (shiftEnd > 0 && (parseInt(shiftEnd) + 86400) < moment().unix()) {
       superStatus = 'ABSENT';
       subStatus = 'SP';
     }
-    if (shiftEnd > 0 && (shiftEnd + 24 * 60 * 60) > moment().unix()) {
+    if (shiftEnd > 0 && (parseInt(shiftEnd) + 86400) > moment().unix()) {
       superStatus = 'PRESENT';
       subStatus = 'SP';
     }
