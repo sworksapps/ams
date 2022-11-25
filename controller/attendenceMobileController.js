@@ -144,6 +144,14 @@ exports.checkIn = async (req, res) => {
       });
 
     const userDetails = userData.data.data.result[0];
+  
+    if(decodedjwt.clientId == '2137' && userDetails.emp_code == '')
+      return res.status(200).json({
+        statusText: 'FAIL',
+        statusValue: 400,
+        message: `Employee code is required. Please contact your Company's SPOC`,
+      });
+
 
     if(userDetails.company_id != decodedjwt.clientId)
       return res.status(200).json({
@@ -294,6 +302,13 @@ exports.checkOut = async (req, res) => {
       });
 
     const userDetails = userData.data.data.result[0];
+
+    if(decodedjwt.clientId == '2137' && userDetails.emp_code == '')
+      return res.status(200).json({
+        statusText: 'FAIL',
+        statusValue: 400,
+        message: `Employee code is required. Please contact your Company's SPOC`,
+      });
 
     if(userDetails.company_id != decodedjwt.clientId)
       return res.status(200).json({
