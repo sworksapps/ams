@@ -12,33 +12,33 @@ exports.preCheckInService = async (tenantDbConnection, userDetails, dateValue, b
     const clockInTimeStamp = moment().unix();
     // check today checkin start
 
-    if(decodedjwt.clientId == '1471') {
-      const res = await attendenceModel.findOne({
-        userId: userDetails.user_id,
-        date: date,
-      });
-      if(!res) {
-        return { type: false, msg: 'Shift not found', data: '' };
-      }
-      if(res) {
-        let shiftStartValue = '';
-        let shiftEndValue = '';
-        if(res.shiftStart.length > 0)
-          shiftStartValue = res.shiftStart[res.shiftStart.length - 1];
-        if(res.shiftEnd.length > 0)
-          shiftEndValue = res.shiftEnd[res.shiftEnd.length - 1];
-        const checkHours= '7200';
-        if(shiftStartValue == '')
-          return { type: false, msg: 'Shift not found', data: '' };
-        if(shiftEndValue == '')
-          return { type: false, msg: 'Shift not found', data: '' };
+    // if(decodedjwt.clientId == '1471') {
+    //   const res = await attendenceModel.findOne({
+    //     userId: userDetails.user_id,
+    //     date: date,
+    //   });
+    //   if(!res) {
+    //     return { type: false, msg: 'Shift not found', data: '' };
+    //   }
+    //   if(res) {
+    //     let shiftStartValue = '';
+    //     let shiftEndValue = '';
+    //     if(res.shiftStart.length > 0)
+    //       shiftStartValue = res.shiftStart[res.shiftStart.length - 1];
+    //     if(res.shiftEnd.length > 0)
+    //       shiftEndValue = res.shiftEnd[res.shiftEnd.length - 1];
+    //     const checkHours= '7200';
+    //     if(shiftStartValue == '')
+    //       return { type: false, msg: 'Shift not found', data: '' };
+    //     if(shiftEndValue == '')
+    //       return { type: false, msg: 'Shift not found', data: '' };
         
-        if((parseInt(shiftStartValue)+parseInt(checkHours)) < parseInt(clockInTimeStamp))
-          return { type: false, msg: 'Checkin is not allowed before two hours of Shift start', data: '' };
-        if((parseInt(shiftStartValue)-parseInt(checkHours)) > parseInt(clockInTimeStamp))
-          return { type: false, msg: 'CheckIn is not allowed after two hours of Shift start', data: '' };
-      }
-    }
+    //     if((parseInt(shiftStartValue)+parseInt(checkHours)) < parseInt(clockInTimeStamp))
+    //       return { type: false, msg: 'Checkin is not allowed before two hours of Shift start', data: '' };
+    //     if((parseInt(shiftStartValue)-parseInt(checkHours)) > parseInt(clockInTimeStamp))
+    //       return { type: false, msg: 'CheckIn is not allowed after two hours of Shift start', data: '' };
+    //   }
+    // }
     return null;
     // check today checkin end
   } catch (err) {
@@ -60,22 +60,22 @@ exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body
     if(res) {
       let shiftStartValue = '';
       let shiftEndValue = '';
-      if(decodedjwt.clientId == '1471') {
-        if(res.shiftStart.length > 0)
-          shiftStartValue = res.shiftStart[res.shiftStart.length - 1];
-        if(res.shiftEnd.length > 0)
-          shiftEndValue = res.shiftEnd[res.shiftEnd.length - 1];
-        const checkHours= '7200';
-        if(shiftStartValue == '')
-          return { type: false, msg: 'Shift not found', data: '' };
-        if(shiftEndValue == '')
-          return { type: false, msg: 'Shift not found', data: '' };
+      // if(decodedjwt.clientId == '1471') {
+      //   if(res.shiftStart.length > 0)
+      //     shiftStartValue = res.shiftStart[res.shiftStart.length - 1];
+      //   if(res.shiftEnd.length > 0)
+      //     shiftEndValue = res.shiftEnd[res.shiftEnd.length - 1];
+      //   const checkHours= '7200';
+      //   if(shiftStartValue == '')
+      //     return { type: false, msg: 'Shift not found', data: '' };
+      //   if(shiftEndValue == '')
+      //     return { type: false, msg: 'Shift not found', data: '' };
         
-        if((parseInt(shiftStartValue)+parseInt(checkHours)) < parseInt(clockInTimeStamp))
-          return { type: false, msg: 'Checkin is not allowed before two hours of Shift start', data: '' };
-        if((parseInt(shiftStartValue)-parseInt(checkHours)) > parseInt(clockInTimeStamp))
-          return { type: false, msg: 'CheckIn is not allowed after two hours of Shift start', data: '' };
-      }
+      //   if((parseInt(shiftStartValue)+parseInt(checkHours)) < parseInt(clockInTimeStamp))
+      //     return { type: false, msg: 'Checkin is not allowed before two hours of Shift start', data: '' };
+      //   if((parseInt(shiftStartValue)-parseInt(checkHours)) > parseInt(clockInTimeStamp))
+      //     return { type: false, msg: 'CheckIn is not allowed after two hours of Shift start', data: '' };
+      // }
       if(res.shiftStart.length > 0)
         shiftStartValue = res.shiftStart[res.shiftStart.length - 1];
       if(res.shiftEnd.length > 0)
