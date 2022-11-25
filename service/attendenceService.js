@@ -52,7 +52,7 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
 
         // insert
         if (iterator.shiftStart == -1 || iterator.shiftEnd == -1)
-          Object.assign(insertObj, { 'userStatus': 'WEEKOFF' });
+          Object.assign(insertObj, { 'userStatus': 'WEEKLYOFF' });
 
         if (iterator.shiftStart == -2 || iterator.shiftEnd == -2)
           Object.assign(insertObj, { 'userStatus': 'WFH' });
@@ -125,7 +125,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
           dbQuery1.userStatus = filter.kpiFilter;
         if (filter.kpiFilter === 'WFH')
           dbQuery1.userStatus = filter.kpiFilter;
-        if (filter.kpiFilter === 'WEEKOFF')
+        if (filter.kpiFilter === 'WEEKLYOFF')
           dbQuery1.userStatus = filter.kpiFilter;
         if (filter.kpiFilter === 'ONTIME')
           dbQuery1.userStatus = filter.kpiFilter;
@@ -541,7 +541,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
 
       resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
       resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
-      resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
+      // resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
       resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
       resData[index]['overTimeMin'] = shiftDurationMin > 0 && totalSpendTime > 0 && (totalSpendTime - shiftDurationMin) > 0 ? (totalSpendTime - shiftDurationMin) : 0;
       resData[index]['overTime'] = (shiftDurationMin > 0 && overTime != 'N/A' > 0) ? overTime : 'N/A';
@@ -933,7 +933,7 @@ const calculateCountOfArr = async (resData) => {
       wfhCount++;
 
     //weekOffCount
-    if (item.userStatus == 'WEEKOFF')
+    if (item.userStatus == 'WEEKLYOFF')
       weekOffCount++;
 
     if (item.userStatus == 'LATECHECKIN')
@@ -1228,7 +1228,7 @@ const autoCalculateStatus = async (shiftStart, shiftEnd, checkIn, checkOut) => {
     subStatus = 'WOP';
   } else if (shiftStart == -1 && shiftEnd == -1) {
     superStatus = 'ABSENT';
-    subStatus = 'WEEKOFF';
+    subStatus = 'WEEKLYOFF';
   } else if (shiftStart == -2 && shiftEnd == -2) {
     superStatus = 'ABSENT';
     subStatus = 'WFH';
