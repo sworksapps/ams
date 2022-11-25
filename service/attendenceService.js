@@ -174,7 +174,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
         '$project': {
           '_id': 1,
           'userId': 1,
-          'userStatus': { '$arrayElemAt': ['$userStatus', -1] },
+          'userStatus': 1,
           'primaryStatus': 1,
           'deptId': 1,
           'locationId': 1,
@@ -292,8 +292,8 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
       resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
       resData[index]['primaryStatusDB'] = resData[index]['primaryStatus'];
-      resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
-      resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
+      // resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
+      // resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
       resData[index]['overTime'] = totalShiftTime > 0 && clockIn > 0 ? overTime : 'N/A';
       resData[index]['durationMin'] = totalSpendTime;
       resData[index]['checkedInLocationId'] = clockInLocId ? clockInLocId : 'N/A';
