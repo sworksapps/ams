@@ -174,7 +174,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
         '$project': {
           '_id': 1,
           'userId': 1,
-          'userStatus': 1,
+          'userStatus': { '$arrayElemAt': ['$userStatus', -1] },
           'primaryStatus': 1,
           'deptId': 1,
           'locationId': 1,
