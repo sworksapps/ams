@@ -219,7 +219,9 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
     const kpiRes = await calculateCountOfArr(kpiData);
 
     const userIds = resData.map(i => i.userId);
-    let userDetails = [];
+    const deptIds = resData.map(i => i.deptId);
+
+    let userDetails = [], userDeptDetails = [];
 
     // get user name
     const userData = await axios.post(
@@ -229,6 +231,15 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
     if (userData.data.status == 200)
       userDetails = userData.data.data;
+
+    const userDeptData = await axios.post(
+      `${process.env.CLIENTSPOC}api/v1/department/get-department-names`,
+      { deptIds: deptIds }
+    );
+
+    if (userDeptData.data.status == 200) {
+      userDeptDetails = userDeptData.data.data;
+    }
 
     for (const [index, item] of resData.entries() || []) {
       let clockIn = 0;
@@ -289,8 +300,15 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       // find user name and empId
       const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
 
+      // find user department name
+      const userDeptDetailsObj = userDeptDetails.filter(data => data.id == item.deptId);
+
       resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
       resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
+      resData[index]['designation'] = userObj.length > 0 ? userObj[0]['designation']?.trim() : '-';
+      resData[index]['project'] = userObj.length > 0 ? userObj[0]['project']?.trim() : '-';
+      resData[index]['payroll'] = userObj.length > 0 ? userObj[0]['payroll']?.trim() : '-';
+      resData[index]['deptName'] = userDeptDetailsObj.length > 0 ? userDeptDetailsObj[0]['dept_name']?.trim() : '-';
       resData[index]['primaryStatusDB'] = resData[index]['primaryStatus'];
       // resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
       // resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
@@ -473,7 +491,9 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
     let resData = await attModel.aggregate([...query]);
     // let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
     const userIds = resData.map(i => i.userId);
-    let userDetails = [];
+    const deptIds = resData.map(i => i.deptId);
+ 
+    let userDetails = [], userDeptDetails = [];
 
     // get user name
     const userData = await axios.post(
@@ -483,6 +503,15 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
 
     if (userData.data.status == 200) {
       userDetails = userData.data.data;
+    }
+
+    const userDeptData = await axios.post(
+      `${process.env.CLIENTSPOC}api/v1/department/get-department-names`,
+      { deptIds: deptIds }
+    );
+
+    if (userDeptData.data.status == 200) {
+      userDeptDetails = userDeptData.data.data;
     }
 
     for (const [index, item] of resData.entries() || []) {
@@ -539,8 +568,15 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       // get username and empCode
       const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
 
+      // get department name
+      const userDeptDetailsObj = userDeptDetails.filter(data => data.id == item.deptId);
+
       resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
       resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
+      resData[index]['designation'] = userObj.length > 0 ? userObj[0]['designation']?.trim() : '-';
+      resData[index]['project'] = userObj.length > 0 ? userObj[0]['project']?.trim() : '-';
+      resData[index]['payroll'] = userObj.length > 0 ? userObj[0]['payroll']?.trim() : '-';
+      resData[index]['deptName'] = userDeptDetailsObj.length > 0 ? userDeptDetailsObj[0]['dept_name']?.trim() : '-';
       // resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
       resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
       resData[index]['overTimeMin'] = shiftDurationMin > 0 && totalSpendTime > 0 && (totalSpendTime - shiftDurationMin) > 0 ? (totalSpendTime - shiftDurationMin) : 0;
@@ -716,7 +752,9 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
     // let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
 
     const userIds = resData.map(i => i._id);
-    let userDetails = [];
+    const deptIds = resData.map(i => i.dataArr[0].deptId);
+ 
+    let userDetails = [], userDeptDetails = [];
 
     // get user name
     const userData = await axios.post(
@@ -726,6 +764,15 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
 
     if (userData.data.status == 200) {
       userDetails = userData.data.data;
+    }
+
+    const userDeptData = await axios.post(
+      `${process.env.CLIENTSPOC}api/v1/department/get-department-names`,
+      { deptIds: deptIds }
+    );
+
+    if (userDeptData.data.status == 200) {
+      userDeptDetails = userDeptData.data.data;
     }
 
     for (const [index, item] of resData.entries() || []) {
@@ -832,8 +879,15 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       // get user name and empCode
       const userObj = userDetails.filter(data => data.rec_id == item._id);
 
+      // find user department name
+      const userDeptDetailsObj = userDeptDetails.filter(data => data.id == item.dataArr[0].deptId);
+
       resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
       resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
+      resData[index]['designation'] = userObj.length > 0 ? userObj[0]['designation']?.trim() : '-';
+      resData[index]['project'] = userObj.length > 0 ? userObj[0]['project']?.trim() : '-';
+      resData[index]['payroll'] = userObj.length > 0 ? userObj[0]['payroll']?.trim() : '-';
+      resData[index]['deptName'] = userDeptDetailsObj.length > 0 ? userDeptDetailsObj[0]['dept_name']?.trim() : '-';
       resData[index]['lateEntryCount'] = lateEntryCount;
       resData[index]['earlyExitCount'] = earlyExitCount;
       resData[index]['presentCount'] = presentCount;
