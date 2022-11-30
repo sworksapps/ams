@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 const { attendenceSchema } = require('../dbModel/clients/attendenceModel');
 const { holidayListSchema } = require('../dbModel/clients/holidayListModel');
+const { faceMatchSchema } = require('../dbModel/clients/faceMatchModel');
 const { logSchema } = require('../dbModel/clients/logModel');
 
 // const clientOption = {
@@ -20,7 +21,7 @@ const newClientOption = {
   sslCA: `./db/rds-combined-ca-bundle.pem`,
   socketTimeoutMS: 30000,
   keepAlive: true,
-  maxPoolSize: 1,
+  maxPoolSize: 10,
   retryWrites: false
 };
 
@@ -70,6 +71,7 @@ const initTenantDbConnection = (DB_URL) => {
     // require all schemas
     attendenceSchema(db);
     holidayListSchema(db);
+    faceMatchSchema(db);
     logSchema(db);
 
     return db;

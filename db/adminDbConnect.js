@@ -21,7 +21,7 @@ const newClientOption = {
   sslCA: `./db/rds-combined-ca-bundle.pem`,
   socketTimeoutMS: 30000,
   keepAlive: true,
-  maxPoolSize: 5,
+  maxPoolSize: 10,
   retryWrites: false,
 };
 
