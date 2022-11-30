@@ -274,13 +274,13 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
         totalShiftTime = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
 
       // MISSINGCHECKOUT  
-      const dateTime = new Date();
-      dateTime.setHours(18, 29, 0, 0); // set time as 23:59:00
-      const midTime = moment(dateTime).unix();
-      const currentTime = moment().unix();
+      // const dateTime = new Date();
+      // dateTime.setHours(18, 29, 0, 0); // set time as 23:59:00
+      // const midTime = moment(dateTime).unix();
+      // const currentTime = moment().unix();
 
-      if (item.shiftEnd && item.shiftEnd > 0 && currentTime > item.shiftEnd && currentTime > midTime && item.lastExit == '')
-        await attModel.findOneAndUpdate({ _id: item._id }, { $push: { userStatus: 'MISSINGCHECKOUT' } });
+      // if (item.shiftEnd && item.shiftEnd > 0 && currentTime > item.shiftEnd && currentTime > midTime && item.lastExit == '')
+      //   await attModel.findOneAndUpdate({ _id: item._id }, { $push: { userStatus: 'MISSINGCHECKOUT' } });
 
       // overTime
       if (clockIn && clockOut && item.shiftStart && item.shiftEnd)
@@ -294,7 +294,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       resData[index]['primaryStatusDB'] = resData[index]['primaryStatus'];
       // resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
       // resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
-      resData[index]['overTime'] = totalShiftTime > 0 && clockIn > 0 ? overTime : 'N/A';
+      resData[index]['overTime'] = (totalShiftTime > 0 && overTime != 'N/A' > 0) ? overTime : 'N/A';
       resData[index]['durationMin'] = totalSpendTime;
       resData[index]['checkedInLocationId'] = clockInLocId ? clockInLocId : 'N/A';
       resData[index]['clockIn'] = clockIn > 0 ? moment.unix(clockIn).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
@@ -859,7 +859,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       resData[index]['CO_Count'] = CO_Count;
       resData[index]['SP_Count'] = SP_Count;
       resData[index]['WFH_Count'] = WFH_Count;
-      resData[index]['overTime'] = totalShiftDurationMin > 0 && totalOverTime != 0 ? totalOverTime : 'N/A';
+      resData[index]['overTime'] = (totalShiftDurationMin > 0 && totalOverTime != 'N/A' > 0) ? totalOverTime : 'N/A';
       resData[index]['duration'] = totalSpendTimeMin > 0 ? formatMinutesToHHMM(totalSpendTimeMin) : 'N/A';
       const avgDurationMin = (totalSpendTimeMin / presentCount) > 0 ? (totalSpendTimeMin / presentCount) : 0;
       resData[index]['avgDuration'] = avgDurationMin > 0 ? formatMinutesToHHMM(avgDurationMin) : 'N/A';
@@ -913,22 +913,15 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
 
 const calculateCountOfArr = async (resData) => {
   let checkedInCount = 0;
-  let lateEntryCount = 0;
   let presentCount = 0;
   let absentCount = 0;
+  let SP_Count = 0;
+  let halfDayCount = 0;
   let leaveCount = 0;
   let wfhCount = 0;
-  let weekOffCount = 0;
-  // let onTimeCount = 0;
-  // let lateInMin = 0;
-  // let overTimeMin = 0;
+  let totalOverTime = 0;
 
   resData.map(item => {
-    // let workDurationMin = 0;
-    // let shiftDurationMin = 0;
-    // let clockIn = 0;
-    // let clockOut = 0;
-
     //  CheckedInCount
     if (item.firstEnrty > 0 && item.lastExit == '')
       checkedInCount++;
@@ -941,90 +934,60 @@ const calculateCountOfArr = async (resData) => {
     if (absentList.includes(item.userStatus))
       absentCount++;
 
-    //leaveCount 
-    if (item.userStatus == 'ONLEAVE')
-      leaveCount++;
-
     //wfhCount
-    if (item.userStatus == 'WFH')
+    if (item.userStatus == 'WFH' || item.shiftStart == -2 || item.shiftEnd == -2)
       wfhCount++;
 
-    //weekOffCount
-    if (item.userStatus == 'WEEKLYOFF')
-      weekOffCount++;
+    //Singal Punch 
+    if (item.userStatus == 'SP')
+      SP_Count++;
 
-    if (item.userStatus == 'LATECHECKIN')
-      lateEntryCount++;
+    //HalfDay
+    if (item.userStatus == 'HALFDAY')
+      halfDayCount++;
 
-    //shiftTimeDiff
-    // if (item.shiftStart && item.shiftStart > 0 && item.shiftEnd && item.shiftEnd > 0) {
-    //   shiftDurationMin = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
-    // }
+    //leaveCount 
+    if (item.userStatus == 'ONLEAVE' || item.userStatus == 'CL' || item.userStatus == 'SL' || item.userStatus == 'LOP')
+      leaveCount++;
+
+    // OverTime
+    let clockIn = 0;
+    let clockOut = 0;
+    let overTime = 0;
+    let flag = false;
+
+    item.attendenceDetails.forEach(element => {
+      if (element.actionBy == 'ADMIN') {
+        clockIn = element.clockIn;
+        clockOut = element.clockOut;
+        flag = true;
+      }
+    });
+
+    if (!flag) {
+      clockIn = item['firstEnrty'];
+      clockOut = item['lastExit'];
+    }
 
     // overTime
-    // let totalSpendTimeByUser = 0;
-    // let totalShiftTimeByAdmin = 0;
-    // let flag = false;
-
-    // item.attendenceDetails.forEach(element => {
-    //   eslint-disable-next-line max-len
-    //   if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && element.actionBy && element.actionBy == 'ADMIN') {
-    //     flag = true;
-    //     clockIn = element.clockIn;
-    //     // clockOut = element.clockOut;
-    //     totalShiftTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
-    //   }
-    //   else if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && !flag) {
-    //     const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
-    //     totalSpendTimeByUser = totalSpendTimeByUser + diff;
-    //   }
-    // });
-
-    // if (flag)
-    //   workDurationMin = totalShiftTimeByAdmin;
-    // else {
-    //   workDurationMin = totalSpendTimeByUser;
-    //   // clockIn = item['firstEnrty'];
-    //   // clockOut = item['lastExit'];
-    // }
-
-    // //overTime
-    // if (workDurationMin > 0 && shiftDurationMin > 0) {
-    //   const calOverTime = workDurationMin - shiftDurationMin;
-    //   if (calOverTime > 0)
-    //     overTimeMin = overTimeMin + calOverTime;
-    // }
-
-    // lateEntryCount
-    // if (shiftDurationMin > 0 && clockIn > 0) {
-    //   const diff = getTimeDiff(item.shiftStart, clockIn, 'minutes');
-    //   if (diff > 15) {
-    //     lateInMin = lateInMin + diff;
-    //     lateEntryCount++;
-    //   }
-    // }
-
-    //onTimeCount 
-    // if (item.shiftStart && clockIn > 0) {
-    //   const diffTime = getTimeDiff(item.shiftStart, clockIn, 'minutes');
-    //   if (diffTime <= 15 && diffTime >= -15)
-    //     onTimeCount++;
-    // }
-    // else 
-    // if (item.userStatus == 'ONTIME')
-    //   onTimeCount++;
+    if (clockIn && clockOut && item.shiftStart && item.shiftEnd) {
+      overTime = getOverTime(item.shiftStart, item.shiftEnd, clockIn, clockOut);
+      if (totalOverTime == 0)
+        totalOverTime = overTime;
+      else if (overTime && overTime != 'N/A' && totalOverTime != 0)
+        totalOverTime = addTimeCalculation(totalOverTime, overTime);
+    }
   });
 
   const calObj = {
     'totalCheckedInCount': checkedInCount,
     'presentCount': presentCount,
     'absentCount': absentCount,
-    'leaveCount': leaveCount,
     'wfhCount': wfhCount,
-    'weekOffCount': weekOffCount,
-    'lateEntryCount': lateEntryCount,
-    // 'onTimeCount': onTimeCount,
-    // 'totalOverTime': overTimeMin > 0 ? new Date((overTimeMin) * 60 * 1000).toISOString().substr(11, 5) : 'N/A'
+    'SP_Count': SP_Count,
+    'halfDayCount': halfDayCount,
+    'leaveCount': leaveCount,
+    'totalOverTime': totalOverTime != 'N/A' && totalOverTime != 0 ? totalOverTime : 'N/A'
   };
   return calObj;
 };
@@ -1182,94 +1145,94 @@ const addTimeCalculation = ((oldTime, newTime) => {
   return calTime.format('HH:mm');
 });
 
-const autoCalculateStatus = async (shiftStart, shiftEnd, checkIn, checkOut) => {
-  let superStatus = 'N/A', subStatus = 'N/A', minHoursForFullPresent = 0, startRangeForHalfDay = 0, endRangeForHalfDay = 0;
-  if (!shiftStart && !shiftEnd && !checkIn && !checkOut)
-    return {
-      superStatus,
-      subStatus,
-    };
-  // } else if (shiftStart && shiftEnd && !checkIn && !checkOut) {
-  //   return {
-  //     superStatus,
-  //     subStatus,
-  //   };
-  // }
-  const shiftDiff = moment.unix(shiftEnd).startOf('hour').diff(moment.unix(shiftStart).startOf('hour'), 'hour');
-  const workingHoursDiff = moment.unix(checkOut).startOf('hour').diff(moment.unix(checkIn).startOf('hour'), 'hour');
-  if (shiftDiff == 12) {
-    minHoursForFullPresent = 10;
-    startRangeForHalfDay = 5;
-    endRangeForHalfDay = 10;
-  } else if (shiftDiff == 8) {
-    minHoursForFullPresent = 7;
-    startRangeForHalfDay = 4;
-    endRangeForHalfDay = 7;
-  } else if (shiftDiff == 9) {
-    minHoursForFullPresent = 7;
-    startRangeForHalfDay = 5;
-    endRangeForHalfDay = 8;
-  } else if (shiftDiff == 10) {
-    startRangeForHalfDay = 5;
-    endRangeForHalfDay = 8;
-  } else if (shiftDiff == 7) {
-    startRangeForHalfDay = 4;
-    endRangeForHalfDay = 6;
-  }
-  if (workingHoursDiff >= minHoursForFullPresent) {
-    superStatus = 'PRESENT';
-    subStatus = 'PRESENT';
-  } else if (workingHoursDiff >= startRangeForHalfDay && workingHoursDiff <= endRangeForHalfDay) {
-    superStatus = 'PRESENT';
-    subStatus = 'HALFDAY';
-  } else if (checkIn && !checkOut) {
-    if (shiftEnd > 0 && (parseInt(shiftEnd) + 86400) > moment().unix()) {
-      superStatus = 'PRESENT';
-      subStatus = 'PRESENT';
-    }
-    else {
-      superStatus = 'ABSENT';
-      subStatus = 'SP';
-    }
-  } else if (shiftStart > 0 && shiftEnd > 0 && checkIn > 0 && checkOut > 0) {
-    if (shiftEnd > 0 && (parseInt(shiftEnd) + 86400) < moment().unix()) {
-      superStatus = 'ABSENT';
-      subStatus = 'SP';
-    }
-    if (shiftEnd > 0 && (parseInt(shiftEnd) + 86400) > moment().unix()) {
-      superStatus = 'PRESENT';
-      subStatus = 'SP';
-    }
-  } else if (shiftStart == -1 && shiftEnd == -1 && checkIn && checkOut) {
-    superStatus = 'PRESENT';
-    subStatus = 'WOP';
-  } else if (shiftStart == -1 && shiftEnd == -1) {
-    superStatus = 'ABSENT';
-    subStatus = 'WEEKLYOFF';
-  } else if (shiftStart == -2 && shiftEnd == -2) {
-    superStatus = 'ABSENT';
-    subStatus = 'WFH';
-  } else if (shiftStart == -3 && shiftEnd == -3) {
-    superStatus = 'ABSENT';
-    subStatus = 'CL';
-  } else if (shiftStart == -4 && shiftEnd == -4 && checkIn && checkOut) {
-    superStatus = 'PRESENT';
-    subStatus = 'HOP';
-  } else if (shiftStart == -4 && shiftEnd == -4) {
-    superStatus = 'ABSENT';
-    subStatus = 'HO';
-  } else if (checkIn && checkOut && !shiftStart && !shiftEnd) {
-    superStatus = 'PRESENT';
-    subStatus = 'PRESENT';
-  } else {
-    superStatus = 'ABSENT';
-    subStatus = 'ABSENT';
-  }
-  return {
-    superStatus,
-    subStatus,
-  };
-};
+// const autoCalculateStatus = async (shiftStart, shiftEnd, checkIn, checkOut) => {
+//   let superStatus = 'N/A', subStatus = 'N/A', minHoursForFullPresent = 0, startRangeForHalfDay = 0, endRangeForHalfDay = 0;
+//   if (!shiftStart && !shiftEnd && !checkIn && !checkOut)
+//     return {
+//       superStatus,
+//       subStatus,
+//     };
+//   // } else if (shiftStart && shiftEnd && !checkIn && !checkOut) {
+//   //   return {
+//   //     superStatus,
+//   //     subStatus,
+//   //   };
+//   // }
+//   const shiftDiff = moment.unix(shiftEnd).startOf('hour').diff(moment.unix(shiftStart).startOf('hour'), 'hour');
+//   const workingHoursDiff = moment.unix(checkOut).startOf('hour').diff(moment.unix(checkIn).startOf('hour'), 'hour');
+//   if (shiftDiff == 12) {
+//     minHoursForFullPresent = 10;
+//     startRangeForHalfDay = 5;
+//     endRangeForHalfDay = 10;
+//   } else if (shiftDiff == 8) {
+//     minHoursForFullPresent = 7;
+//     startRangeForHalfDay = 4;
+//     endRangeForHalfDay = 7;
+//   } else if (shiftDiff == 9) {
+//     minHoursForFullPresent = 7;
+//     startRangeForHalfDay = 5;
+//     endRangeForHalfDay = 8;
+//   } else if (shiftDiff == 10) {
+//     startRangeForHalfDay = 5;
+//     endRangeForHalfDay = 8;
+//   } else if (shiftDiff == 7) {
+//     startRangeForHalfDay = 4;
+//     endRangeForHalfDay = 6;
+//   }
+//   if (workingHoursDiff >= minHoursForFullPresent) {
+//     superStatus = 'PRESENT';
+//     subStatus = 'PRESENT';
+//   } else if (workingHoursDiff >= startRangeForHalfDay && workingHoursDiff <= endRangeForHalfDay) {
+//     superStatus = 'PRESENT';
+//     subStatus = 'HALFDAY';
+//   } else if (checkIn && !checkOut) {
+//     if (shiftEnd > 0 && (parseInt(shiftEnd) + 86400) > moment().unix()) {
+//       superStatus = 'PRESENT';
+//       subStatus = 'PRESENT';
+//     }
+//     else {
+//       superStatus = 'ABSENT';
+//       subStatus = 'SP';
+//     }
+//   } else if (shiftStart > 0 && shiftEnd > 0 && checkIn > 0 && checkOut > 0) {
+//     if (shiftEnd > 0 && (parseInt(shiftEnd) + 86400) < moment().unix()) {
+//       superStatus = 'ABSENT';
+//       subStatus = 'SP';
+//     }
+//     if (shiftEnd > 0 && (parseInt(shiftEnd) + 86400) > moment().unix()) {
+//       superStatus = 'PRESENT';
+//       subStatus = 'SP';
+//     }
+//   } else if (shiftStart == -1 && shiftEnd == -1 && checkIn && checkOut) {
+//     superStatus = 'PRESENT';
+//     subStatus = 'WOP';
+//   } else if (shiftStart == -1 && shiftEnd == -1) {
+//     superStatus = 'ABSENT';
+//     subStatus = 'WEEKLYOFF';
+//   } else if (shiftStart == -2 && shiftEnd == -2) {
+//     superStatus = 'ABSENT';
+//     subStatus = 'WFH';
+//   } else if (shiftStart == -3 && shiftEnd == -3) {
+//     superStatus = 'ABSENT';
+//     subStatus = 'CL';
+//   } else if (shiftStart == -4 && shiftEnd == -4 && checkIn && checkOut) {
+//     superStatus = 'PRESENT';
+//     subStatus = 'HOP';
+//   } else if (shiftStart == -4 && shiftEnd == -4) {
+//     superStatus = 'ABSENT';
+//     subStatus = 'HO';
+//   } else if (checkIn && checkOut && !shiftStart && !shiftEnd) {
+//     superStatus = 'PRESENT';
+//     subStatus = 'PRESENT';
+//   } else {
+//     superStatus = 'ABSENT';
+//     subStatus = 'ABSENT';
+//   }
+//   return {
+//     superStatus,
+//     subStatus,
+//   };
+// };
 
 const formatMinutesToHHMM = (minutes) => {
   const m = parseInt(minutes % 60);
