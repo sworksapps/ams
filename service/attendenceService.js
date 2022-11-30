@@ -279,7 +279,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       }
 
       // auto status
-      const autoStatusRes = await autoCalculateStatus(item.shiftStart, item.shiftEnd, clockIn, clockOut);
+      // const autoStatusRes = await autoCalculateStatus(item.shiftStart, item.shiftEnd, clockIn, clockOut);
       // shiftTime
       if (item.shiftStart && item.shiftStart > 0 && item.shiftEnd && item.shiftEnd > 0)
         totalShiftTime = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
@@ -466,6 +466,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
           'locationId': 1,
           'date': 1,
           'userStatus': { '$arrayElemAt': ['$userStatus', -1] },
+          'primaryStatus': 1,
           'shiftStart': { '$arrayElemAt': ['$shiftStart', -1] },
           'shiftEnd': { '$arrayElemAt': ['$shiftEnd', -1] },
           'checkedInLocationId': { '$arrayElemAt': ['$attendenceDetails.deviceLocationIdClockIn', 0] },
@@ -492,7 +493,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
     // let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
     const userIds = resData.map(i => i.userId);
     const deptIds = resData.map(i => i.deptId);
- 
+
     let userDetails = [], userDeptDetails = [];
 
     // get user name
@@ -563,7 +564,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
         overTime = getOverTime(item.shiftStart, item.shiftEnd, clockIn, clockOut);
 
       // auto status
-      const autoStatusRes = await autoCalculateStatus(item.shiftStart, item.shiftEnd, clockIn, clockOut);
+      // const autoStatusRes = await autoCalculateStatus(item.shiftStart, item.shiftEnd, clockIn, clockOut);
 
       // get username and empCode
       const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
@@ -578,7 +579,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       resData[index]['payroll'] = userObj.length > 0 ? userObj[0]['payroll']?.trim() : '-';
       resData[index]['deptName'] = userDeptDetailsObj.length > 0 ? userDeptDetailsObj[0]['dept_name']?.trim() : '-';
       // resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
-      resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
+      // resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
       resData[index]['overTimeMin'] = shiftDurationMin > 0 && totalSpendTime > 0 && (totalSpendTime - shiftDurationMin) > 0 ? (totalSpendTime - shiftDurationMin) : 0;
       resData[index]['overTime'] = (shiftDurationMin > 0 && overTime != 'N/A' > 0) ? overTime : 'N/A';
       //resData[index]['overTime'] = shiftDurationMin > 0 && overTime > 0 ? overTime : 'N/A';
@@ -753,7 +754,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
 
     const userIds = resData.map(i => i._id);
     const deptIds = resData.map(i => i.dataArr[0].deptId);
- 
+
     let userDetails = [], userDeptDetails = [];
 
     // get user name
@@ -776,20 +777,22 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
     }
 
     for (const [index, item] of resData.entries() || []) {
-      // resData.map((item, index) => {
-      let lateEntryCount = 0;
-      let earlyExitCount = 0;
       let presentCount = 0;
+      let WOP_Count = 0;
+      let HOP_Count = 0;
+      let halfDayCount = 0;
       let absentCount = 0;
+      let WO_Count = 0;
       let leaveCount = 0;
       let holidayCount = 0;
+      let CO_Count = 0;
+      let SP_Count = 0;
+      let WFH_Count = 0;
       let totalOverTime = 0;
       let totalSpendTimeMin = 0;
       let totalShiftDurationMin = 0;
-      let lateInMin = 0;
-      
+
       for (const itemObj of item.dataArr) {
-        // item.dataArr.forEach(itemObj => {
         let clockIn = 0;
         let clockOut = 0;
         let spendTime = 0;
@@ -832,8 +835,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
 
         // overTime
         if (clockIn && clockOut && itemObj.shiftStart && itemObj.shiftEnd) {
-          overTime = getOverTime(item.shiftStart, item.shiftEnd, clockIn, clockOut);
-
+          overTime = getOverTime(itemObj.shiftStart, itemObj.shiftEnd, clockIn, clockOut);
           if (totalOverTime == 0)
             totalOverTime = overTime;
           else if (overTime && overTime != 'N/A' && totalOverTime != 0)
@@ -843,37 +845,49 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
         totalSpendTimeMin = totalSpendTimeMin + spendTime;
         totalShiftDurationMin = totalShiftDurationMin + shiftDurationMin;
 
-        // lateEntryCount
-        if (shiftDurationMin > 0 && clockIn > 0) {
-          const diff = getTimeDiff(itemObj.shiftStart, clockIn, 'minutes');
-          if (diff > 15) {
-            lateInMin = lateInMin + diff;
-            lateEntryCount++;
-          }
-        }
-
-        // EarlyExitCount
-        if (shiftDurationMin > 0 && clockOut > 0) {
-          const diff = getTimeDiff(itemObj.shiftEnd, clockOut, 'minutes');
-          if (diff < 0)
-            earlyExitCount++;
-        }
-
         // presentCount
         if (itemObj.attendenceDetails.length > 0)
           presentCount++;
+
+        //WOP Count 
+        if (itemObj.userStatus == 'WOP')
+          WOP_Count++;
+
+        //HOP Count 
+        if (itemObj.userStatus == 'HOP')
+          HOP_Count++;
+
+        //Half Day Count 
+        if (itemObj.userStatus == 'HALFDAY')
+          halfDayCount++;
 
         // absentCount 
         if (itemObj.attendenceDetails.length == 0)
           absentCount++;
 
+        //Week Off Count 
+        if (itemObj.shiftStart == -1 || itemObj.shiftEnd == -1 || itemObj.userStatus == 'WEEKLYOFF')
+          WO_Count++;
+
         //leaveCount 
-        if (itemObj.shiftStart == -3 || itemObj.shiftEnd == -3 || itemObj.userStatus == 'ONLEAVE')
+        if (itemObj.shiftStart == -3 || itemObj.shiftEnd == -3 || itemObj.userStatus == 'ONLEAVE' || itemObj.userStatus == 'CL' || itemObj.userStatus == 'SL' || itemObj.userStatus == 'LOP')
           leaveCount++;
 
         // holidayCount
-        if (itemObj['isHoliday'] || itemObj.userStatus == 'HOLIDAY')
+        if (itemObj['isHoliday'] || itemObj.userStatus == 'HOLIDAY' || itemObj.userStatus == 'HO')
           holidayCount++;
+
+        // Comp Off Count
+        if (itemObj.userStatus == 'CO')
+          CO_Count++;
+
+        // Singal Punch Count
+        if (itemObj.userStatus == 'SP')
+          SP_Count++;
+
+        //WFH Count 
+        if (itemObj.shiftStart == -2 || itemObj.shiftEnd == -2 || itemObj.userStatus == 'WFH')
+          WFH_Count++;
       }
 
       // get user name and empCode
@@ -888,23 +902,20 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       resData[index]['project'] = userObj.length > 0 ? userObj[0]['project']?.trim() : '-';
       resData[index]['payroll'] = userObj.length > 0 ? userObj[0]['payroll']?.trim() : '-';
       resData[index]['deptName'] = userDeptDetailsObj.length > 0 ? userDeptDetailsObj[0]['dept_name']?.trim() : '-';
-      resData[index]['lateEntryCount'] = lateEntryCount;
-      resData[index]['earlyExitCount'] = earlyExitCount;
       resData[index]['presentCount'] = presentCount;
+      resData[index]['WOP_Count'] = WOP_Count;
+      resData[index]['HOP_Count'] = HOP_Count;
+      resData[index]['halfDayCount'] = halfDayCount;
       resData[index]['absentCount'] = absentCount;
+      resData[index]['WO_Count'] = WO_Count;
       resData[index]['leaveCount'] = leaveCount;
       resData[index]['holidayCount'] = holidayCount;
-      // eslint-disable-next-line max-len
-      resData[index]['overTimeMin'] = totalShiftDurationMin > 0 && totalSpendTimeMin > 0 && (totalSpendTimeMin - totalShiftDurationMin) > 0 ? (totalSpendTimeMin - totalShiftDurationMin) : 0;
-      // eslint-disable-next-line max-len
-      resData[index]['overTime'] = totalShiftDurationMin > 0 && totalOverTime > 0 ? totalOverTime : 'N/A';
-      resData[index]['avgLateMin'] = (lateInMin / presentCount) > 0 ? (lateInMin / presentCount) : 0;
-      // eslint-disable-next-line max-len
-      resData[index]['avgLate'] = (lateInMin / presentCount) > 0 ? new Date((lateInMin / presentCount) * 60 * 1000).toISOString().substr(11, 5) : 'N/A';
-      // eslint-disable-next-line max-len
-      resData[index]['duration'] = totalSpendTimeMin > 0 ? formatMinutesToHHMM(totalSpendTimeMin)  : 'N/A';
+      resData[index]['CO_Count'] = CO_Count;
+      resData[index]['SP_Count'] = SP_Count;
+      resData[index]['WFH_Count'] = WFH_Count;
+      resData[index]['overTime'] = totalShiftDurationMin > 0 && totalOverTime != 0 ? totalOverTime : 'N/A';
+      resData[index]['duration'] = totalSpendTimeMin > 0 ? formatMinutesToHHMM(totalSpendTimeMin) : 'N/A';
       const avgDurationMin = (totalSpendTimeMin / presentCount) > 0 ? (totalSpendTimeMin / presentCount) : 0;
-      // eslint-disable-next-line max-len
       resData[index]['avgDuration'] = avgDurationMin > 0 ? formatMinutesToHHMM(avgDurationMin) : 'N/A';
       resData[index]['avgDurationMin'] = avgDurationMin;
     }
@@ -913,22 +924,28 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
     if (sort_by && sort_by != '') {
       if (sort_by == 'userId')
         resData = sortByKey(resData, '_id');
-      else if (sort_by == 'name')
-        resData = sortByKey(resData, sort_by);
-      else if (sort_by == 'lateEntry')
-        resData = sortByKey(resData, 'lateEntryCount');
-      else if (sort_by == 'earlyExit')
-        resData = sortByKey(resData, 'earlyExitCount');
       else if (sort_by == 'present')
         resData = sortByKey(resData, 'presentCount');
+      else if (sort_by == 'WOP')
+        resData = sortByKey(resData, 'WOP_Count');
+      else if (sort_by == 'HOP')
+        resData = sortByKey(resData, 'HOP_Count');
+      else if (sort_by == 'halfDay')
+        resData = sortByKey(resData, 'halfDayCount');
       else if (sort_by == 'absent')
         resData = sortByKey(resData, 'absentCount');
+      else if (sort_by == 'WO')
+        resData = sortByKey(resData, 'WO_Count');
       else if (sort_by == 'leave')
         resData = sortByKey(resData, 'leaveCount');
       else if (sort_by == 'holiday')
         resData = sortByKey(resData, 'holidayCount');
-      else if (sort_by == 'avgLate')
-        resData = sortByKey(resData, 'avgLateMin');
+      else if (sort_by == 'CO')
+        resData = sortByKey(resData, 'CO_Count');
+      else if (sort_by == 'SP')
+        resData = sortByKey(resData, 'SP_Count');
+      else if (sort_by == 'WFH')
+        resData = sortByKey(resData, 'WFH_Count');
       else if (sort_by == 'overtime')
         resData = sortByKey(resData, 'overTimeMin');
       else if (sort_by == 'avgWork')
