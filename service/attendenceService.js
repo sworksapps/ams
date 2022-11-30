@@ -866,11 +866,11 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
           absentCount++;
 
         //Week Off Count 
-        if (itemObj.shiftStart == -1 || itemObj.shiftEnd == -1 || itemObj.userStatus == 'WEEKLYOFF')
+        if (itemObj.userStatus == 'WEEKLYOFF')
           WO_Count++;
 
         //leaveCount 
-        if (itemObj.shiftStart == -3 || itemObj.shiftEnd == -3 || itemObj.userStatus == 'ONLEAVE' || itemObj.userStatus == 'CL' || itemObj.userStatus == 'SL' || itemObj.userStatus == 'LOP')
+        if (itemObj.userStatus == 'ONLEAVE' || itemObj.userStatus == 'CL' || itemObj.userStatus == 'SL' || itemObj.userStatus == 'LOP')
           leaveCount++;
 
         // holidayCount
@@ -886,7 +886,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
           SP_Count++;
 
         //WFH Count 
-        if (itemObj.shiftStart == -2 || itemObj.shiftEnd == -2 || itemObj.userStatus == 'WFH')
+        if (itemObj.userStatus == 'WFH')
           WFH_Count++;
       }
 
@@ -989,7 +989,7 @@ const calculateCountOfArr = async (resData) => {
       absentCount++;
 
     //wfhCount
-    if (item.userStatus == 'WFH' || item.shiftStart == -2 || item.shiftEnd == -2)
+    if (item.userStatus == 'WFH')
       wfhCount++;
 
     //Singal Punch 
