@@ -358,3 +358,16 @@ const insertAttData = async (tenantDbConnection,user_id,emp_code,card_number,che
     await logsModel(insertData).save();
   }
 };
+
+exports.validateFaceData = async (tenantDbConnection) => {
+  try {
+    const facematchdatas = await tenantDbConnection.model('facematchdatas');
+    const res = await facematchdatas.findOne();
+    if (!res)
+      return { type: false, data: res };
+
+    return { type: true, data: res };
+  } catch (err) {
+    return { type: false, data: {} };
+  }
+};
