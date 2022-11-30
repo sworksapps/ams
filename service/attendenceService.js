@@ -789,7 +789,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
         // overTime
         if (clockIn && clockOut && itemObj.shiftStart && itemObj.shiftEnd) {
           overTime = getOverTime(itemObj.shiftStart, itemObj.shiftEnd, clockIn, clockOut);
-          if (totalOverTime == 0)
+          if (overTime && overTime != 'N/A' && totalOverTime == 0)
             totalOverTime = overTime;
           else if (overTime && overTime != 'N/A' && totalOverTime != 0)
             totalOverTime = addTimeCalculation(totalOverTime, overTime);
@@ -972,7 +972,7 @@ const calculateCountOfArr = async (resData) => {
     // overTime
     if (clockIn && clockOut && item.shiftStart && item.shiftEnd) {
       overTime = getOverTime(item.shiftStart, item.shiftEnd, clockIn, clockOut);
-      if (totalOverTime == 0)
+      if (overTime && overTime != 'N/A' && totalOverTime == 0)
         totalOverTime = overTime;
       else if (overTime && overTime != 'N/A' && totalOverTime != 0)
         totalOverTime = addTimeCalculation(totalOverTime, overTime);
