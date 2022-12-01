@@ -122,14 +122,12 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
         if (filter.kpiFilter === 'ABSENT')
           dbQuery1.userStatus = { $in: absentList };
         if (filter.kpiFilter === 'ONLEAVE')
-          dbQuery1.userStatus = filter.kpiFilter;
+          dbQuery1.userStatus = { $in: ['SP', 'CL', 'LOP', 'ONLEAVE'] };
         if (filter.kpiFilter === 'WFH')
           dbQuery1.userStatus = filter.kpiFilter;
-        if (filter.kpiFilter === 'WEEKLYOFF')
+        if (filter.kpiFilter === 'SP')
           dbQuery1.userStatus = filter.kpiFilter;
-        if (filter.kpiFilter === 'ONTIME')
-          dbQuery1.userStatus = filter.kpiFilter;
-        if (filter.kpiFilter === 'LATECHECKIN')
+        if (filter.kpiFilter === 'HALFDAY')
           dbQuery1.userStatus = filter.kpiFilter;
         if (filter.kpiFilter === 'CHECKEDIN')
           dbQuery1.lastExit = '';
@@ -232,13 +230,15 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
     if (userData.data.status == 200)
       userDetails = userData.data.data;
 
-    const userDeptData = await axios.post(
-      `${process.env.CLIENTSPOC}api/v1/department/get-department-names`,
-      { deptIds: deptIds }
-    );
+    if (deptIds.length > 0) {
+      const userDeptData = await axios.post(
+        `${process.env.CLIENTSPOC}api/v1/department/get-department-names`,
+        { deptIds: deptIds }
+      );
 
-    if (userDeptData.data.status == 200) {
-      userDeptDetails = userDeptData.data.data;
+      if (userDeptData.data.status == 200) {
+        userDeptDetails = userDeptData.data.data;
+      }
     }
 
     for (const [index, item] of resData.entries() || []) {
@@ -506,13 +506,15 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       userDetails = userData.data.data;
     }
 
-    const userDeptData = await axios.post(
-      `${process.env.CLIENTSPOC}api/v1/department/get-department-names`,
-      { deptIds: deptIds }
-    );
+    if (deptIds.length > 0) {
+      const userDeptData = await axios.post(
+        `${process.env.CLIENTSPOC}api/v1/department/get-department-names`,
+        { deptIds: deptIds }
+      );
 
-    if (userDeptData.data.status == 200) {
-      userDeptDetails = userDeptData.data.data;
+      if (userDeptData.data.status == 200) {
+        userDeptDetails = userDeptData.data.data;
+      }
     }
 
     for (const [index, item] of resData.entries() || []) {
@@ -767,13 +769,15 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       userDetails = userData.data.data;
     }
 
-    const userDeptData = await axios.post(
-      `${process.env.CLIENTSPOC}api/v1/department/get-department-names`,
-      { deptIds: deptIds }
-    );
+    if (deptIds.length > 0) {
+      const userDeptData = await axios.post(
+        `${process.env.CLIENTSPOC}api/v1/department/get-department-names`,
+        { deptIds: deptIds }
+      );
 
-    if (userDeptData.data.status == 200) {
-      userDeptDetails = userDeptData.data.data;
+      if (userDeptData.data.status == 200) {
+        userDeptDetails = userDeptData.data.data;
+      }
     }
 
     for (const [index, item] of resData.entries() || []) {
