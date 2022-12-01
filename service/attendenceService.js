@@ -298,8 +298,8 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       // find user name and empId
       const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
 
-      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
-      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
+      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : 'N/A';
+      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : 'N/A';
       resData[index]['primaryStatusDB'] = resData[index]['primaryStatus'];
       // resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
       // resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
@@ -561,8 +561,8 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       // get username and empCode
       const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
 
-      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
-      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
+      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : 'N/A';
+      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : 'N/A';
       // // resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
       // resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
       resData[index]['overTimeMin'] = shiftDurationMin > 0 && totalSpendTime > 0 && (totalSpendTime - shiftDurationMin) > 0 ? (totalSpendTime - shiftDurationMin) : 0;
@@ -879,8 +879,8 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       // get user name and empCode
       const userObj = userDetails.filter(data => data.rec_id == item._id);
 
-      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
-      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
+      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : 'N/A';
+      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : 'N/A';
       resData[index]['presentCount'] = presentCount;
       resData[index]['WOP_Count'] = WOP_Count;
       resData[index]['HOP_Count'] = HOP_Count;
