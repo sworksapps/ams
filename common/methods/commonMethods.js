@@ -1,3 +1,4 @@
+/* eslint-disable no-extra-boolean-cast */
 /* eslint-disable max-len */
 const moment = require('moment-timezone');
 moment.tz.setDefault('Asia/Kolkata');
@@ -107,43 +108,43 @@ const getTimeDiff = (start, end, type) => {
   return 0;
 };
 
-const checkForHalfDay = (shiftTime = 9, workingTime, type) => {
-  if (shiftTime == 7) {
-    if (workingTime >= 4 && workingTime <= 6) {
+const checkForHalfDay = (shiftTime = 9 * 60, workingTime, type) => {
+  if (shiftTime == 7 * 60) {
+    if (workingTime >= 4 * 60 && workingTime <= 6 * 60) {
       return 'HALFDAY';
-    } else if (workingTime > 6) {
+    } else if (workingTime > 6 * 60) {
       return (type != 'NA') ? type : 'PRESENT';
     } else {
       return 'ABSENT';
     }
-  } else if (shiftTime == 8) {
-    if (workingTime >= 4 && workingTime <= 7) {
+  } else if (shiftTime == 8 * 60) {
+    if (workingTime >= 4 * 60 && workingTime <= 7 * 60) {
       return 'HALFDAY';
-    } else if (workingTime > 7) {
+    } else if (workingTime > 7 * 60) {
       return (type != 'NA') ? type : 'PRESENT';
     } else {
       return 'ABSENT';
     }
-  } else if (shiftTime == 9) {
-    if (workingTime >= 5 && workingTime <= 8) {
+  } else if (shiftTime == 9 * 60) {
+    if (workingTime >= 5 * 60 && workingTime <= 8 * 60) {
       return 'HALFDAY';
-    } else if (workingTime > 8) {
+    } else if (workingTime > 8 * 60) {
       return (type != 'NA') ? type : 'PRESENT';
     } else {
       return 'ABSENT';
     }
-  } else if (shiftTime == 10) {
-    if (workingTime >= 5 && workingTime <= 8) {
+  } else if (shiftTime == 10 * 60) {
+    if (workingTime >= 5 * 60 && workingTime <= 8 * 60) {
       return 'HALFDAY';
-    } else if (workingTime > 8) {
+    } else if (workingTime > 8 * 60) {
       return (type != 'NA') ? type : 'PRESENT';
     } else {
       return 'ABSENT';
     }
-  } else if (shiftTime == 12) {
-    if (workingTime >= 5 && workingTime <= 10) {
+  } else if (shiftTime == 12 * 60) {
+    if (workingTime >= 5 * 60 && workingTime <= 10 * 60) {
       return 'HALFDAY';
-    } else if (workingTime > 10) {
+    } else if (workingTime > 10 * 60) {
       return (type != 'NA') ? type : 'PRESENT';
     } else {
       return 'ABSENT';
@@ -198,13 +199,13 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
   const checkIn = !!Number(checkIn1) ? checkIn1 : 0;
   const checkOut = !!Number(checkOut1) ? checkOut1 : 0;
   //shiftDiff is optional in case if its not avl pass undefined in checkForHalfDay()
-  const shiftDiff = moment.unix(shiftEnd).startOf('hour').diff(moment.unix(shiftStart).startOf('hour'), 'hour');
-  const workingHoursDiff = moment.unix(checkOut).startOf('hour').diff(moment.unix(checkIn).startOf('hour'), 'hour');
-  // const shiftDiffMin = moment.unix(shiftEnd).startOf('minutes').diff(moment.unix(shiftStart).startOf('minutes'), 'minutes');
-  // const workingHoursDiffMin = moment.unix(checkOut).startOf('minutes').diff(moment.unix(checkIn).startOf('minutes'), 'minutes');
+  // const shiftDiff = moment.unix(shiftEnd).startOf('hour').diff(moment.unix(shiftStart).startOf('hour'), 'hour');
+  // const workingHoursDiff = moment.unix(checkOut).startOf('hour').diff(moment.unix(checkIn).startOf('hour'), 'hour');
+  const shiftDiffMin = moment.unix(shiftEnd).startOf('minutes').diff(moment.unix(shiftStart).startOf('minutes'), 'minutes');
+  const workingHoursDiffMin = moment.unix(checkOut).startOf('minutes').diff(moment.unix(checkIn).startOf('minutes'), 'minutes');
   const checkInDate = moment.unix(checkIn).format('YYYY/MM/DD HH:mm:ss');
   const nextDayTime = moment(checkInDate, 'YYYY/MM/DD HH:mm:ss').add(1, 'd');
-  nextDayTime.set({ hour: 23, minute: 59, second: 59, millisecond: 0 });
+  nextDayTime.set({ hour: 23, minute: 59, second: 59, millisecond: 0 })
   const nextDayTimeStamp = moment(nextDayTime, 'YYYY/MM/DD HH:mm:ss').unix();
   const currentTimeStamp = moment().unix();
   /*------Week Off------*/
@@ -222,7 +223,7 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
     if (currentTimeStamp < nextDayTimeStamp) {
       return { superStatus: 'PRESENT', subStatus: 'WOP', overTimeHours: 0, msg: 'WEEK OFF' };
     } else {
-      const chkHalfDay = checkForHalfDay(undefined, workingHoursDiff, 'WOP');
+      const chkHalfDay = checkForHalfDay(undefined, workingHoursDiffMin, 'WOP');
       return { superStatus: 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: 'WEEK OFF' };
     }
   }
@@ -244,7 +245,7 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
     if (currentTimeStamp < nextDayTimeStamp) {
       return { superStatus: 'PRESENT', subStatus: 'PRESENT', overTimeHours: 0, msg: 'WFH' };
     } else {
-      const chkHalfDay = checkForHalfDay(undefined, workingHoursDiff, 'NA');
+      const chkHalfDay = checkForHalfDay(undefined, workingHoursDiffMin, 'NA');
       return { superStatus: 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: 'WFH' };
     }
   }
@@ -266,7 +267,7 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
     if (currentTimeStamp < nextDayTimeStamp) {
       return { superStatus: 'PRESENT', subStatus: 'PRESENT', overTimeHours: 0, msg: 'LEAVE' };
     } else {
-      const chkHalfDay = checkForHalfDay(undefined, workingHoursDiff, 'NA');
+      const chkHalfDay = checkForHalfDay(undefined, workingHoursDiffMin, 'NA');
       return { superStatus: 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: 'LEAVE' };
     }
   }
@@ -288,7 +289,7 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
     if (currentTimeStamp < nextDayTimeStamp) {
       return { superStatus: 'PRESENT', subStatus: 'PRESENT', overTimeHours: 0, msg: 'HOLIDAY' };
     } else {
-      const chkHalfDay = checkForHalfDay(undefined, workingHoursDiff, 'HOP');
+      const chkHalfDay = checkForHalfDay(undefined, workingHoursDiffMin, 'HOP');
       return { superStatus: 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: 'HOLIDAY' };
     }
   }
@@ -307,13 +308,15 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
     }
   }
   if (shiftStart && shiftEnd && checkIn && checkOut) {
-    if (currentTimeStamp < nextDayTimeStamp) {
-      const overTime = getOverTimeCalculation(shiftStart, shiftEnd, checkIn, checkOut);
-      return { superStatus: 'PRESENT', subStatus: 'PRESENT', overTimeHours: overTime, msg: '2' };
-    } else {
-      const chkHalfDay = checkForHalfDay(shiftDiff, workingHoursDiff, 'NA');
-      return { superStatus: 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: '2' };
-    }
+    const chkHalfDay = checkForHalfDay(shiftDiffMin, workingHoursDiffMin, 'NA');
+    return { superStatus: 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: '2.1' };
+    // if(currentTimeStamp < nextDayTimeStamp){
+    //     const overTime = getOverTimeCalculation(shiftStart, shiftEnd, checkIn, checkOut);
+    //     return { superStatus: 'PRESENT', subStatus: 'PRESENT', overTimeHours: overTime, msg: '2' };
+    // } else {
+    //     const chkHalfDay = checkForHalfDay(shiftDiffMin, workingHoursDiffMin, 'NA');
+    //     return { superStatus: 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: '2.1' };
+    // }
   }
   if (shiftStart && shiftEnd && !checkIn && !checkOut) {
     return { superStatus: 'ABSENT', subStatus: 'ABSENT', overTimeHours: 0, msg: 'Absent' };
@@ -332,7 +335,7 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
     if (currentTimeStamp < nextDayTimeStamp) {
       return { superStatus: 'PRESENT', subStatus: 'PRESENT', overTimeHours: 0, msg: '4' };
     } else {
-      const chkHalfDay = checkForHalfDay(shiftDiff, workingHoursDiff, 'NA');
+      const chkHalfDay = checkForHalfDay(shiftDiffMin, workingHoursDiffMin, 'NA');
       return { superStatus: 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: '4' };
     }
   }
@@ -341,8 +344,6 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
   }
   return { superStatus: 'NA', subStatus: 'NA', overTimeHours: 0, msg: '6' };
 };
-
-
 
 module.exports = {
   createUserActivity,
