@@ -253,18 +253,16 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       let flag = false;
 
       item.attendenceDetails.forEach(element => {
-        clockIn = element.clockIn;
-        clockOut = element.clockOut;
-        clockInLocId = element.deviceLocationIdClockIn;
+        if (element.actionBy && element.actionBy == 'ADMIN') {
+          clockIn = element.clockIn;
+          clockOut = element.clockOut;
+          clockInLocId = element.deviceLocationIdClockIn;
 
-        if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && element.actionBy && element.actionBy == 'ADMIN') {
-          flag = true;
-          totalSpendTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
+          if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0) {
+            flag = true;
+            totalSpendTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
+          }
         }
-        // else if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && !flag) {
-        //   const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
-        //   totalSpendTimeByUser = totalSpendTimeByUser + diff;
-        // }
       });
 
       if (flag) {
@@ -530,18 +528,16 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       let totalShiftTimeByAdmin = 0;
 
       item.attendenceDetails.forEach(element => {
-        clockIn = element.clockIn;
-        clockOut = element.clockOut;
-        clockInLocId = element.deviceLocationIdClockIn;
+        if (element.actionBy && element.actionBy == 'ADMIN') {
+          clockIn = element.clockIn;
+          clockOut = element.clockOut;
+          clockInLocId = element.deviceLocationIdClockIn;
 
-        if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && element.actionBy && element.actionBy == 'ADMIN') {
-          flag = true;
-          totalShiftTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
+          if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0) {
+            flag = true;
+            totalShiftTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
+          }
         }
-        // else if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && !flag) {
-        //   const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
-        //   totalSpendTimeByUser = totalSpendTimeByUser + diff;
-        // }
       });
 
       if (flag)
@@ -809,18 +805,15 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
         let totalShiftTimeByAdmin = 0;
 
         itemObj.attendenceDetails.forEach(element => {
-          // eslint-disable-next-line max-len
-          clockIn = element.clockIn;
-          clockOut = element.clockOut;
+          if (element.actionBy && element.actionBy == 'ADMIN') {
+            clockIn = element.clockIn;
+            clockOut = element.clockOut;
 
-          if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && element.actionBy && element.actionBy == 'ADMIN') {
-            flag = true;
-            totalShiftTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
+            if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0) {
+              flag = true;
+              totalShiftTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
+            }
           }
-          // else if (element.clockIn && element.clockIn > 0 && element.clockOut && element.clockOut > 0 && !flag) {
-          //   const diff = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
-          //   totalSpendTimeByUser = totalSpendTimeByUser + diff;
-          // }
         });
 
         if (flag)
@@ -1017,7 +1010,7 @@ const calculateCountOfArr = async (resData) => {
     let flag = false;
 
     item.attendenceDetails.forEach(element => {
-      if (element.actionBy == 'ADMIN') {
+      if (element.actionBy && element.actionBy == 'ADMIN') {
         clockIn = element.clockIn;
         clockOut = element.clockOut;
         flag = true;
