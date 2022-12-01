@@ -308,8 +308,6 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       resData[index]['payroll'] = userObj.length > 0 && userObj[0]['payroll'] ? userObj[0]['payroll'].trim() : '-';
       resData[index]['deptName'] = userDeptDetailsObj.length > 0 ? userDeptDetailsObj[0]['dept_name']?.trim() : '-';
       resData[index]['primaryStatusDB'] = resData[index]['primaryStatus'];
-      // resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
-      // resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
       resData[index]['overTime'] = (totalShiftTime > 0 && overTime != 'N/A' > 0) ? overTime : 'N/A';
       resData[index]['durationMin'] = totalSpendTime;
       resData[index]['checkedInLocationId'] = clockInLocId ? clockInLocId : 'N/A';
@@ -577,11 +575,8 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       resData[index]['project'] = userObj.length > 0 && userObj[0]['project'] ? userObj[0]['project'].trim() : '-';
       resData[index]['payroll'] = userObj.length > 0 && userObj[0]['payroll'] ? userObj[0]['payroll'].trim() : '-';
       resData[index]['deptName'] = userDeptDetailsObj.length > 0 ? userDeptDetailsObj[0]['dept_name']?.trim() : '-';
-      // resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
-      // resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
       resData[index]['overTimeMin'] = shiftDurationMin > 0 && totalSpendTime > 0 && (totalSpendTime - shiftDurationMin) > 0 ? (totalSpendTime - shiftDurationMin) : 0;
       resData[index]['overTime'] = (shiftDurationMin > 0 && overTime != 'N/A' > 0) ? overTime : 'N/A';
-      //resData[index]['overTime'] = shiftDurationMin > 0 && overTime > 0 ? overTime : 'N/A';
       resData[index]['checkedInLocationId'] = clockInLocId ? clockInLocId : 'N/A';
       resData[index]['clockIn'] = clockIn > 0 ? moment.unix(clockIn).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['clockOut'] = clockOut > 0 ? moment.unix(clockOut).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
