@@ -2,6 +2,8 @@
 // const mongoose = require('mongoose');
 const moment = require('moment');
 const prozoClienId = process.env.prozoClienId;
+
+const commonMethods = require('../common/methods/commonMethods');
 /*
  *------------User Service------------
  */
@@ -117,13 +119,15 @@ exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body
     }
     // check last checkin end
     if (!res) {
+      const autoCalculateValue = commonMethods.autoCalculateStatus('', '', clockInTimeStamp, '', '');
       const insertData = {
         deptId: userDetails.user_dept_id,
         locationId: userDetails.location_id,
         userId: userDetails.user_id,
         date: date,
         attendenceStatus: 'CLOCKIN',
-        userStatus: ['PRESENT'],
+        userStatus: [autoCalculateValue.subStatus],
+        primaryStatus: autoCalculateValue.superStatus,
         attendenceDetails: [{ clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: body.deviceName, deviceNumberClockIn: body.deviceNumber, deviceLocationClockIn: body.deviceLocation, deviceLocationIdClockIn: body.locationId }],
       };
       await attendenceModel(insertData).save();
@@ -140,9 +144,10 @@ exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body
       const attendenceDetails = res.attendenceDetails;
       attendenceDetails.push({ clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: body.deviceName, deviceNumberClockIn: body.deviceNumber, deviceLocationClockIn: body.deviceLocation, deviceLocationIdClockIn: body.locationId });
       const userStatus = res.userStatus;
-  
-      if (!userStatus.includes('PRESENT'))
-        userStatus.push('PRESENT');
+      userStatus.push(autoCalculateValue.subStatus);
+      
+      const autoCalculateValue = commonMethods.autoCalculateStatus(res.shiftStart[res.shiftStart.length -1], res.shiftEnd[res.shiftEnd.length -1], attendenceDetails[0]['clockIn'], '', '');
+      
         
       // if(res.shiftStart && res.shiftStart.length > 0)
       // {
@@ -153,10 +158,10 @@ exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body
       //   if(diffTime > 15)
       //     userStatus.push('LATECHECKIN');
       // }
-  
+      
       await attendenceModel.findOneAndUpdate(
         { _id: res._id },
-        { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKIN', userStatus: userStatus }
+        { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKIN', userStatus: userStatus, primaryStatus: autoCalculateValue.superStatus }
       );
       clockInTimeStamp = moment.unix(clockInTimeStamp).format('hh:mm a');
       if (res.attendenceStatus == 'CLOCKOUT')
@@ -223,21 +228,14 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, body, de
       clockInTimeStamp = moment.unix(res.attendenceDetails[0].clockIn).format('hh:mm a');
       clockOutTimeStamp = moment.unix(clockOutTimeStamp).format('hh:mm a');
 
+      const autoCalculateValue = commonMethods.autoCalculateStatus(res.shiftStart[res.shiftStart.length -1], res.shiftEnd[res.shiftEnd.length -1], attendenceDetails[0].clockIn, clockOutTimeStamp, '');
+
       const userStatus = res.userStatus;
-      
-      // if(res.shiftEnd && res.shiftEnd.length > 0 && moment().unix() >= (res.shiftEnd[res.shiftEnd.length -1] - 15))
-      // {
-      //   const diffTime = getTimeDiff(res.shiftEnd[res.shiftEnd.length -1], clockOutTimeStamp, 'minutes');
-      //   if(diffTime > -15)
-      //     userStatus.push('EARLYEXIT');
-        
-      //   if(diffTime > 15)
-      //     userStatus.push('LATEEXIT');
-      // }
+      userStatus.push(autoCalculateValue.subStatus);
 
       await attendenceModel.findOneAndUpdate(
         { _id: res._id },
-        { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKOUT', userStatus : userStatus }
+        { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKOUT', userStatus : userStatus, primaryStatus: autoCalculateValue.superStatus }
       );
 
       if(decodedjwt.clientId == prozoClienId)
