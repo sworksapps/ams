@@ -205,7 +205,7 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
   const workingHoursDiffMin = moment.unix(checkOut).startOf('minutes').diff(moment.unix(checkIn).startOf('minutes'), 'minutes');
   const checkInDate = moment.unix(checkIn).format('YYYY/MM/DD HH:mm:ss');
   const nextDayTime = moment(checkInDate, 'YYYY/MM/DD HH:mm:ss').add(1, 'd');
-  nextDayTime.set({ hour: 23, minute: 59, second: 59, millisecond: 0 })
+  nextDayTime.set({ hour: 23, minute: 59, second: 59, millisecond: 0 });
   const nextDayTimeStamp = moment(nextDayTime, 'YYYY/MM/DD HH:mm:ss').unix();
   const currentTimeStamp = moment().unix();
   /*------Week Off------*/

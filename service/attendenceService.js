@@ -217,7 +217,9 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
     const kpiRes = await calculateCountOfArr(kpiData);
 
     const userIds = resData.map(i => i.userId);
-    let userDetails = [];
+    const deptIds = resData.map(i => i.deptId);
+
+    let userDetails = [], userDeptDetails = [];
 
     // get user name
     const userData = await axios.post(
@@ -296,11 +298,16 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       // find user name and empId
       const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
 
-      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : 'N/A';
-      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : 'N/A';
+      // find user department name
+      const userDeptDetailsObj = userDeptDetails.filter(data => data.id == item.deptId);
+
+      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
+      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
+      resData[index]['designation'] = userObj.length > 0 && userObj[0]['designation'] ? userObj[0]['designation'].trim() : '-';
+      resData[index]['project'] = userObj.length > 0 && userObj[0]['project'] ? userObj[0]['project'].trim() : '-';
+      resData[index]['payroll'] = userObj.length > 0 && userObj[0]['payroll'] ? userObj[0]['payroll'].trim() : '-';
+      resData[index]['deptName'] = userDeptDetailsObj.length > 0 ? userDeptDetailsObj[0]['dept_name']?.trim() : '-';
       resData[index]['primaryStatusDB'] = resData[index]['primaryStatus'];
-      // resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
-      // resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
       resData[index]['overTime'] = (totalShiftTime > 0 && overTime != 'N/A' > 0) ? overTime : 'N/A';
       resData[index]['durationMin'] = totalSpendTime;
       resData[index]['checkedInLocationId'] = clockInLocId ? clockInLocId : 'N/A';
@@ -482,7 +489,9 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
     let resData = await attModel.aggregate([...query]);
     // let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
     const userIds = resData.map(i => i.userId);
-    let userDetails = [];
+    const deptIds = resData.map(i => i.deptId);
+ 
+    let userDetails = [], userDeptDetails = [];
 
     // get user name
     const userData = await axios.post(
@@ -557,13 +566,17 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       // get username and empCode
       const userObj = userDetails.filter(data => data.rec_id == resData[index]['userId']);
 
-      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : 'N/A';
-      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : 'N/A';
-      // // resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
-      // resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
+      // get department name
+      const userDeptDetailsObj = userDeptDetails.filter(data => data.id == item.deptId);
+
+      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
+      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
+      resData[index]['designation'] = userObj.length > 0 && userObj[0]['designation'] ? userObj[0]['designation'].trim() : '-';
+      resData[index]['project'] = userObj.length > 0 && userObj[0]['project'] ? userObj[0]['project'].trim() : '-';
+      resData[index]['payroll'] = userObj.length > 0 && userObj[0]['payroll'] ? userObj[0]['payroll'].trim() : '-';
+      resData[index]['deptName'] = userDeptDetailsObj.length > 0 ? userDeptDetailsObj[0]['dept_name']?.trim() : '-';
       resData[index]['overTimeMin'] = shiftDurationMin > 0 && totalSpendTime > 0 && (totalSpendTime - shiftDurationMin) > 0 ? (totalSpendTime - shiftDurationMin) : 0;
       resData[index]['overTime'] = (shiftDurationMin > 0 && overTime != 'N/A' > 0) ? overTime : 'N/A';
-      //resData[index]['overTime'] = shiftDurationMin > 0 && overTime > 0 ? overTime : 'N/A';
       resData[index]['checkedInLocationId'] = clockInLocId ? clockInLocId : 'N/A';
       resData[index]['clockIn'] = clockIn > 0 ? moment.unix(clockIn).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['clockOut'] = clockOut > 0 ? moment.unix(clockOut).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
@@ -735,7 +748,9 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
     // let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
 
     const userIds = resData.map(i => i._id);
-    let userDetails = [];
+    const deptIds = resData.map(i => i.dataArr[0].deptId);
+ 
+    let userDetails = [], userDeptDetails = [];
 
     // get user name
     const userData = await axios.post(
@@ -872,8 +887,15 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       // get user name and empCode
       const userObj = userDetails.filter(data => data.rec_id == item._id);
 
-      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : 'N/A';
-      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : 'N/A';
+      // find user department name
+      const userDeptDetailsObj = userDeptDetails.filter(data => data.id == item.dataArr[0].deptId);
+
+      resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
+      resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
+      resData[index]['designation'] = userObj.length > 0 && userObj[0]['designation'] ? userObj[0]['designation'].trim() : '-';
+      resData[index]['project'] = userObj.length > 0 && userObj[0]['project'] ? userObj[0]['project'].trim() : '-';
+      resData[index]['payroll'] = userObj.length > 0 && userObj[0]['payroll'] ? userObj[0]['payroll'].trim() : '-';
+      resData[index]['deptName'] = userDeptDetailsObj.length > 0 ? userDeptDetailsObj[0]['dept_name']?.trim() : '-';
       resData[index]['presentCount'] = presentCount;
       resData[index]['WOP_Count'] = WOP_Count;
       resData[index]['HOP_Count'] = HOP_Count;
