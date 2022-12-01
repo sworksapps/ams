@@ -1,9 +1,8 @@
 /* eslint-disable max-len */
 const moment = require('moment');
 const axios = require('axios');
-// eslint-disable-next-line max-len
-const presentList = ['PRESENT', 'LATECHECKIN', 'ONTIME', 'EARLYEXIT', 'LATEEXIT', 'OVERTIME', 'HALFDAY', 'WOP', 'HOP'];
-const absentList = ['ABSENT'];
+const presentList = ['PRESENT', 'HALFDAY', 'WOP', 'HOP'];
+const absentList = ['ABSENT', 'WEEKLYOFF', 'LOP', 'SL', 'CL', 'HO', 'CO', 'SP', 'WFH'];
 /* ---------------get daily report----------------------*/
 exports.insertShiftData = async (tenantDbConnection, bodyData) => {
   try {
@@ -122,7 +121,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
         if (filter.kpiFilter === 'ABSENT')
           dbQuery1.userStatus = { $in: absentList };
         if (filter.kpiFilter === 'ONLEAVE')
-          dbQuery1.userStatus = { $in: ['SP', 'CL', 'LOP', 'ONLEAVE'] };
+          dbQuery1.userStatus = { $in: ['SL', 'CL', 'LOP', 'ONLEAVE'] };
         if (filter.kpiFilter === 'WFH')
           dbQuery1.userStatus = filter.kpiFilter;
         if (filter.kpiFilter === 'SP')
@@ -313,19 +312,19 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       resData[index]['primaryStatusDB'] = resData[index]['primaryStatus'];
       // resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
       // resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
-      resData[index]['overTime'] = (totalShiftTime > 0 && overTime != 'N/A' > 0) ? overTime : '-';
+      resData[index]['overTime'] = (totalShiftTime > 0 && overTime != 'N/A' > 0) ? overTime : 'N/A';
       resData[index]['durationMin'] = totalSpendTime;
-      resData[index]['checkedInLocationId'] = clockInLocId ? clockInLocId : '-';
-      resData[index]['clockIn'] = clockIn > 0 ? moment.unix(clockIn).format('YYYY-MM-DD HH:mm:ss') : '-';
-      resData[index]['clockOut'] = clockOut > 0 ? moment.unix(clockOut).format('YYYY-MM-DD HH:mm:ss') : '-';
+      resData[index]['checkedInLocationId'] = clockInLocId ? clockInLocId : 'N/A';
+      resData[index]['clockIn'] = clockIn > 0 ? moment.unix(clockIn).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
+      resData[index]['clockOut'] = clockOut > 0 ? moment.unix(clockOut).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['clockInNum'] = clockIn;
       resData[index]['clockOutNum'] = clockOut;
-      resData[index]['duration'] = totalSpendTime > 0 ? formatMinutesToHHMM(totalSpendTime) : '-';
-      resData[index]['recentEnrty'] = item['recentEnrty'] && item['recentEnrty'] > 0 ? moment.unix(item['recentEnrty']).format('YYYY-MM-DD HH:mm:ss') : '-';
+      resData[index]['duration'] = totalSpendTime > 0 ? formatMinutesToHHMM(totalSpendTime) : 'N/A';
+      resData[index]['recentEnrty'] = item['recentEnrty'] && item['recentEnrty'] > 0 ? moment.unix(item['recentEnrty']).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['shiftStartNum'] = item['shiftStart'];
       resData[index]['shiftEndNum'] = item['shiftEnd'];
-      resData[index]['shiftStart'] = item['shiftStart'] && item['shiftStart'] > 0 ? moment.unix(item['shiftStart']).format('YYYY-MM-DD HH:mm:ss') : '-';
-      resData[index]['shiftEnd'] = item['shiftEnd'] && item['shiftEnd'] > 0 ? moment.unix(item['shiftEnd']).format('YYYY-MM-DD HH:mm:ss') : '-';
+      resData[index]['shiftStart'] = item['shiftStart'] && item['shiftStart'] > 0 ? moment.unix(item['shiftStart']).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
+      resData[index]['shiftEnd'] = item['shiftEnd'] && item['shiftEnd'] > 0 ? moment.unix(item['shiftEnd']).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['holidayName'] = resData[index]['holidayName'] ? resData[index]['holidayName'] : '';
     }
 
@@ -585,19 +584,19 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       // resData[index]['userStatus'] = autoStatusRes ? autoStatusRes.subStatus : 'N/A';
       // resData[index]['primaryStatus'] = autoStatusRes ? autoStatusRes.superStatus : 'N/A';
       resData[index]['overTimeMin'] = shiftDurationMin > 0 && totalSpendTime > 0 && (totalSpendTime - shiftDurationMin) > 0 ? (totalSpendTime - shiftDurationMin) : 0;
-      resData[index]['overTime'] = (shiftDurationMin > 0 && overTime != 'N/A' > 0) ? overTime : '-';
-      //resData[index]['overTime'] = shiftDurationMin > 0 && overTime > 0 ? overTime : '-';
-      resData[index]['checkedInLocationId'] = clockInLocId ? clockInLocId : '-';
-      resData[index]['clockIn'] = clockIn > 0 ? moment.unix(clockIn).format('YYYY-MM-DD HH:mm:ss') : '-';
-      resData[index]['clockOut'] = clockOut > 0 ? moment.unix(clockOut).format('YYYY-MM-DD HH:mm:ss') : '-';
+      resData[index]['overTime'] = (shiftDurationMin > 0 && overTime != 'N/A' > 0) ? overTime : 'N/A';
+      //resData[index]['overTime'] = shiftDurationMin > 0 && overTime > 0 ? overTime : 'N/A';
+      resData[index]['checkedInLocationId'] = clockInLocId ? clockInLocId : 'N/A';
+      resData[index]['clockIn'] = clockIn > 0 ? moment.unix(clockIn).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
+      resData[index]['clockOut'] = clockOut > 0 ? moment.unix(clockOut).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['clockInNum'] = clockIn;
       resData[index]['clockOutNum'] = clockOut;
       resData[index]['shiftStartNum'] = item['shiftStart'];
       resData[index]['shiftEndNum'] = item['shiftEnd'];
-      resData[index]['shiftStart'] = item['shiftStart'] && item['shiftStart'] > 0 ? moment.unix(item['shiftStart']).format('YYYY-MM-DD HH:mm:ss') : '-';
-      resData[index]['shiftEnd'] = item['shiftEnd'] && item['shiftEnd'] > 0 ? moment.unix(item['shiftEnd']).format('YYYY-MM-DD HH:mm:ss') : '-';
+      resData[index]['shiftStart'] = item['shiftStart'] && item['shiftStart'] > 0 ? moment.unix(item['shiftStart']).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
+      resData[index]['shiftEnd'] = item['shiftEnd'] && item['shiftEnd'] > 0 ? moment.unix(item['shiftEnd']).format('YYYY-MM-DD HH:mm:ss') : 'N/A';
       resData[index]['durationMin'] = totalSpendTime;
-      resData[index]['duration'] = totalSpendTime > 0 ? formatMinutesToHHMM(totalSpendTime) : '-';
+      resData[index]['duration'] = totalSpendTime > 0 ? formatMinutesToHHMM(totalSpendTime) : 'N/A';
     }
 
     //sorting
@@ -920,10 +919,10 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       resData[index]['CO_Count'] = CO_Count;
       resData[index]['SP_Count'] = SP_Count;
       resData[index]['WFH_Count'] = WFH_Count;
-      resData[index]['overTime'] = (totalShiftDurationMin > 0 && totalOverTime != 'N/A' > 0) ? totalOverTime : '-';
-      resData[index]['duration'] = totalSpendTimeMin > 0 ? formatMinutesToHHMM(totalSpendTimeMin) : '-';
+      resData[index]['overTime'] = (totalShiftDurationMin > 0 && totalOverTime != 'N/A' > 0) ? totalOverTime : 'N/A';
+      resData[index]['duration'] = totalSpendTimeMin > 0 ? formatMinutesToHHMM(totalSpendTimeMin) : 'N/A';
       const avgDurationMin = (totalSpendTimeMin / presentCount) > 0 ? (totalSpendTimeMin / presentCount) : 0;
-      resData[index]['avgDuration'] = avgDurationMin > 0 ? formatMinutesToHHMM(avgDurationMin) : '-';
+      resData[index]['avgDuration'] = avgDurationMin > 0 ? formatMinutesToHHMM(avgDurationMin) : 'N/A';
       resData[index]['avgDurationMin'] = avgDurationMin;
     }
 
@@ -1048,7 +1047,7 @@ const calculateCountOfArr = async (resData) => {
     'SP_Count': SP_Count,
     'halfDayCount': halfDayCount,
     'leaveCount': leaveCount,
-    'totalOverTime': totalOverTime != 'N/A' && totalOverTime != 0 ? totalOverTime : '-'
+    'totalOverTime': totalOverTime != 'N/A' && totalOverTime != 0 ? totalOverTime : 'N/A'
   };
   return calObj;
 };
