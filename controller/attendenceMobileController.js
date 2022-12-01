@@ -348,7 +348,7 @@ exports.checkInSubmit = async (req, res) => {
 
     const userData = await axios.post(
       `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
-      { faceId: req.body.userFaceId }
+      { faceId: req.body.userFaceId, company_id: decodedjwt.clientId }
     );
   
     if (userData.data.status != 'success')
@@ -471,7 +471,7 @@ exports.checkOutSubmit = async (req, res) => {
 
     const userData = await axios.post(
       `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
-      { faceId: req.body.userFaceId }
+      { faceId: req.body.userFaceId, company_id: decodedjwt.clientId }
     );
   
     if (userData.data.status != 'success')
