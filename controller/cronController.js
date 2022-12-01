@@ -21,9 +21,12 @@ exports.autoCheckoutAtMidnight = async (req, res) => {
       if(tenantDb){
         successFlag = true;
         const attModel = await tenantDb.model('attendences_data');
-        await attModel.updateMany(
-          { date: previousDate, attendenceStatus: 'CLOCKIN' }, {'$set':{ attendenceStatus: 'AUTOCHECKOUT' }}
-        );
+
+        const update = {
+          $set: { attendenceStatus: 'AUTOCHECKOUT', primaryStatus: 'ABSENT' },
+          $push: {userStatus: 'SP'}
+        };
+        await attModel.updateMany( { date: previousDate, attendenceStatus: 'CLOCKIN' }, update );
       }
     }
     return { status: successFlag, msg: 'Cron task done' };
