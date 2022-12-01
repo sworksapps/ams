@@ -143,11 +143,11 @@ exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body
     if (res.attendenceStatus == 'CLOCKOUT' || res.attendenceStatus == 'N/A') {
       const attendenceDetails = res.attendenceDetails;
       attendenceDetails.push({ clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: body.deviceName, deviceNumberClockIn: body.deviceNumber, deviceLocationClockIn: body.deviceLocation, deviceLocationIdClockIn: body.locationId });
-      const userStatus = res.userStatus;
-      userStatus.push(autoCalculateValue.subStatus);
+      
       
       const autoCalculateValue = commonMethods.autoCalculateStatus(res.shiftStart[res.shiftStart.length -1], res.shiftEnd[res.shiftEnd.length -1], attendenceDetails[0]['clockIn'], '', '');
-      
+      const userStatus = res.userStatus;
+      userStatus.push(autoCalculateValue.subStatus);
         
       // if(res.shiftStart && res.shiftStart.length > 0)
       // {
