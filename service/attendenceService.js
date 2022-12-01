@@ -88,6 +88,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
     const dbQuery = [{ 'date': date }];
     const dbQuery1 = {};
     const dbQuery2 = [];
+    const dbQuery3 = [];
     const attModel = await dbConnection.model('attendences_data');
 
     if (filter) {
@@ -128,8 +129,10 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
           dbQuery1.userStatus = filter.kpiFilter;
         if (filter.kpiFilter === 'HALFDAY')
           dbQuery1.userStatus = filter.kpiFilter;
-        if (filter.kpiFilter === 'CHECKEDIN')
+        if (filter.kpiFilter === 'CHECKEDIN') {
           dbQuery1.lastExit = '';
+          dbQuery3.push({ firstEnrty: { $ne: '' } }, { attendenceStatus: { $ne: 'AUTOCHECKOUT' } });
+        }
       }
     }
 
@@ -198,11 +201,18 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       {
         $match: dbQuery1 ? dbQuery1 : {}
       },
+      {
+        $match: {}
+      },
       { $sort: sort_by },
     ];
 
     if (dbQuery.length > 0)
       query[0].$match.$and = dbQuery;
+
+    if (dbQuery3.length > 0)
+      query[4].$match.$and = dbQuery3;
+
     if (dbQuery2.length > 0)
       query[3].$match.$or = dbQuery2;
 
@@ -490,7 +500,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
     // let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
     const userIds = resData.map(i => i.userId);
     const deptIds = resData.map(i => i.deptId);
- 
+
     let userDetails = [], userDeptDetails = [];
 
     // get user name
@@ -749,7 +759,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
 
     const userIds = resData.map(i => i._id);
     const deptIds = resData.map(i => i.dataArr[0].deptId);
- 
+
     let userDetails = [], userDeptDetails = [];
 
     // get user name
