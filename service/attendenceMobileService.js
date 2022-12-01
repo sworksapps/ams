@@ -144,15 +144,15 @@ exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body
       if (!userStatus.includes('PRESENT'))
         userStatus.push('PRESENT');
         
-      if(res.shiftStart && res.shiftStart.length > 0)
-      {
-        const diffTime = getTimeDiff(res.shiftStart[res.shiftStart.length -1], clockInTimeStamp, 'minutes');
-        if(diffTime <= 15  && diffTime >= -15)
-          userStatus.push('ONTIME');
+      // if(res.shiftStart && res.shiftStart.length > 0)
+      // {
+      //   const diffTime = getTimeDiff(res.shiftStart[res.shiftStart.length -1], clockInTimeStamp, 'minutes');
+      //   if(diffTime <= 15  && diffTime >= -15)
+      //     userStatus.push('ONTIME');
           
-        if(diffTime > 15)
-          userStatus.push('LATECHECKIN');
-      }
+      //   if(diffTime > 15)
+      //     userStatus.push('LATECHECKIN');
+      // }
   
       await attendenceModel.findOneAndUpdate(
         { _id: res._id },
@@ -225,15 +225,15 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, body, de
 
       const userStatus = res.userStatus;
       
-      if(res.shiftEnd && res.shiftEnd.length > 0 && moment().unix() >= (res.shiftEnd[res.shiftEnd.length -1] - 15))
-      {
-        const diffTime = getTimeDiff(res.shiftEnd[res.shiftEnd.length -1], clockOutTimeStamp, 'minutes');
-        if(diffTime > -15)
-          userStatus.push('EARLYEXIT');
+      // if(res.shiftEnd && res.shiftEnd.length > 0 && moment().unix() >= (res.shiftEnd[res.shiftEnd.length -1] - 15))
+      // {
+      //   const diffTime = getTimeDiff(res.shiftEnd[res.shiftEnd.length -1], clockOutTimeStamp, 'minutes');
+      //   if(diffTime > -15)
+      //     userStatus.push('EARLYEXIT');
         
-        if(diffTime > 15)
-          userStatus.push('LATEEXIT');
-      }
+      //   if(diffTime > 15)
+      //     userStatus.push('LATEEXIT');
+      // }
 
       await attendenceModel.findOneAndUpdate(
         { _id: res._id },
