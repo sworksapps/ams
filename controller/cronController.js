@@ -6,8 +6,8 @@ exports.autoCheckoutAtMidnight = async (req, res) => {
   try {
     console.log('Auto Checkout At Midnight Cron task Executed');
     const adminConn = getAdminConnection();
-    if (adminConn) {
-      return { status: false, msg: 'The provided admin is not Available' };
+    if (!adminConn){
+      return {status: false, msg: 'The provided admin is not Available'};
     }
     let successFlag = false;
     const ClientTable = await adminConn.model('client_master_datas');
@@ -26,7 +26,7 @@ exports.autoCheckoutAtMidnight = async (req, res) => {
           $set: { attendenceStatus: 'AUTOCHECKOUT', primaryStatus: 'ABSENT' },
           $push: { userStatus: 'SP' }
         };
-        await attModel.updateMany({ date: previousDate, attendenceStatus: 'CLOCKIN' }, update);
+        await attModel.updateMany( { date: previousDate, attendenceStatus: 'CLOCKIN' }, update );
       }
     }
     return { status: successFlag, msg: 'Cron task done' };
