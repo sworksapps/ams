@@ -214,7 +214,7 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
   }
   if (shiftStart == -1 && shiftEnd == -1 && checkIn && !checkOut) {
     if (currentTimeStamp < nextDayTimeStamp) {
-      return { superStatus: 'PRESENT', subStatus: 'WOP', overTimeHours: 0, msg: 'WEEK OFF' };
+      return { superStatus: 'PRESENT', subStatus: 'PRESENT', overTimeHours: 0, msg: 'WEEK OFF' };
     } else {
       return { superStatus: 'PRESENT', subStatus: 'SP', overTimeHours: 0, msg: 'WEEK OFF' };
     }
