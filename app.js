@@ -10,6 +10,7 @@ const axios = require('axios');
 
 const { connectAllDb, getConnectionByTenant } = require('./connectionManager');
 
+const { autoCheckoutAtMidnight } = require('./controller/cronController');
 /*
  *-----------------------Includes Routes----------------
  */
@@ -35,7 +36,7 @@ connectAllDb();
 /*------------------------*/
 app.get('/', async (req, res) => {
   try {
-  // throw new Error('dvcgdscd');
+    // throw new Error('dvcgdscd');
     res.status(200).json({ statusText: 'OK', statusValue: 200, message: 'Message From index 😊'});
   } catch (err) {
     console.log(err);
@@ -206,6 +207,18 @@ cron.schedule('0 0 */3 * * *', async () => {
     });
   }
   console.log('running at every 3 hours');
+});
+
+/*--------------*/
+cron.schedule('1 0 0 * * *', async () => {
+  console.log('Running a job at 12:45 at Asia/Kolkata timezone');
+  const cronRes = await autoCheckoutAtMidnight();
+  if(cronRes.status == false){
+    await autoCheckoutAtMidnight();
+  }
+}, {
+  scheduled: true,
+  timezone: 'Asia/Kolkata'
 });
 
 /*-----------------------------*/
