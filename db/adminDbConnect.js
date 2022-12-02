@@ -63,7 +63,7 @@ const initAdminDbConnection = async (DB_URL) => {
     //   )
     // );
     // db.once('open', () => {
-    //   console.log('initAdminDbConnection client MongoDB Connection ok!');
+    //   console.log('initAdminDbConnection client MongoDB Connection ok!);
     // });
 
     // require all schemas
