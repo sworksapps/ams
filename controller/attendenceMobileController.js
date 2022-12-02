@@ -7,6 +7,7 @@ const moment = require('moment');
 const {
   RekognitionClient,
   SearchFacesByImageCommand,
+  DetectFacesCommand
 } = require('@aws-sdk/client-rekognition');
 
 const client = new RekognitionClient({
@@ -99,51 +100,20 @@ exports.checkIn = async (req, res) => {
         statusValue: 400,
         message: fileUpRes.message,
       });
+    
+    const dbConnection = getConnection();
+    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
-    const params = {
-      CollectionId: process.env.COLLECTIONID,
-      FaceMatchThreshold: 80,
-      Image: {
-        S3Object: {
-          Bucket: process.env.BUCKETNAME,
-          Name: fileUpRes.imgName,
-        },
-      },
-      MaxFaces: 1,
-    };
-    const command = new SearchFacesByImageCommand(params);
-
-    const faceData = await client.send(command);
-
-    if (faceData.FaceMatches.length == 0)
-      return res.status(200).json({
+    const validateFaceData = await validateFace(dbConnection, fileUpRes.imgName, decodedjwt);
+    if(validateFaceData.status == false)
+      return res.status(400).json({
         statusText: 'FAIL',
         statusValue: 400,
-        message: `It seems you're not registered with our face recognition. Please contact your Company's SPOC`,
+        message: validateFaceData.message,
+        data: validateFaceData.data
       });
 
-    const userFaceId = faceData.FaceMatches[0].Face.FaceId;
-
-    const userData = await axios.post(
-      `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
-      { faceId: userFaceId }
-    );
-
-    if (userData.data.status != 'success')
-      return res.status(200).json({
-        statusText: 'FAIL',
-        statusValue: 400,
-        message: `SPOC Internal Server Error. Please contact your Company's SPOC`,
-      });
-
-    if (userData.data.data.result.length == 0)
-      return res.status(200).json({
-        statusText: 'FAIL',
-        statusValue: 400,
-        message: `It seems you're not registered with us. Please contact your Company's SPOC`,
-      });
-
-    const userDetails = userData.data.data.result[0];
+    const userDetails = validateFaceData.data;
   
     if(decodedjwt.clientId == '2137' && userDetails.emp_code == '')
       return res.status(200).json({
@@ -171,8 +141,6 @@ exports.checkIn = async (req, res) => {
     const clockInTime = moment().unix();
     const clockInTimeString  = moment.unix(clockInTime).format('hh:mm a');
 
-    const dbConnection = getConnection();
-    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
     const response = await attendenceMobileService.preCheckInService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body, decodedjwt);
       
     if(response && response.type == false){
@@ -190,6 +158,7 @@ exports.checkIn = async (req, res) => {
       }
     });
   } catch (err) {
+    console.log(err);
     if(err.Code == 'InvalidParameterException'){
       res.status(400).json({statusText: 'FAIL', statusValue: 400, message: 'No face detected. Please stand in the front of the camera.'});
     } else {
@@ -258,50 +227,19 @@ exports.checkOut = async (req, res) => {
         message: fileUpRes.message,
       });
 
-    const params = {
-      CollectionId: process.env.COLLECTIONID,
-      FaceMatchThreshold: 80,
-      Image: {
-        S3Object: {
-          Bucket: process.env.BUCKETNAME,
-          Name: fileUpRes.imgName,
-        },
-      },
-      MaxFaces: 1,
-    };
-    const command = new SearchFacesByImageCommand(params);
-
-    const faceData = await client.send(command);
-
-    if (faceData.FaceMatches.length == 0)
-      return res.status(200).json({
+    const dbConnection = getConnection();
+    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
+  
+    const validateFaceData = await validateFace(dbConnection, fileUpRes.imgName, decodedjwt);
+    if(validateFaceData.status == false)
+      return res.status(400).json({
         statusText: 'FAIL',
         statusValue: 400,
-        message: `It seems you're not registered with our face recognition. Please contact your Company's SPOC`
+        message: validateFaceData.message,
+        data: validateFaceData.data
       });
-
-    const userFaceId = faceData.FaceMatches[0].Face.FaceId;
-
-    const userData = await axios.post(
-      `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
-      { faceId: userFaceId }
-    );
-
-    if (userData.data.status != 'success')
-      return res.status(200).json({
-        statusText: 'FAIL',
-        statusValue: 400,
-        message: `SPOC Internal Server Error. Please contact your Company's SPOC`
-      });
-
-    if (userData.data.data.result.length == 0)
-      return res.status(200).json({
-        statusText: 'FAIL',
-        statusValue: 400,
-        message: `It seems you're not registered with us. Please contact your Company's SPOC`
-      });
-
-    const userDetails = userData.data.data.result[0];
+  
+    const userDetails = validateFaceData.data;
 
     if(decodedjwt.clientId == '2137' && userDetails.emp_code == '')
       return res.status(200).json({
@@ -324,9 +262,6 @@ exports.checkOut = async (req, res) => {
           statusValue: 400,
           message: `User doesn't map in this location.`,
         });
-
-    const dbConnection = getConnection();
-    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
       
     const userTimeData = await attendenceMobileService.getCheckInTimeByUser(dbConnection, userDetails, moment().format('YYYY-MM-DD'));
     if(userTimeData.type == true){
@@ -413,7 +348,7 @@ exports.checkInSubmit = async (req, res) => {
 
     const userData = await axios.post(
       `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
-      { faceId: req.body.userFaceId }
+      { faceId: req.body.userFaceId, company_id: decodedjwt.clientId }
     );
   
     if (userData.data.status != 'success')
@@ -536,7 +471,7 @@ exports.checkOutSubmit = async (req, res) => {
 
     const userData = await axios.post(
       `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
-      { faceId: req.body.userFaceId }
+      { faceId: req.body.userFaceId, company_id: decodedjwt.clientId }
     );
   
     if (userData.data.status != 'success')
@@ -680,6 +615,112 @@ exports.createJwtToken = async (req, res) => {
       res.status(400).json({statusText: 'FAIL', statusValue: 400, message: 'There are no faces in the image. Should be at least 1'});
     } else {
       res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'Somthing went erong'});
+    }
+  }
+};
+
+const validateFace = async (dbConnection, faceImg, decodedjwt) => {
+  try {
+    const params = {
+      CollectionId: process.env.COLLECTIONID,
+      Image: {
+        S3Object: {
+          Bucket: process.env.BUCKETNAME,
+          Name: faceImg,
+        },
+      },
+      Attributes: ['ALL'],
+    };
+    const command = new DetectFacesCommand(params);
+    const faceData = await client.send(command);
+    if (faceData.FaceDetails.length == 0)
+      return {status: false, message: 'Face not found.'};
+    const userFaceId = faceData.FaceDetails[0];
+
+    const response = await attendenceMobileService.validateFaceData(dbConnection);
+    if(response.type == false)
+      return {status: false, message: 'Face config not found..'};
+
+    const validateFaceValue = response.data;
+
+    if(userFaceId.BoundingBox.Height <  validateFaceValue.Height)
+      return {status: false, message: 'Please stand closer to the camera.'};
+
+    if(userFaceId.BoundingBox.Width <  validateFaceValue.Width)
+      return {status: false, message: 'Please stand closer to the camera.'};
+
+    if(userFaceId.Quality.Brightness <  validateFaceValue.Brightness)
+      return {status: false, message: 'Please make sure that your face is well light and the camera is stable.'};
+
+    if(userFaceId.Quality.Sharpness <  validateFaceValue.Sharpness)
+      return {status: false, message: 'Please make sure that your face is well light and the camera is stable.'};
+
+    if(userFaceId.Pose.Pitch <  validateFaceValue.PitchMin)
+      return {status: false, message: 'Please look straight into the camera. Looks like you are looking down.'};
+      
+    if(userFaceId.Pose.Pitch >  validateFaceValue.PitchMax)
+      return {status: false, message: 'Please look straight into the camera. Looks like you are looking up.'};
+
+    if(userFaceId.Pose.Yaw <  validateFaceValue.YawMin)
+      return {status: false, message: 'Please look straight into the camera. Looks like you are looking towards right.'};
+      
+    if(userFaceId.Pose.Yaw >  validateFaceValue.YawMax)
+      return {status: false, message: 'Please look straight into the camera. Looks like you are looking towards left.'};
+
+    if(userFaceId.EyesOpen.Value !=  validateFaceValue.EyesOpen)
+      return {status: false, message: 'Face not captured properly. It seems your eyes were closed.'};
+
+    if(userFaceId.Eyeglasses.Value !=  validateFaceValue.Eyeglasses)
+      return {status: false, message: 'It seems like you are wearing glasses. Please remove them and capture again.'};
+
+    if(userFaceId.Sunglasses.Value !=  validateFaceValue.Sunglasses)
+      return {status: false, message: 'It seems like you are wearing glasses. Please remove them and capture again.'};
+
+    if(userFaceId.MouthOpen.Value !=  validateFaceValue.MouthOpen)
+      return {status: false, message: 'Face not captured properly, It seems like your mouth was open.'};
+
+    const paramsOne = {
+      CollectionId: process.env.COLLECTIONID,
+      FaceMatchThreshold: validateFaceValue.FaceMatchThreshold,
+      Image: {
+        S3Object: {
+          Bucket: process.env.BUCKETNAME,
+          Name: faceImg,
+        },
+      },
+      MaxFaces: validateFaceValue.MaxFaces,
+    };
+    const commandOne = new SearchFacesByImageCommand(paramsOne);
+  
+    const faceDataOne = await client.send(commandOne);
+
+    if (faceDataOne.FaceMatches.length == 0)
+      return {status: false, message: `It seems you're not registered with our face recognition. Please contact your Company's SPOC`};
+    
+    const faceArray = [];
+    for (let i = 0; i < faceDataOne.FaceMatches.length; i++) {
+      const element = faceDataOne.FaceMatches[i];
+      faceArray.push(element.Face.FaceId);
+    } 
+    const faceString = faceArray.toString();
+    const userData = await axios.post(
+      `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
+      { faceId: faceString, company_id: decodedjwt.clientId }
+    ); 
+    if (userData.data.status != 'success')
+      return {status: false, message: `SPOC Internal Server Error. Please contact your Company's SPOC`};
+
+    if (userData.data.data.result.length == 0)
+      return {status: false, message: `It seems you're not registered with us. Please contact your Company's SPOC`};
+
+
+    return {status: true, message: 'Face Data.', data: userData.data.data.result[0] };
+  } catch (err) {
+    console.log(err);
+    if(err.Code == 'InvalidParameterException'){
+      return {status: false, message: 'Face not found..'};
+    } else {
+      return {status: false, message: 'Somthing went wrong.'} ;
     }
   }
 };
