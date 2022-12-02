@@ -57,10 +57,10 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
           Object.assign(insertObj, { 'userStatus': 'WFH' });
 
         if (iterator.shiftStart == -3 || iterator.shiftEnd == -3)
-          Object.assign(insertObj, { 'userStatus': 'ONLEAVE' });
+          Object.assign(insertObj, { 'userStatus': 'CL' });
 
         if (iterator.shiftStart == -4 || iterator.shiftEnd == -4)
-          Object.assign(insertObj, { 'userStatus': 'HOLIDAY' });
+          Object.assign(insertObj, { 'userStatus': 'HO' });
 
         const update = {
           $set: updateObj,
@@ -222,7 +222,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
     query[3] = { $match: {} };
     query[4] = { $match: {} };
     if (filter && filter.location)
-      query[3].$match.$or = [{ checkedInLocationId: { $in: filter.location } }];
+      query[3].$match.$or = [{ checkedInLocationId: { $in: filter.location } }, { locationId: { $in: filter.location } }];
 
     const kpiData = await attModel.aggregate([...query]);
     const kpiRes = await calculateCountOfArr(kpiData);
