@@ -107,7 +107,8 @@ exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body
       userId: userDetails.user_id,
       '$or': [
         { 'attendenceStatus': 'CLOCKIN' },
-        { 'attendenceStatus': 'CLOCKOUT' }
+        { 'attendenceStatus': 'CLOCKOUT' },
+        { 'attendenceStatus': 'AUTOCHECKOUT' }
       ],
       date: {$lte: date}
     }).sort({ date : -1 });
@@ -184,7 +185,8 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, body, de
       userId: userDetails.user_id,
       '$or': [
         { 'attendenceStatus': 'CLOCKIN' },
-        { 'attendenceStatus': 'CLOCKOUT' }
+        { 'attendenceStatus': 'CLOCKOUT' },
+        { 'attendenceStatus': 'AUTOCHECKOUT' }
       ],
       date: {$lte: date}
     }).sort({ date : -1 });
@@ -202,7 +204,7 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, body, de
     }
     if (!res)
       return { type: false, msg: 'Its Seems you are not check in today so please checkin first', data: '' };
-    if (res.attendenceStatus == 'CLOCKOUT' || res.attendenceStatus == 'N/A')
+    if (res.attendenceStatus == 'CLOCKOUT' || res.attendenceStatus == 'N/A' || res.attendenceStatus == 'AUTOCHECKOUT')
       return { type: false, msg: 'Its Seems you are not check in today so please checkin first', data: '' };
 
     if (res.attendenceStatus == 'CLOCKIN') {
