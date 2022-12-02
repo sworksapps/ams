@@ -499,15 +499,14 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
 
     let resData = await attModel.aggregate([...query]);
     // let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
-    const userIds = resData.map(i => i.userId);
-    const deptIds = resData.map(i => i.deptId);
-
+    const userIds = resData[0]['userId'];
+    const deptIds = resData[0]['deptId'];
     let userDetails = [], userDeptDetails = [];
 
     // get user name
     const userData = await axios.post(
       `${process.env.CLIENTSPOC}api/v1/user/get-user-name`,
-      { rec_id: userIds }
+      { rec_id: [userIds] }
     );
 
     if (userData.data.status == 200) {
@@ -517,7 +516,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
     if (deptIds.length > 0) {
       const userDeptData = await axios.post(
         `${process.env.CLIENTSPOC}api/v1/department/get-department-names`,
-        { deptIds: deptIds }
+        { deptIds: [deptIds] }
       );
 
       if (userDeptData.data.status == 200) {
