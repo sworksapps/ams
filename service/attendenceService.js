@@ -33,7 +33,7 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
         if (holidayRes.length > 0) {
           const holidayId = holidayRes[0]['_id'].toString();
           Object.assign(updateObj, { 'isHoliday': holidayId });
-          Object.assign(insertObj, { 'userStatus': 'HOLIDAY' });
+          Object.assign(insertObj, { 'userStatus': 'HO' });
           Object.assign(insertObj, { 'shiftStart': '-4' });
           Object.assign(insertObj, { 'shiftEnd': '-4' });
         }
