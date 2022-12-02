@@ -57,10 +57,10 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
           Object.assign(insertObj, { 'userStatus': 'WFH' });
 
         if (iterator.shiftStart == -3 || iterator.shiftEnd == -3)
-          Object.assign(insertObj, { 'userStatus': 'ONLEAVE' });
+          Object.assign(insertObj, { 'userStatus': 'CL' });
 
         if (iterator.shiftStart == -4 || iterator.shiftEnd == -4)
-          Object.assign(insertObj, { 'userStatus': 'HOLIDAY' });
+          Object.assign(insertObj, { 'userStatus': 'HO' });
 
         const update = {
           $set: updateObj,
