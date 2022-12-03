@@ -18,7 +18,7 @@ const client = new RekognitionClient({
 
 const awsMethods = require('../common/methods/awsMethods');
 const dataValidation = require('../common/methods/dataValidation');
-const { getConnection, getAdminConnection, getConnectionByTenant } = require('../connectionManager');
+const { getConnection, getAdminConnection } = require('../connectionManager');
 const attendenceMobileService = require('../service/attendenceMobileService');
 
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -101,9 +101,8 @@ exports.checkIn = async (req, res) => {
         message: fileUpRes.message,
       });
     
-    const decodedjwt2 = dataValidation.parseJwt(req.headers['authorization']);
-    const dbConnection = await getConnectionByTenant(decodedjwt2.clientDbName);
-    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available 12345' });
+    const dbConnection = getConnection();
+    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
     const validateFaceData = await validateFace(dbConnection, fileUpRes.imgName, decodedjwt);
     if(validateFaceData.status == false)

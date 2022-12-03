@@ -63,7 +63,7 @@ const getAdminConnection = () => {
  * getNamespace from 'continuation-local-storage'. This will let us get / set any
  * information and binds the information to current request context.
  */
-const getConnection = async () => {
+const getConnection = () => {
   const nameSpace = getNamespace('unique context');
   const conn = nameSpace.get('connection');
   if(conn){
