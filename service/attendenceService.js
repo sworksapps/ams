@@ -33,7 +33,7 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
         if (holidayRes.length > 0) {
           const holidayId = holidayRes[0]['_id'].toString();
           Object.assign(updateObj, { 'isHoliday': holidayId });
-          Object.assign(insertObj, { 'userStatus': 'HOLIDAY' });
+          Object.assign(insertObj, { 'userStatus': 'HO' });
           Object.assign(insertObj, { 'shiftStart': '-4' });
           Object.assign(insertObj, { 'shiftEnd': '-4' });
         }
@@ -57,10 +57,10 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
           Object.assign(insertObj, { 'userStatus': 'WFH' });
 
         if (iterator.shiftStart == -3 || iterator.shiftEnd == -3)
-          Object.assign(insertObj, { 'userStatus': 'ONLEAVE' });
+          Object.assign(insertObj, { 'userStatus': 'CL' });
 
         if (iterator.shiftStart == -4 || iterator.shiftEnd == -4)
-          Object.assign(insertObj, { 'userStatus': 'HOLIDAY' });
+          Object.assign(insertObj, { 'userStatus': 'HO' });
 
         const update = {
           $set: updateObj,
@@ -222,33 +222,36 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
     query[3] = { $match: {} };
     query[4] = { $match: {} };
     if (filter && filter.location)
-      query[3].$match.$or = [{ checkedInLocationId: { $in: filter.location } }];
+      query[3].$match.$or = [{ checkedInLocationId: { $in: filter.location } }, { locationId: { $in: filter.location } }];
 
     const kpiData = await attModel.aggregate([...query]);
     const kpiRes = await calculateCountOfArr(kpiData);
-
-    const userIds = resData.map(i => i.userId);
-    const deptIds = resData.map(i => i.deptId);
-
     let userDetails = [], userDeptDetails = [];
 
-    // get user name
-    const userData = await axios.post(
-      `${process.env.CLIENTSPOC}api/v1/user/get-user-name`,
-      { rec_id: userIds }
-    );
+    if (resData && resData.length > 0) {
+      const userIds = resData.map(i => i.userId);
+      const deptIds = resData.map(i => i.deptId);
 
-    if (userData.data.status == 200)
-      userDetails = userData.data.data;
+      // get user name
+      if (userIds && userIds.length > 0) {
+        const userData = await axios.post(
+          `${process.env.CLIENTSPOC}api/v1/user/get-user-name`,
+          { rec_id: userIds }
+        );
 
-    if (deptIds.length > 0) {
-      const userDeptData = await axios.post(
-        `${process.env.CLIENTSPOC}api/v1/department/get-department-names`,
-        { deptIds: deptIds }
-      );
+        if (userData.data.status == 200)
+          userDetails = userData.data.data;
+      }
 
-      if (userDeptData.data.status == 200) {
-        userDeptDetails = userDeptData.data.data;
+      // get dept details
+      if (deptIds && deptIds.length > 0) {
+        const userDeptData = await axios.post(
+          `${process.env.CLIENTSPOC}api/v1/department/get-department-names`,
+          { deptIds: deptIds }
+        );
+
+        if (userDeptData.data.status == 200)
+          userDeptDetails = userDeptData.data.data;
       }
     }
 
@@ -498,30 +501,32 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
     //   query[2].$match.$or = dbQuery2;
 
     let resData = await attModel.aggregate([...query]);
-    // let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
-    const userIds = resData.map(i => i.userId);
-    const deptIds = resData.map(i => i.deptId);
-
     let userDetails = [], userDeptDetails = [];
 
-    // get user name
-    const userData = await axios.post(
-      `${process.env.CLIENTSPOC}api/v1/user/get-user-name`,
-      { rec_id: userIds }
-    );
+    if (resData && resData.length > 0) {
+      const userIds = resData[0]['userId'] ? resData[0]['userId'] : '';
+      const deptIds = resData[0]['deptId'] ? resData[0]['deptId'] : '';
 
-    if (userData.data.status == 200) {
-      userDetails = userData.data.data;
-    }
+      // get user name
+      if (userIds != '') {
+        const userData = await axios.post(
+          `${process.env.CLIENTSPOC}api/v1/user/get-user-name`,
+          { rec_id: [userIds] }
+        );
 
-    if (deptIds.length > 0) {
-      const userDeptData = await axios.post(
-        `${process.env.CLIENTSPOC}api/v1/department/get-department-names`,
-        { deptIds: deptIds }
-      );
+        if (userData.data.status == 200)
+          userDetails = userData.data.data;
+      }
 
-      if (userDeptData.data.status == 200) {
-        userDeptDetails = userDeptData.data.data;
+      // get dept details
+      if (deptIds != '') {
+        const userDeptData = await axios.post(
+          `${process.env.CLIENTSPOC}api/v1/department/get-department-names`,
+          { deptIds: [deptIds] }
+        );
+
+        if (userDeptData.data.status == 200)
+          userDeptDetails = userDeptData.data.data;
       }
     }
 
@@ -756,31 +761,32 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       query[0].$match.$and = dbQuery;
 
     let resData = await attModel.aggregate([...query]);
-    // let resData = await attModel.aggregate([...query, { $skip: limit * page }, { $limit: limit }]);
-
-    const userIds = resData.map(i => i._id);
-    const deptIds = resData.map(i => i.dataArr[0].deptId);
-
     let userDetails = [], userDeptDetails = [];
 
-    // get user name
-    const userData = await axios.post(
-      `${process.env.CLIENTSPOC}api/v1/user/get-user-name`,
-      { rec_id: userIds }
-    );
+    if (resData && resData.length > 0) {
+      const userIds = resData.map(i => i._id);
+      const deptIds = resData.map(i => i.dataArr[0].deptId);
 
-    if (userData.data.status == 200) {
-      userDetails = userData.data.data;
-    }
+      // get user name
+      if (userIds && userIds.length > 0) {
+        const userData = await axios.post(
+          `${process.env.CLIENTSPOC}api/v1/user/get-user-name`,
+          { rec_id: userIds }
+        );
 
-    if (deptIds.length > 0) {
-      const userDeptData = await axios.post(
-        `${process.env.CLIENTSPOC}api/v1/department/get-department-names`,
-        { deptIds: deptIds }
-      );
+        if (userData.data.status == 200)
+          userDetails = userData.data.data;
+      }
 
-      if (userDeptData.data.status == 200) {
-        userDeptDetails = userDeptData.data.data;
+      // get dept details
+      if (deptIds && deptIds.length > 0) {
+        const userDeptData = await axios.post(
+          `${process.env.CLIENTSPOC}api/v1/department/get-department-names`,
+          { deptIds: deptIds }
+        );
+
+        if (userDeptData.data.status == 200)
+          userDeptDetails = userDeptData.data.data;
       }
     }
 
