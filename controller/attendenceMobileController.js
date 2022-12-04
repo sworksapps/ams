@@ -18,7 +18,7 @@ const client = new RekognitionClient({
 
 const awsMethods = require('../common/methods/awsMethods');
 const dataValidation = require('../common/methods/dataValidation');
-const { getConnection, getAdminConnection } = require('../connectionManager');
+const { getConnection, getAdminConnection, getConnectionByTenant } = require('../connectionManager');
 const attendenceMobileService = require('../service/attendenceMobileService');
 
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -57,7 +57,14 @@ exports.checkIn = async (req, res) => {
         message: result.error.details[0].message,
       });
 
+    if (!req.headers['authorization'])
+      return res.status(403).json({ statusText: 'FAIL', statusValue: 403, message: `Please provide auth Token` });
     
+    const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
+    
+    const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
+
     const decodedjwt = dataValidation.parseJwt(req.headers['authorization']);
 
     // const totaldistance = calculateDistance(decodedjwt.clientLat, decodedjwt.clientLong, req.body.latitude, req.body.longitude);
@@ -100,9 +107,6 @@ exports.checkIn = async (req, res) => {
         statusValue: 400,
         message: fileUpRes.message,
       });
-    
-    const dbConnection = getConnection();
-    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
     const validateFaceData = await validateFace(dbConnection, fileUpRes.imgName, decodedjwt);
     if(validateFaceData.status == false)
@@ -183,6 +187,14 @@ exports.checkOut = async (req, res) => {
         message: result.error.details[0].message,
       });
 
+    if (!req.headers['authorization'])
+      return res.status(403).json({ statusText: 'FAIL', statusValue: 403, message: `Please provide auth Token` });
+    
+    const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
+    
+    const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
+
     
     const decodedjwt = dataValidation.parseJwt(req.headers['authorization']);
 
@@ -226,9 +238,6 @@ exports.checkOut = async (req, res) => {
         statusValue: 400,
         message: fileUpRes.message,
       });
-
-    const dbConnection = getConnection();
-    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
   
     const validateFaceData = await validateFace(dbConnection, fileUpRes.imgName, decodedjwt);
     if(validateFaceData.status == false)
@@ -309,6 +318,14 @@ exports.checkInSubmit = async (req, res) => {
         message: result.error.details[0].message,
       });
 
+    if (!req.headers['authorization'])
+      return res.status(403).json({ statusText: 'FAIL', statusValue: 403, message: `Please provide auth Token` });
+      
+    const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
+      
+    const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
+
     const decodedjwt = dataValidation.parseJwt(req.headers['authorization']);
 
     if(decodedjwt.clientId == '2137') {
@@ -388,9 +405,6 @@ exports.checkInSubmit = async (req, res) => {
     //     statusValue: 400,
     //     message: `User doesn't have department`,
     //   });
-
-    const dbConnection = getConnection();
-    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
     const response = await attendenceMobileService.checkInService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body, decodedjwt);
       
     if(response.type == true){
@@ -431,6 +445,14 @@ exports.checkOutSubmit = async (req, res) => {
         statusValue: 400,
         message: result.error.details[0].message,
       });
+
+    if (!req.headers['authorization'])
+      return res.status(403).json({ statusText: 'FAIL', statusValue: 403, message: `Please provide auth Token` });
+      
+    const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
+      
+    const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
     
     const decodedjwt = dataValidation.parseJwt(req.headers['authorization']);
 
@@ -504,9 +526,6 @@ exports.checkOutSubmit = async (req, res) => {
           statusValue: 400,
           message: `User doesn't map in this location.`,
         });
-  
-    const dbConnection = getConnection();
-    if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
       
     const response = await attendenceMobileService.checkOutService(dbConnection, userDetails, moment().format('YYYY-MM-DD'), req.body,decodedjwt);
       
