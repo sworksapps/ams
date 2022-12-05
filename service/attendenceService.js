@@ -85,6 +85,7 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
 /* ---------------get daily report----------------------*/
 exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search, filter, dateChk, date) => {
   try {
+    const todayDate = moment().format('YYYY-MM-DD');
     const dbQuery = [{ 'date': date }];
     const dbQuery1 = {};
     const dbQuery2 = [];
@@ -118,20 +119,22 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
       if (filter.kpiFilter) {
         if (filter.kpiFilter === 'PRESENT')
-          dbQuery1.userStatus = { $in: presentList };
+          dbQuery1.primaryStatus = 'PRESENT';
         if (filter.kpiFilter === 'ABSENT')
-          dbQuery1.userStatus = { $in: absentList };
+          dbQuery1.primaryStatus = 'ABSENT';
         if (filter.kpiFilter === 'ONLEAVE')
           dbQuery1.userStatus = { $in: ['SL', 'CL', 'LOP', 'ONLEAVE'] };
         if (filter.kpiFilter === 'WFH')
           dbQuery1.userStatus = filter.kpiFilter;
-        if (filter.kpiFilter === 'SP')
-          dbQuery1.userStatus = filter.kpiFilter;
+
         if (filter.kpiFilter === 'HALFDAY')
           dbQuery1.userStatus = filter.kpiFilter;
         if (filter.kpiFilter === 'CHECKEDIN') {
           dbQuery1.lastExit = '';
           dbQuery3.push({ firstEnrty: { $ne: '' } }, { attendenceStatus: { $ne: 'AUTOCHECKOUT' } });
+        }
+        if (filter.kpiFilter === 'YETCHEKIN') {
+          dbQuery3.push({ date: { $eq: todayDate } }, { firstEnrty: { $eq: '' } }, { lastExit: { $eq: '' } });
         }
       }
     }
@@ -191,8 +194,20 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
           'checkedInLocationId': { '$arrayElemAt': ['$attendenceDetails.deviceLocationIdClockIn', 0] },
           'holidayName': { '$arrayElemAt': ['$holiday.holidayName', 0] },
           'date': 1,
-          'firstEnrty': { '$arrayElemAt': ['$attendenceDetails.clockIn', 0] },
-          'lastExit': { '$arrayElemAt': ['$attendenceDetails.clockOut', -1] },
+          // 'firstEnrty': { '$arrayElemAt': ['$attendenceDetails.clockIn', 0] },
+          'firstEnrty': {
+            $ifNull: [
+              { '$arrayElemAt': ['$attendenceDetails.clockIn', 0] },
+              ''
+            ]
+          },
+          'lastExit': {
+            $ifNull: [
+              { '$arrayElemAt': ['$attendenceDetails.clockOut', 0] },
+              ''
+            ]
+          },
+          // 'lastExit': { '$arrayElemAt': ['$attendenceDetails.clockOut', -1] },
           'recentEnrty': { '$arrayElemAt': ['$attendenceDetails.clockIn', -1] },
           'shiftStart': { '$arrayElemAt': ['$shiftStart', -1] },
           'shiftEnd': { '$arrayElemAt': ['$shiftEnd', -1] },
@@ -262,6 +277,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       let totalSpendTime = 0;
       let totalShiftTime = 0;
       let overTime = 0;
+      // let primaryStatus = '';
       // let totalSpendTimeByUser = 0;
       let totalSpendTimeByAdmin = 0;
       let flag = false;
@@ -296,14 +312,13 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       if (item.shiftStart && item.shiftStart > 0 && item.shiftEnd && item.shiftEnd > 0)
         totalShiftTime = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
 
-      // MISSINGCHECKOUT  
-      // const dateTime = new Date();
-      // dateTime.setHours(18, 29, 0, 0); // set time as 23:59:00
-      // const midTime = moment(dateTime).unix();
-      // const currentTime = moment().unix();
-
-      // if (item.shiftEnd && item.shiftEnd > 0 && currentTime > item.shiftEnd && currentTime > midTime && item.lastExit == '')
-      //   await attModel.findOneAndUpdate({ _id: item._id }, { $push: { userStatus: 'MISSINGCHECKOUT' } });
+      // if (item.shiftStart && item.shiftStart > 0 && item.shiftEnd && item.shiftEnd > 0 && clockIn == 0 && clockOut == 0) {
+      //   const currentTime = moment().unix();
+      //   if (currentTime > item.shiftEnd)
+      //     primaryStatus = 'ABSENT';
+      //   else
+      //     primaryStatus = '-';
+      // }
 
       // overTime
       if (clockIn && clockOut && item.shiftStart && item.shiftEnd)
@@ -639,31 +654,31 @@ exports.changeUserStatus = async (tenantDbConnection, bodyData) => {
     const updateObject = {};
     const attObj = {};
 
-    if (bodyData.shiftStart && !isNaN(bodyData.shiftStart))
+    if (bodyData.shiftStart || bodyData.shiftStart == '')
       Object.assign(pushedObject, { shiftStart: bodyData.shiftStart });
 
-    if (bodyData.shiftEnd && !isNaN(bodyData.shiftEnd))
+    if (bodyData.shiftEnd || bodyData.shiftEnd == '')
       Object.assign(pushedObject, { shiftEnd: bodyData.shiftEnd });
 
     if (bodyData.status)
       Object.assign(pushedObject, { userStatus: bodyData.status });
 
-    if (bodyData.clockIn && !isNaN(bodyData.clockIn))
+    if (bodyData.clockIn || bodyData.clockIn == '')
       Object.assign(attObj, { clockIn: bodyData.clockIn });
 
-    if (bodyData.clockOut && !isNaN(bodyData.clockOut))
+    if (bodyData.clockOut || bodyData.clockOut == '')
       Object.assign(attObj, { clockOut: bodyData.clockOut });
 
-    if (bodyData.clockIn && !isNaN(bodyData.clockIn) || bodyData.clockOut && !isNaN(bodyData.clockOut))
+    if (bodyData.clockIn || bodyData.clockOut)
       Object.assign(attObj, { actionBy: 'ADMIN' });
 
-    if (bodyData.clockOut && !isNaN(bodyData.clockOut))
+    if (bodyData.clockOut)
       Object.assign(updateObject, { attendenceStatus: 'CLOCKOUT' });
 
     if (bodyData.primaryStatus)
       Object.assign(updateObject, { primaryStatus: bodyData.primaryStatus });
 
-    if (bodyData.clockIn && !isNaN(bodyData.clockIn) && !bodyData.clockOut)
+    if (bodyData.clockIn && !bodyData.clockOut)
       Object.assign(updateObject, { attendenceStatus: 'CLOCKIN' });
 
     Object.assign(attObj, { actionById: bodyData.spocId });
@@ -980,32 +995,34 @@ const calculateCountOfArr = async (resData) => {
   let checkedInCount = 0;
   let presentCount = 0;
   let absentCount = 0;
-  let SP_Count = 0;
+  let yetToCheckIn = 0;
   let halfDayCount = 0;
   let leaveCount = 0;
   let wfhCount = 0;
   let totalOverTime = 0;
 
   resData.map(item => {
+
+
     //  CheckedInCount
     if (item.firstEnrty > 0 && item.lastExit == '')
       checkedInCount++;
 
-    // presentCount
-    if (presentList.includes(item.userStatus))
-      presentCount++;
+    // // presentCount
+    // if (presentList.includes(item.userStatus))
+    //   presentCount++;
 
-    // absentCount 
-    if (absentList.includes(item.userStatus))
-      absentCount++;
+    // // absentCount 
+    // if (absentList.includes(item.userStatus))
+    //   absentCount++;
 
     //wfhCount
     if (item.userStatus == 'WFH')
       wfhCount++;
 
-    //Singal Punch 
-    if (item.userStatus == 'SP')
-      SP_Count++;
+    // //Singal Punch 
+    // if (item.userStatus == 'SP')
+    //   SP_Count++;
 
     //HalfDay
     if (item.userStatus == 'HALFDAY')
@@ -1042,6 +1059,27 @@ const calculateCountOfArr = async (resData) => {
       else if (overTime && overTime != 'N/A' && totalOverTime != 0)
         totalOverTime = addTimeCalculation(totalOverTime, overTime);
     }
+
+    // presentCount
+    // let primaryStatus = '';
+
+    // if (item.shiftStart && item.shiftStart > 0 && item.shiftEnd && item.shiftEnd > 0 && clockIn == 0 && clockOut == 0) {
+    //   const currentTime = moment().unix();
+    //   if (currentTime > item.shiftEnd)
+    //     primaryStatus = 'ABSENT';
+    //   else
+    //     primaryStatus = '-';
+    // }
+
+    if (item.primaryStatus == 'PRESENT')
+      presentCount++;
+
+    // absentCount 
+    if (item.primaryStatus == 'ABSENT')
+      absentCount++;
+    // yetToCheckIn  
+    if (moment().format('YYYY-MM-DD') == item.date && item['firstEnrty'] == '' && item['lastExit'] == '')
+      yetToCheckIn++;
   });
 
   const calObj = {
@@ -1049,7 +1087,7 @@ const calculateCountOfArr = async (resData) => {
     'presentCount': presentCount,
     'absentCount': absentCount,
     'wfhCount': wfhCount,
-    'SP_Count': SP_Count,
+    'yetToCheckIn_Count': yetToCheckIn,
     'halfDayCount': halfDayCount,
     'leaveCount': leaveCount,
     'totalOverTime': totalOverTime != 'N/A' && totalOverTime != 0 ? totalOverTime : 'N/A'
