@@ -129,7 +129,7 @@ exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body
         attendenceStatus: 'CLOCKIN',
         userStatus: [autoCalculateValue.subStatus],
         primaryStatus: autoCalculateValue.superStatus,
-        attendenceDetails: [{ clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: body.deviceName, deviceNumberClockIn: body.deviceNumber, deviceLocationClockIn: body.deviceLocation, deviceLocationIdClockIn: body.locationId }],
+        attendenceDetails: [{ actionByTimeStamp: moment(), clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: body.deviceName, deviceNumberClockIn: body.deviceNumber, deviceLocationClockIn: body.deviceLocation, deviceLocationIdClockIn: body.locationId }],
       };
       await attendenceModel(insertData).save();
       clockInTimeStamp = moment.unix(clockInTimeStamp).format('hh:mm a');
@@ -143,7 +143,7 @@ exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body
 
     if (res.attendenceStatus == 'CLOCKOUT' || res.attendenceStatus == 'N/A') {
       const attendenceDetails = res.attendenceDetails;
-      attendenceDetails.push({ clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: body.deviceName, deviceNumberClockIn: body.deviceNumber, deviceLocationClockIn: body.deviceLocation, deviceLocationIdClockIn: body.locationId });
+      attendenceDetails.push({ actionByTimeStamp: moment(),clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: body.deviceName, deviceNumberClockIn: body.deviceNumber, deviceLocationClockIn: body.deviceLocation, deviceLocationIdClockIn: body.locationId });
       
       
       const autoCalculateValue = commonMethods.autoCalculateStatus(res.shiftStart[res.shiftStart.length -1], res.shiftEnd[res.shiftEnd.length -1], attendenceDetails[0]['clockIn'], '', '');
@@ -237,7 +237,7 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, body, de
 
       await attendenceModel.findOneAndUpdate(
         { _id: res._id },
-        { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKOUT', userStatus : userStatus, primaryStatus: autoCalculateValue.superStatus }
+        { actionByTimeStamp: moment(), attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKOUT', userStatus : userStatus, primaryStatus: autoCalculateValue.superStatus }
       );
 
       if(decodedjwt.clientId == prozoClienId)
