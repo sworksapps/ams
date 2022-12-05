@@ -689,11 +689,11 @@ const validateFace = async (dbConnection, faceImg, decodedjwt) => {
     if(userFaceId.EyesOpen.Value !=  validateFaceValue.EyesOpen)
       return {status: false, message: 'Face not captured properly. It seems your eyes were closed.'};
 
-    if(userFaceId.Eyeglasses.Value !=  validateFaceValue.Eyeglasses)
-      return {status: false, message: 'It seems like you are wearing glasses. Please remove them and capture again.'};
+    // if(userFaceId.Eyeglasses.Value !=  validateFaceValue.Eyeglasses)
+    //   return {status: false, message: 'It seems like you are wearing glasses. Please remove them and capture again.'};
 
-    if(userFaceId.Sunglasses.Value !=  validateFaceValue.Sunglasses)
-      return {status: false, message: 'It seems like you are wearing glasses. Please remove them and capture again.'};
+    // if(userFaceId.Sunglasses.Value !=  validateFaceValue.Sunglasses)
+    //   return {status: false, message: 'It seems like you are wearing glasses. Please remove them and capture again.'};
 
     if(userFaceId.MouthOpen.Value !=  validateFaceValue.MouthOpen)
       return {status: false, message: 'Face not captured properly, It seems like your mouth was open.'};
