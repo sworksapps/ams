@@ -194,8 +194,20 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
           'checkedInLocationId': { '$arrayElemAt': ['$attendenceDetails.deviceLocationIdClockIn', 0] },
           'holidayName': { '$arrayElemAt': ['$holiday.holidayName', 0] },
           'date': 1,
-          'firstEnrty': { '$arrayElemAt': ['$attendenceDetails.clockIn', 0] },
-          'lastExit': { '$arrayElemAt': ['$attendenceDetails.clockOut', -1] },
+          // 'firstEnrty': { '$arrayElemAt': ['$attendenceDetails.clockIn', 0] },
+          'firstEnrty': {
+            $ifNull: [
+              { '$arrayElemAt': ['$attendenceDetails.clockIn', 0] },
+              ''
+            ]
+          },
+          'lastExit': {
+            $ifNull: [
+              { '$arrayElemAt': ['$attendenceDetails.clockOut', 0] },
+              ''
+            ]
+          },
+          // 'lastExit': { '$arrayElemAt': ['$attendenceDetails.clockOut', -1] },
           'recentEnrty': { '$arrayElemAt': ['$attendenceDetails.clockIn', -1] },
           'shiftStart': { '$arrayElemAt': ['$shiftStart', -1] },
           'shiftEnd': { '$arrayElemAt': ['$shiftEnd', -1] },
