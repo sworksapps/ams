@@ -219,6 +219,7 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, body, de
       const objIndex = attendenceDetails.findIndex(
         (obj) => obj._id == attendenceDetails[0]['_id']
       );
+      attendenceDetails[objIndex].actionByTimeStamp = moment();
       attendenceDetails[objIndex].clockOut = clockOutTimeStamp;
       attendenceDetails[objIndex].deviceNameClockOut = body.deviceName;
       attendenceDetails[objIndex].deviceNumberClockOut = body.deviceNumber;
@@ -237,7 +238,7 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, body, de
 
       await attendenceModel.findOneAndUpdate(
         { _id: res._id },
-        { actionByTimeStamp: moment(), attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKOUT', userStatus : userStatus, primaryStatus: autoCalculateValue.superStatus }
+        { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKOUT', userStatus : userStatus, primaryStatus: autoCalculateValue.superStatus }
       );
 
       if(decodedjwt.clientId == prozoClienId)
