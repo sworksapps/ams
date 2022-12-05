@@ -122,6 +122,7 @@ exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body
     if (!res) {
       const autoCalculateValue = commonMethods.autoCalculateStatus('', '', clockInTimeStamp, '', '');
       const insertData = {
+        actionByTimeStamp: moment(), 
         deptId: userDetails.user_dept_id,
         locationId: userDetails.location_id,
         userId: userDetails.user_id,
@@ -143,7 +144,7 @@ exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body
 
     if (res.attendenceStatus == 'CLOCKOUT' || res.attendenceStatus == 'N/A') {
       const attendenceDetails = res.attendenceDetails;
-      attendenceDetails.push({ clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: body.deviceName, deviceNumberClockIn: body.deviceNumber, deviceLocationClockIn: body.deviceLocation, deviceLocationIdClockIn: body.locationId });
+      attendenceDetails.push({ actionByTimeStamp: moment(), clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: body.deviceName, deviceNumberClockIn: body.deviceNumber, deviceLocationClockIn: body.deviceLocation, deviceLocationIdClockIn: body.locationId });
       
       
       const autoCalculateValue = commonMethods.autoCalculateStatus(res.shiftStart[res.shiftStart.length -1], res.shiftEnd[res.shiftEnd.length -1], attendenceDetails[0]['clockIn'], '', '');
@@ -219,6 +220,7 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, body, de
       const objIndex = attendenceDetails.findIndex(
         (obj) => obj._id == attendenceDetails[0]['_id']
       );
+      attendenceDetails[objIndex].actionByTimeStamp = moment();
       attendenceDetails[objIndex].clockOut = clockOutTimeStamp;
       attendenceDetails[objIndex].deviceNameClockOut = body.deviceName;
       attendenceDetails[objIndex].deviceNumberClockOut = body.deviceNumber;
