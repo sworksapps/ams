@@ -654,31 +654,31 @@ exports.changeUserStatus = async (tenantDbConnection, bodyData) => {
     const updateObject = {};
     const attObj = {};
 
-    if (bodyData.shiftStart && !isNaN(bodyData.shiftStart))
+    if (bodyData.shiftStart || bodyData.shiftStart == '')
       Object.assign(pushedObject, { shiftStart: bodyData.shiftStart });
 
-    if (bodyData.shiftEnd && !isNaN(bodyData.shiftEnd))
+    if (bodyData.shiftEnd || bodyData.shiftEnd == '')
       Object.assign(pushedObject, { shiftEnd: bodyData.shiftEnd });
 
     if (bodyData.status)
       Object.assign(pushedObject, { userStatus: bodyData.status });
 
-    if (bodyData.clockIn && !isNaN(bodyData.clockIn))
+    if (bodyData.clockIn || bodyData.clockIn == '')
       Object.assign(attObj, { clockIn: bodyData.clockIn });
 
-    if (bodyData.clockOut && !isNaN(bodyData.clockOut))
+    if (bodyData.clockOut || bodyData.clockOut == '')
       Object.assign(attObj, { clockOut: bodyData.clockOut });
 
-    if (bodyData.clockIn && !isNaN(bodyData.clockIn) || bodyData.clockOut && !isNaN(bodyData.clockOut))
+    if (bodyData.clockIn || bodyData.clockOut)
       Object.assign(attObj, { actionBy: 'ADMIN' });
 
-    if (bodyData.clockOut && !isNaN(bodyData.clockOut))
+    if (bodyData.clockOut)
       Object.assign(updateObject, { attendenceStatus: 'CLOCKOUT' });
 
     if (bodyData.primaryStatus)
       Object.assign(updateObject, { primaryStatus: bodyData.primaryStatus });
 
-    if (bodyData.clockIn && !isNaN(bodyData.clockIn) && !bodyData.clockOut)
+    if (bodyData.clockIn && !bodyData.clockOut)
       Object.assign(updateObject, { attendenceStatus: 'CLOCKIN' });
 
     Object.assign(attObj, { actionById: bodyData.spocId });
