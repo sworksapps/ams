@@ -12,7 +12,7 @@ const attendenceSchema = async (dbconn) => {
     shiftEnd: [{ type: String, default: '' }],
     primaryStatus: { type: String, enum: ['N/A', 'PRESENT', 'ABSENT'], default: 'N/A' },
     userStatus: [{
-      type: String, enum: ['N/A', 'PRESENT', 'ABSENT', 'WEEKLYOFF', 'WFH', 'HOLIDAY', 'HALFDAY', 'WOP', 'HOP', 'LOP', 'SL', 'CL', 'HO', 'CO', 'SP'], default: 'N/A'
+      type: String, enum: ['N/A', 'PRESENT', 'ABSENT', 'WEEKLYOFF', 'WFH', 'HALFDAY', 'WOP', 'HOP', 'LOP', 'SL', 'CL', 'HO', 'CO', 'SP'], default: 'N/A'
     }],
     isHoliday: { type: Schema.Types.ObjectId, default: null },
     attendenceStatus: { type: String, enum: ['N/A', 'CLOCKIN', 'CLOCKOUT', 'AUTOCHECKOUT'], default: 'N/A' },
