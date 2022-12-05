@@ -262,6 +262,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       let totalSpendTime = 0;
       let totalShiftTime = 0;
       let overTime = 0;
+      let primaryStatus = '';
       // let totalSpendTimeByUser = 0;
       let totalSpendTimeByAdmin = 0;
       let flag = false;
@@ -296,14 +297,13 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       if (item.shiftStart && item.shiftStart > 0 && item.shiftEnd && item.shiftEnd > 0)
         totalShiftTime = getTimeDiff(item.shiftStart, item.shiftEnd, 'minutes');
 
-      // MISSINGCHECKOUT  
-      // const dateTime = new Date();
-      // dateTime.setHours(18, 29, 0, 0); // set time as 23:59:00
-      // const midTime = moment(dateTime).unix();
-      // const currentTime = moment().unix();
-
-      // if (item.shiftEnd && item.shiftEnd > 0 && currentTime > item.shiftEnd && currentTime > midTime && item.lastExit == '')
-      //   await attModel.findOneAndUpdate({ _id: item._id }, { $push: { userStatus: 'MISSINGCHECKOUT' } });
+      if (item.shiftStart && item.shiftStart > 0 && item.shiftEnd && item.shiftEnd > 0 && clockIn == 0 && clockOut == 0) {
+        const currentTime = moment().unix();
+        if (currentTime > item.shiftEnd)
+          primaryStatus = 'ABSENT';
+        else
+          primaryStatus = '-';
+      }
 
       // overTime
       if (clockIn && clockOut && item.shiftStart && item.shiftEnd)
@@ -317,6 +317,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
       resData[index]['empCode'] = userObj.length > 0 && userObj[0]['emp_code'] ? userObj[0]['emp_code'] : '-';
       resData[index]['name'] = userObj.length > 0 ? userObj[0]['name']?.trim() : '-';
+      resData[index]['primaryStatus'] = !resData[index]['primaryStatus'] ? primaryStatus : resData[index]['primaryStatus'];
       resData[index]['designation'] = userObj.length > 0 && userObj[0]['designation'] ? userObj[0]['designation'].trim() : '-';
       resData[index]['project'] = userObj.length > 0 && userObj[0]['project'] ? userObj[0]['project'].trim() : '-';
       resData[index]['payroll'] = userObj.length > 0 && userObj[0]['payroll'] ? userObj[0]['payroll'].trim() : '-';
@@ -988,17 +989,19 @@ const calculateCountOfArr = async (resData) => {
   let totalOverTime = 0;
 
   resData.map(item => {
+
+
     //  CheckedInCount
     if (item.firstEnrty > 0 && item.lastExit == '')
       checkedInCount++;
 
-    // presentCount
-    if (presentList.includes(item.userStatus))
-      presentCount++;
+    // // presentCount
+    // if (presentList.includes(item.userStatus))
+    //   presentCount++;
 
-    // absentCount 
-    if (absentList.includes(item.userStatus))
-      absentCount++;
+    // // absentCount 
+    // if (absentList.includes(item.userStatus))
+    //   absentCount++;
 
     //wfhCount
     if (item.userStatus == 'WFH')
@@ -1043,6 +1046,25 @@ const calculateCountOfArr = async (resData) => {
       else if (overTime && overTime != 'N/A' && totalOverTime != 0)
         totalOverTime = addTimeCalculation(totalOverTime, overTime);
     }
+
+    // presentCount
+    let primaryStatus = '';
+
+    if (item.shiftStart && item.shiftStart > 0 && item.shiftEnd && item.shiftEnd > 0 && clockIn == 0 && clockOut == 0) {
+      const currentTime = moment().unix();
+      if (currentTime > item.shiftEnd)
+        primaryStatus = 'ABSENT';
+      else
+        primaryStatus = '-';
+    }
+
+    if (item.primaryStatus == 'PRESENT' || primaryStatus == '-')
+      presentCount++;
+
+    // absentCount 
+    if (item.primaryStatus == 'ABSENT')
+      absentCount++;
+
   });
 
   const calObj = {
