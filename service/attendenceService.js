@@ -118,9 +118,9 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
       if (filter.kpiFilter) {
         if (filter.kpiFilter === 'PRESENT')
-          dbQuery1.userStatus = { $in: presentList };
+          dbQuery1.primaryStatus = { $in: ['PRESENT'] };
         if (filter.kpiFilter === 'ABSENT')
-          dbQuery1.userStatus = { $in: absentList };
+          dbQuery1.primaryStatus = { $in: ['ABSENT'] };
         if (filter.kpiFilter === 'ONLEAVE')
           dbQuery1.userStatus = { $in: ['SL', 'CL', 'LOP', 'ONLEAVE'] };
         if (filter.kpiFilter === 'WFH')
