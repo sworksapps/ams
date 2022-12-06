@@ -12,22 +12,21 @@ exports.autoCheckoutAtMidnight = async (req, res) => {
     let successFlag = false;
     const ClientTable = await adminConn.model('client_master_datas');
     const tenants = await ClientTable.find({ clientStatus: 1 }).select({ clientDbName: 1 });
-    
+
     //const todayDate = moment().format('YYYY-MM-DD');
     const previousDate = moment().subtract(2, 'days').format('YYYY-MM-DD');
 
     for (const tenant of tenants) {
       const tenantDb = getConnectionByTenant(tenant.clientDbName);
-      if(tenantDb){
+      if (tenantDb) {
         successFlag = true;
         const attModel = await tenantDb.model('attendences_data');
 
         const update = {
           $set: { attendenceStatus: 'AUTOCHECKOUT', primaryStatus: 'ABSENT' },
-          $push: {userStatus: 'SP'}
+          $push: { userStatus: 'SP' }
         };
-        const abc = await attModel.updateMany( { date: previousDate, attendenceStatus: 'CLOCKIN' }, update );
-        console.log(abc);
+        await attModel.updateMany( { date: previousDate, attendenceStatus: 'CLOCKIN' }, update );
       }
     }
     return { status: successFlag, msg: 'Cron task done' };

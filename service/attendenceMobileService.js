@@ -130,7 +130,7 @@ exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body
         attendenceStatus: 'CLOCKIN',
         userStatus: [autoCalculateValue.subStatus],
         primaryStatus: autoCalculateValue.superStatus,
-        attendenceDetails: [{ clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: body.deviceName, deviceNumberClockIn: body.deviceNumber, deviceLocationClockIn: body.deviceLocation, deviceLocationIdClockIn: body.locationId }],
+        attendenceDetails: [{ actionByTimeStamp: moment(), clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: body.deviceName, deviceNumberClockIn: body.deviceNumber, deviceLocationClockIn: body.deviceLocation, deviceLocationIdClockIn: body.locationId }],
       };
       await attendenceModel(insertData).save();
       clockInTimeStamp = moment.unix(clockInTimeStamp).format('hh:mm a');

@@ -1,8 +1,8 @@
 /* eslint-disable max-len */
 const moment = require('moment');
 const axios = require('axios');
-const presentList = ['PRESENT', 'HALFDAY', 'WOP', 'HOP'];
-const absentList = ['ABSENT', 'WEEKLYOFF', 'LOP', 'SL', 'CL', 'HO', 'CO', 'SP', 'WFH'];
+// const presentList = ['PRESENT', 'HALFDAY', 'WOP', 'HOP'];
+// const absentList = ['ABSENT', 'WEEKLYOFF', 'LOP', 'SL', 'CL', 'HO', 'CO', 'SP', 'WFH'];
 /* ---------------get daily report----------------------*/
 exports.insertShiftData = async (tenantDbConnection, bodyData) => {
   try {
