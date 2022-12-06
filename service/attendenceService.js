@@ -133,7 +133,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
           dbQuery1.lastExit = '';
           dbQuery3.push({ firstEnrty: { $ne: '' } }, { attendenceStatus: { $ne: 'AUTOCHECKOUT' } });
         }
-        if (filter.kpiFilter === 'YETCHEKIN') {
+        if (filter.kpiFilter === 'YETCHECKIN') {
           dbQuery3.push({ date: { $eq: todayDate } }, { firstEnrty: { $eq: '' } }, { lastExit: { $eq: '' } });
         }
       }
@@ -233,6 +233,12 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
     let resData = await attModel.aggregate([...query]);
 
+    if (filter.kpiFilter == 'CHECKEDIN')
+      resData = await fetchYetToCheckInData(resData, 'CHECKEDIN');
+
+    else if (filter.kpiFilter == 'YETCHECKIN')
+      resData = await fetchYetToCheckInData(resData, 'YETCHECKIN');
+
     // calculate kpi
     query[3] = { $match: {} };
     query[4] = { $match: {} };
@@ -244,8 +250,10 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
     let userDetails = [], userDeptDetails = [];
 
     if (resData && resData.length > 0) {
-      const userIds = resData.map(i => i.userId);
-      const deptIds = resData.map(i => i.deptId);
+      let userIds = resData.map(i => i.userId);
+      let deptIds = resData.map(i => i.deptId != null);
+      userIds = filterArray(userIds);
+      deptIds = filterArray(deptIds);
 
       // get user name
       if (userIds && userIds.length > 0) {
@@ -321,7 +329,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       // }
 
       // overTime
-      if (clockIn && clockOut && item.shiftStart && item.shiftEnd)
+      if (clockIn && clockIn != '' && clockOut && clockOut != '' && item.shiftStart && item.shiftStart != '' && item.shiftEnd && item.shiftEnd != '')
         overTime = getOverTime(item.shiftStart, item.shiftEnd, clockIn, clockOut);
 
       // find user name and empId
@@ -519,8 +527,8 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
     let userDetails = [], userDeptDetails = [];
 
     if (resData && resData.length > 0) {
-      const userIds = resData[0]['userId'] ? resData[0]['userId'] : '';
-      const deptIds = resData[0]['deptId'] ? resData[0]['deptId'] : '';
+      const userIds = resData[0]['userId'] ? resData[0]['userId'] : '0';
+      const deptIds = resData[0]['deptId'] ? resData[0]['deptId'] : '0';
 
       // get user name
       if (userIds != '') {
@@ -588,7 +596,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       }
 
       // overTime
-      if (item.shiftStart && item.shiftEnd && clockIn && clockOut)
+      if (clockIn && clockIn != '' && clockOut && clockOut != '' && item.shiftStart && item.shiftStart != '' && item.shiftEnd && item.shiftEnd != '')
         overTime = getOverTime(item.shiftStart, item.shiftEnd, clockIn, clockOut);
 
       // auto status
@@ -779,8 +787,11 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
     let userDetails = [], userDeptDetails = [];
 
     if (resData && resData.length > 0) {
-      const userIds = resData.map(i => i._id);
-      const deptIds = resData.map(i => i.dataArr[0].deptId);
+      let userIds = resData.map(i => i._id);
+      let deptIds = resData.map(i => i.dataArr[0].deptId);
+      userIds = filterArray(userIds);
+      deptIds = filterArray(deptIds);
+
 
       // get user name
       if (userIds && userIds.length > 0) {
@@ -860,7 +871,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
         }
 
         // overTime
-        if (clockIn && clockOut && itemObj.shiftStart && itemObj.shiftEnd) {
+        if (clockIn && clockIn != '' && clockOut && clockOut != '' && item.shiftStart && item.shiftStart != '' && item.shiftEnd && item.shiftEnd != '') {
           overTime = getOverTime(itemObj.shiftStart, itemObj.shiftEnd, clockIn, clockOut);
           if (overTime && overTime != 'N/A' && totalOverTime == 0)
             totalOverTime = overTime;
@@ -1005,9 +1016,9 @@ const calculateCountOfArr = async (resData) => {
   resData.map(item => {
 
 
-    //  CheckedInCount
-    if (item.firstEnrty > 0 && item.lastExit == '')
-      checkedInCount++;
+    // //  CheckedInCount
+    // if (item.firstEnrty > 0 && item.lastExit == '')
+    //   checkedInCount++;
 
     // // presentCount
     // if (presentList.includes(item.userStatus))
@@ -1053,7 +1064,7 @@ const calculateCountOfArr = async (resData) => {
     }
 
     // overTime
-    if (clockIn && clockOut && item.shiftStart && item.shiftEnd) {
+    if (clockIn && clockIn != '' && clockOut && clockOut != '' && item.shiftStart && item.shiftStart != '' && item.shiftEnd && item.shiftEnd != '') {
       overTime = getOverTime(item.shiftStart, item.shiftEnd, clockIn, clockOut);
       if (overTime && overTime != 'N/A' && totalOverTime == 0)
         totalOverTime = overTime;
@@ -1078,9 +1089,14 @@ const calculateCountOfArr = async (resData) => {
     // absentCount 
     if (item.primaryStatus == 'ABSENT')
       absentCount++;
+
     // yetToCheckIn  
-    if (moment().format('YYYY-MM-DD') == item.date && item['firstEnrty'] == '' && item['lastExit'] == '')
+    if (moment().format('YYYY-MM-DD') == item.date && (!clockIn || clockIn == '' || clockIn == 0) && (!clockOut || clockOut == '' || clockOut == 0))
       yetToCheckIn++;
+
+    //  CheckedInCount
+    if (clockIn > 0 && (!clockOut || clockOut == '' || clockOut == 0))
+      checkedInCount++;
   });
 
   const calObj = {
@@ -1343,4 +1359,43 @@ const formatMinutesToHHMM = (minutes) => {
   const h = parseInt((minutes - m) / 60);
   const HHMM = (h < 10 ? '0' : '') + h.toString() + ':' + (m < 10 ? '0' : '') + m.toString();
   return HHMM;
+};
+
+function filterArray(array) {
+  let filtered = array.filter(function (el) {
+    return el != null && el != '' && el != '0' && el != null;
+  });
+  return filtered = [...new Set(filtered)];
+}
+
+const fetchYetToCheckInData = (resData, filterName) => {
+  const filterData = [];
+  resData.map((item) => {
+    // OverTime
+    let clockIn = 0;
+    let clockOut = 0;
+    let flag = false;
+
+    item.attendenceDetails.forEach(element => {
+      if (element.actionBy && element.actionBy == 'ADMIN') {
+        clockIn = element.clockIn;
+        clockOut = element.clockOut;
+        flag = true;
+      }
+    });
+
+    if (!flag) {
+      clockIn = item['firstEnrty'];
+      clockOut = item['lastExit'];
+    }
+    if (filterName == 'CHECKEDIN') {
+      if (clockIn > 0 && item.attendenceStatus != 'AUTOCHECKOUT' && (!clockOut || clockOut == '' || clockOut == 0))
+        filterData.push(item);
+    }
+    else if (filterName == 'YETCHECKIN') {
+      if (moment().format('YYYY-MM-DD') == item.date && clockIn == '' && clockOut == '')
+        filterData.push(item);
+    }
+  });
+  return filterData;
 };

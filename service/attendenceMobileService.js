@@ -123,7 +123,7 @@ exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body
       const autoCalculateValue = commonMethods.autoCalculateStatus('', '', clockInTimeStamp, '', '');
       const insertData = {
         actionByTimeStamp: moment(), 
-        deptId: userDetails.user_dept_id,
+        deptId: userDetails.user_dept_id ? userDetails.user_dept_id : '0',
         locationId: userDetails.location_id,
         userId: userDetails.user_id,
         date: date,
