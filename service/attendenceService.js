@@ -40,7 +40,6 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
         else {
           Object.assign(insertObj, { 'shiftStart': iterator.shiftStart });
           Object.assign(insertObj, { 'shiftEnd': iterator.shiftEnd });
-          Object.assign(insertObj, { 'userStatus': 'N/A' });
         }
 
         // update
@@ -48,19 +47,19 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
         Object.assign(updateObj, { 'deptId': iterator.deptId });
         Object.assign(updateObj, { 'locationId': iterator.locationId });
         Object.assign(updateObj, { 'date': iterator.date });
+        Object.assign(updateObj, { 'attendenceStatus': 'N/A' });
 
         // insert
         if (iterator.shiftStart == -1 || iterator.shiftEnd == -1)
           Object.assign(insertObj, { 'userStatus': 'WEEKLYOFF' });
-
-        if (iterator.shiftStart == -2 || iterator.shiftEnd == -2)
+        else if (iterator.shiftStart == -2 || iterator.shiftEnd == -2)
           Object.assign(insertObj, { 'userStatus': 'WFH' });
-
-        if (iterator.shiftStart == -3 || iterator.shiftEnd == -3)
+        else if (iterator.shiftStart == -3 || iterator.shiftEnd == -3)
           Object.assign(insertObj, { 'userStatus': 'CL' });
-
-        if (iterator.shiftStart == -4 || iterator.shiftEnd == -4)
+        else if (iterator.shiftStart == -4 || iterator.shiftEnd == -4)
           Object.assign(insertObj, { 'userStatus': 'HO' });
+        else
+          Object.assign(insertObj, { 'userStatus': 'N/A' });
 
         const update = {
           $set: updateObj,
