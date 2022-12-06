@@ -996,7 +996,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
     const total = await attModel.aggregate([...query, { $count: 'totalCount' }])
       .then(res => res.length > 0 ? res[0].totalCount : 0);
     return { resData, total };
-    
+
   } catch (err) {
     console.log(err);
     return false;
@@ -1095,7 +1095,7 @@ const calculateCountOfArr = async (resData) => {
       yetToCheckIn++;
 
     //  CheckedInCount
-    if (clockIn > 0 && (!clockOut || clockOut == '' || clockOut == 0))
+    if (clockIn > 0 && item.attendenceStatus != 'AUTOCHECKOUT' && (!clockOut || clockOut == '' || clockOut == 0))
       checkedInCount++;
   });
 
