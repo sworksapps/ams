@@ -17,6 +17,8 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
       const tomarrow = moment(iterator.date).add(1, 'days').format('YYYY-MM-DD').toString();
       const resData = await attModel.find({ date: { $in: [yesterDay, tomarrow] }, userId: iterator.userId }).select({ shiftStart: 1, shiftEnd: 1, date: 1 });
       const statusData = await attModel.find({ date: iterator.date, userId: iterator.userId }).select({ userStatus: 1 });
+      iterator.shiftStart = iterator.shiftStart != 'NAN' ? iterator.shiftStart : '';
+      iterator.shiftEnd = iterator.shiftEnd != 'NAN' ? iterator.shiftEnd : '';
 
       if (resData && resData.length > 0) {
         const newShift = { shiftStart: iterator.shiftStart, shiftEnd: iterator.shiftEnd };
@@ -46,7 +48,7 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
 
         // update
         Object.assign(updateObj, { 'userId': iterator.userId });
-        Object.assign(updateObj, { 'deptId': iterator.deptId });
+        Object.assign(updateObj, { 'deptId': iterator.deptId ? iterator.deptId : '0' });
         Object.assign(updateObj, { 'locationId': iterator.locationId });
         Object.assign(updateObj, { 'date': iterator.date });
 
@@ -91,6 +93,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
     const dbQuery1 = {};
     const dbQuery2 = [];
     const dbQuery3 = [];
+    const dbQuery4 = [];
     const attModel = await dbConnection.model('attendences_data');
 
     if (filter) {
@@ -119,8 +122,10 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       }
 
       if (filter.kpiFilter) {
-        if (filter.kpiFilter === 'PRESENT')
-          dbQuery1.primaryStatus = 'PRESENT';
+        if (filter.kpiFilter === 'PRESENT') {
+          dbQuery4.push({ 'primaryStatus': { $eq: 'PRESENT' } });
+          dbQuery4.push({ 'userStatus': { $eq: 'WFH' } });
+        }
         if (filter.kpiFilter === 'ABSENT')
           dbQuery1.primaryStatus = 'ABSENT';
         if (filter.kpiFilter === 'ONLEAVE')
@@ -135,7 +140,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
           dbQuery3.push({ firstEnrty: { $ne: '' } }, { attendenceStatus: { $ne: 'AUTOCHECKOUT' } });
         }
         if (filter.kpiFilter === 'YETCHECKIN') {
-          dbQuery3.push({ date: { $eq: todayDate } }, { firstEnrty: { $eq: '' } }, { lastExit: { $eq: '' } });
+          dbQuery3.push({ date: { $eq: todayDate } }, { attendenceStatus: { $eq: 'N/A' } }, { firstEnrty: { $eq: '' } }, { lastExit: { $eq: '' } });
         }
       }
     }
@@ -222,6 +227,9 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       {
         $match: {}
       },
+      {
+        $match: {}
+      },
       { $sort: sort_by },
     ];
 
@@ -234,13 +242,16 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
     if (dbQuery2.length > 0)
       query[3].$match.$or = dbQuery2;
 
+    if (dbQuery4.length > 0)
+      query[5].$match.$or = dbQuery4;
+
     let resData = await attModel.aggregate([...query]);
 
     if (filter.kpiFilter == 'CHECKEDIN')
-      resData = await fetchYetToCheckInData(resData, 'CHECKEDIN');
+      resData = await filterKpiData(resData, 'CHECKEDIN');
 
     else if (filter.kpiFilter == 'YETCHECKIN')
-      resData = await fetchYetToCheckInData(resData, 'YETCHECKIN');
+      resData = await filterKpiData(resData, 'YETCHECKIN');
 
     // calculate kpi
     query[3] = { $match: {} };
@@ -667,7 +678,12 @@ exports.changeUserStatus = async (tenantDbConnection, bodyData) => {
     const updateObject = {};
     const attObj = {};
 
-    if (bodyData.shiftStart || bodyData.shiftStart == '')
+    bodyData.clockIn = bodyData.clockIn != 'NAN' ? bodyData.clockIn : '';
+    bodyData.clockOut = bodyData.clockOut != 'NAN' ? bodyData.clockOut : '';
+    bodyData.shiftStart = bodyData.shiftStart != 'NAN' ? bodyData.shiftStart : '';
+    bodyData.shiftEnd = bodyData.shiftEnd != 'NAN' ? bodyData.shiftEnd : '';
+
+    if (bodyData.shiftStart || bodyData.shiftStart == '' && bodyData.shiftStart)
       Object.assign(pushedObject, { shiftStart: bodyData.shiftStart });
 
     if (bodyData.shiftEnd || bodyData.shiftEnd == '')
@@ -682,9 +698,6 @@ exports.changeUserStatus = async (tenantDbConnection, bodyData) => {
     if (bodyData.clockOut || bodyData.clockOut == '')
       Object.assign(attObj, { clockOut: bodyData.clockOut });
 
-    if (bodyData.clockIn || bodyData.clockOut)
-      Object.assign(attObj, { actionBy: 'ADMIN' });
-
     if (bodyData.clockOut)
       Object.assign(updateObject, { attendenceStatus: 'CLOCKOUT' });
 
@@ -698,6 +711,7 @@ exports.changeUserStatus = async (tenantDbConnection, bodyData) => {
     Object.assign(attObj, { actionByName: bodyData.spocName });
     Object.assign(attObj, { actionRemark: bodyData.remark });
     Object.assign(attObj, { actionByTimeStamp: new Date() });
+    Object.assign(attObj, { actionBy: 'ADMIN' });
 
     const DataObj = await attendenceModel.findOne({ _id: bodyData.id }).select({ locationId: 1, attendenceDetails: 1 });
     let checkedInLocId = '';
@@ -1088,7 +1102,7 @@ const calculateCountOfArr = async (resData) => {
     //     primaryStatus = '-';
     // }
 
-    if (item.primaryStatus == 'PRESENT')
+    if (item.primaryStatus == 'PRESENT' || item.userStatus == 'WFH')
       presentCount++;
 
     // absentCount 
@@ -1373,7 +1387,7 @@ function filterArray(array) {
   return filtered = [...new Set(filtered)];
 }
 
-const fetchYetToCheckInData = (resData, filterName) => {
+const filterKpiData = (resData, filterName) => {
   const filterData = [];
   resData.map((item) => {
     // OverTime
@@ -1398,7 +1412,7 @@ const fetchYetToCheckInData = (resData, filterName) => {
         filterData.push(item);
     }
     else if (filterName == 'YETCHECKIN') {
-      if (moment().format('YYYY-MM-DD') == item.date && clockIn == '' && clockOut == '')
+      if (moment().format('YYYY-MM-DD') == item.date && clockIn == '' && clockOut == '' && item.attendenceStatus == 'N/A')
         filterData.push(item);
     }
   });

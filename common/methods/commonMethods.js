@@ -108,7 +108,8 @@ const getTimeDiff = (start, end, type) => {
   return 0;
 };
 
-const checkForHalfDay = (shiftTime = 9 * 60, workingTime, type) => {
+const checkForHalfDay = (shiftTime1 = 9 * 60, workingTime, type) => {
+  const shiftTime = shiftTime1 > 0 ? shiftTime1 : 9 * 60;
   if (shiftTime == 7 * 60) {
     if (workingTime >= 4 * 60 && workingTime <= 6 * 60) {
       return 'HALFDAY';
@@ -333,7 +334,8 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
   }
   if (!shiftStart && !shiftEnd && checkIn && checkOut) {
     if (currentTimeStamp < nextDayTimeStamp) {
-      return { superStatus: 'PRESENT', subStatus: 'PRESENT', overTimeHours: 0, msg: '4' };
+      const chkHalfDay = checkForHalfDay(shiftDiffMin, workingHoursDiffMin, 'NA');
+      return { superStatus: (chkHalfDay == 'ABSENT') ? 'ABSENT' : 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: '4' };
     } else {
       const chkHalfDay = checkForHalfDay(shiftDiffMin, workingHoursDiffMin, 'NA');
       return { superStatus: 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: '4' };
