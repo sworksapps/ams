@@ -3,6 +3,7 @@ const moment = require('moment');
 const axios = require('axios');
 // const presentList = ['PRESENT', 'HALFDAY', 'WOP', 'HOP'];
 // const absentList = ['ABSENT', 'WEEKLYOFF', 'LOP', 'SL', 'CL', 'HO', 'CO', 'SP', 'WFH'];
+
 /* ---------------get daily report----------------------*/
 exports.insertShiftData = async (tenantDbConnection, bodyData) => {
   try {
@@ -15,6 +16,7 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
       const yesterDay = moment(iterator.date).subtract(1, 'days').format('YYYY-MM-DD').toString();
       const tomarrow = moment(iterator.date).add(1, 'days').format('YYYY-MM-DD').toString();
       const resData = await attModel.find({ date: { $in: [yesterDay, tomarrow] }, userId: iterator.userId }).select({ shiftStart: 1, shiftEnd: 1, date: 1 });
+      const statusData = await attModel.find({ date: iterator.date, userId: iterator.userId }).select({ userStatus: 1 });
 
       if (resData && resData.length > 0) {
         const newShift = { shiftStart: iterator.shiftStart, shiftEnd: iterator.shiftEnd };
@@ -33,7 +35,7 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
         if (holidayRes.length > 0) {
           const holidayId = holidayRes[0]['_id'].toString();
           Object.assign(updateObj, { 'isHoliday': holidayId });
-          Object.assign(insertObj, { 'userStatus': 'HO' });
+          Object.assign(insertObj, { 'userStatus': ['HO'] });
           Object.assign(insertObj, { 'shiftStart': '-4' });
           Object.assign(insertObj, { 'shiftEnd': '-4' });
         }
@@ -47,19 +49,19 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
         Object.assign(updateObj, { 'deptId': iterator.deptId });
         Object.assign(updateObj, { 'locationId': iterator.locationId });
         Object.assign(updateObj, { 'date': iterator.date });
-        Object.assign(updateObj, { 'attendenceStatus': 'N/A' });
 
         // insert
         if (iterator.shiftStart == -1 || iterator.shiftEnd == -1)
-          Object.assign(insertObj, { 'userStatus': 'WEEKLYOFF' });
+          Object.assign(insertObj, { 'userStatus': ['WEEKLYOFF'] });
         else if (iterator.shiftStart == -2 || iterator.shiftEnd == -2)
-          Object.assign(insertObj, { 'userStatus': 'WFH' });
+          Object.assign(insertObj, { 'userStatus': ['WFH'] });
         else if (iterator.shiftStart == -3 || iterator.shiftEnd == -3)
-          Object.assign(insertObj, { 'userStatus': 'CL' });
+          Object.assign(insertObj, { 'userStatus': ['CL'] });
         else if (iterator.shiftStart == -4 || iterator.shiftEnd == -4)
-          Object.assign(insertObj, { 'userStatus': 'HO' });
-        else
-          Object.assign(insertObj, { 'userStatus': 'N/A' });
+          Object.assign(insertObj, { 'userStatus': ['HO'] });
+
+        if ((statusData && statusData.length == 0) || (statusData.length > 0 && statusData[0]['userStatus'].length == 0))
+          Object.assign(insertObj, { 'userStatus': ['N/A'] });
 
         const update = {
           $set: updateObj,
@@ -178,7 +180,9 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
           'userId': 1,
           'attendenceStatus': 1,
           'userStatus': { '$arrayElemAt': ['$userStatus', -1] },
-          'primaryStatus': 1,
+          'primaryStatus': {
+            $ifNull: ['$primaryStatus', 'N/A'],
+          },
           'deptId': 1,
           'locationId': 1,
           'isHoliday': 1,
@@ -499,7 +503,9 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
           'date': 1,
           'attendenceStatus': 1,
           'userStatus': { '$arrayElemAt': ['$userStatus', -1] },
-          'primaryStatus': 1,
+          'primaryStatus': {
+            $ifNull: ['$primaryStatus', 'N/A'],
+          },
           'shiftStart': { '$arrayElemAt': ['$shiftStart', -1] },
           'shiftEnd': { '$arrayElemAt': ['$shiftEnd', -1] },
           'checkedInLocationId': { '$arrayElemAt': ['$attendenceDetails.deviceLocationIdClockIn', 0] },
