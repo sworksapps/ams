@@ -71,7 +71,7 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
           // Object.assign(insertObj, { 'primaryStatus': 'ABSENT' });
         }
 
-        if ((statusData && statusData.length == 0) || (statusData.length > 0 && statusData[0]['userStatus'].length == 0))
+        if ((statusData && statusData.length == 0) || (statusData.length > 0 && statusData[0]['userStatus'].length == 0) && !insertObj.userStatus)
           Object.assign(insertObj, { 'userStatus': ['N/A'] });
 
         const update = {
