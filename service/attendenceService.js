@@ -988,8 +988,8 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
       resData[index]['WFH_Count'] = WFH_Count;
       resData[index]['overTime'] = (totalShiftDurationMin > 0 && totalOverTime != 'N/A' > 0) ? totalOverTime : 'N/A';
       resData[index]['duration'] = totalSpendTimeMin > 0 ? formatMinutesToHHMM(totalSpendTimeMin) : 'N/A';
-      const avgDurationMin = (totalSpendTimeMin / presentCount) > 0 ? (totalSpendTimeMin / presentCount) : 0;
-      resData[index]['avgDuration'] = avgDurationMin > 0 ? formatMinutesToHHMM(avgDurationMin) : 'N/A';
+      const avgDurationMin = totalSpendTimeMin > 0 && presentCount > 0 ? (totalSpendTimeMin / presentCount) : totalSpendTimeMin;
+      resData[index]['avgDuration'] = avgDurationMin && avgDurationMin > 0 ? formatMinutesToHHMM(avgDurationMin) : 'N/A';
       resData[index]['avgDurationMin'] = avgDurationMin;
     }
 
