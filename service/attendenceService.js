@@ -256,6 +256,8 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
     // calculate kpi
     query[3] = { $match: {} };
     query[4] = { $match: {} };
+    query[5] = { $match: {} };
+
     if (filter && filter.location)
       query[3].$match.$or = [{ checkedInLocationId: { $in: filter.location } }, { locationId: { $in: filter.location } }];
 
