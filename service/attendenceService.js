@@ -53,6 +53,9 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
         Object.assign(updateObj, { 'locationId': iterator.locationId });
         Object.assign(updateObj, { 'date': iterator.date });
 
+        if ((statusData && statusData.length == 0) || (statusData.length > 0 && statusData[0]['userStatus'].length == 0) && !insertObj.userStatus)
+          Object.assign(insertObj, { 'userStatus': ['N/A'] });
+
         // insert
         if (iterator.shiftStart == -1 || iterator.shiftEnd == -1) {
           Object.assign(insertObj, { 'userStatus': ['WEEKLYOFF'] });
@@ -70,9 +73,8 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
           Object.assign(insertObj, { 'userStatus': ['HO'] });
           // Object.assign(insertObj, { 'primaryStatus': 'ABSENT' });
         }
-
-        if ((statusData && statusData.length == 0) || (statusData.length > 0 && statusData[0]['userStatus'].length == 0) && !insertObj.userStatus)
-          Object.assign(insertObj, { 'userStatus': ['N/A'] });
+        // else if ((statusData && statusData.length == 0) || (statusData.length > 0 && statusData[0]['userStatus'].length == 0) && !insertObj.userStatus )
+        //   Object.assign(insertObj, { 'userStatus': ['N/A'] });
 
         const update = {
           $set: updateObj,
