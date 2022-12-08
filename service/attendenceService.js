@@ -915,7 +915,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
         // presentCount
         // if (itemObj.attendenceDetails.length > 0)
         //   presentCount++;
-        if (item.primaryStatus == 'PRESENT' || item.userStatus == 'WFH')
+        if (itemObj.primaryStatus == 'PRESENT' || itemObj.userStatus == 'WFH')
           presentCount++;
 
         //WOP Count 
@@ -933,7 +933,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
         // absentCount 
         // if (itemObj.attendenceDetails.length == 0)
         //   absentCount++;
-        if (item.primaryStatus == 'ABSENT')
+        if (itemObj.primaryStatus == 'ABSENT')
           absentCount++;
 
         //Week Off Count 
