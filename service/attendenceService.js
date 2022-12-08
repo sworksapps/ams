@@ -17,8 +17,8 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
       const tomarrow = moment(iterator.date).add(1, 'days').format('YYYY-MM-DD').toString();
       const resData = await attModel.find({ date: { $in: [yesterDay, tomarrow] }, userId: iterator.userId }).select({ shiftStart: 1, shiftEnd: 1, date: 1 });
       const statusData = await attModel.find({ date: iterator.date, userId: iterator.userId }).select({ userStatus: 1 });
-      iterator.shiftStart = iterator.shiftStart != 'NAN' ? iterator.shiftStart : '';
-      iterator.shiftEnd = iterator.shiftEnd != 'NAN' ? iterator.shiftEnd : '';
+      iterator.shiftStart = iterator.shiftStart != 'NaN' ? iterator.shiftStart : '';
+      iterator.shiftEnd = iterator.shiftEnd != 'NaN' ? iterator.shiftEnd : '';
 
       if (resData && resData.length > 0) {
         const newShift = { shiftStart: iterator.shiftStart, shiftEnd: iterator.shiftEnd };
@@ -689,10 +689,10 @@ exports.changeUserStatus = async (tenantDbConnection, bodyData) => {
     const updateObject = {};
     const attObj = {};
 
-    bodyData.clockIn = bodyData.clockIn != 'NAN' ? bodyData.clockIn : '';
-    bodyData.clockOut = bodyData.clockOut != 'NAN' ? bodyData.clockOut : '';
-    bodyData.shiftStart = bodyData.shiftStart != 'NAN' ? bodyData.shiftStart : '';
-    bodyData.shiftEnd = bodyData.shiftEnd != 'NAN' ? bodyData.shiftEnd : '';
+    bodyData.clockIn = bodyData.clockIn != 'NaN' ? bodyData.clockIn : '';
+    bodyData.clockOut = bodyData.clockOut != 'NaN' ? bodyData.clockOut : '';
+    bodyData.shiftStart = bodyData.shiftStart != 'NaN' ? bodyData.shiftStart : '';
+    bodyData.shiftEnd = bodyData.shiftEnd != 'NaN' ? bodyData.shiftEnd : '';
 
     if (bodyData.shiftStart || bodyData.shiftStart == '' && bodyData.shiftStart)
       Object.assign(pushedObject, { shiftStart: bodyData.shiftStart });

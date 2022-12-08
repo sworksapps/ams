@@ -146,8 +146,10 @@ exports.checkInService = async (tenantDbConnection, userDetails, dateValue, body
       const attendenceDetails = res.attendenceDetails;
       attendenceDetails.push({ actionByTimeStamp: moment(), clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: body.deviceName, deviceNumberClockIn: body.deviceNumber, deviceLocationClockIn: body.deviceLocation, deviceLocationIdClockIn: body.locationId });
       
+      const shiftStart = res.shiftStart.length > 0 && res.shiftStart[res.shiftStart.length -1] ? res.shiftStart[res.shiftStart.length -1] : '';
+      const shiftEnd = res.shiftEnd.length > 0 && res.shiftEnd[res.shiftEnd.length -1] ? res.shiftEnd[res.shiftEnd.length -1] : '';
       
-      const autoCalculateValue = commonMethods.autoCalculateStatus(res.shiftStart[res.shiftStart.length -1], res.shiftEnd[res.shiftEnd.length -1], attendenceDetails[0]['clockIn'], '', '');
+      const autoCalculateValue = commonMethods.autoCalculateStatus(shiftStart, shiftEnd, attendenceDetails[0]['clockIn'], '', '');
       const userStatus = res.userStatus;
       userStatus.push(autoCalculateValue.subStatus);
         
@@ -232,7 +234,10 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, body, de
       clockInTimeStamp = moment.unix(res.attendenceDetails[0].clockIn).format('hh:mm a');
       clockOutTimeStamp = moment.unix(clockOutTimeStamp).format('hh:mm a');
 
-      const autoCalculateValue = commonMethods.autoCalculateStatus(res.shiftStart[res.shiftStart.length -1], res.shiftEnd[res.shiftEnd.length -1], attendenceDetails[0].clockIn, clockOutTimeStamp, '');
+      const shiftStart = res.shiftStart.length > 0 && res.shiftStart[res.shiftStart.length -1] ? res.shiftStart[res.shiftStart.length -1] : '';
+      const shiftEnd = res.shiftEnd.length > 0 && res.shiftEnd[res.shiftEnd.length -1] ? res.shiftEnd[res.shiftEnd.length -1] : '';
+
+      const autoCalculateValue = commonMethods.autoCalculateStatus(shiftStart, shiftEnd, attendenceDetails[0].clockIn, clockOutTimeStamp, '');
 
       const userStatus = res.userStatus;
       userStatus.push(autoCalculateValue.subStatus);
