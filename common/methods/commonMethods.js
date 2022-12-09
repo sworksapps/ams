@@ -310,7 +310,7 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
   }
   if (shiftStart && shiftEnd && checkIn && checkOut) {
     const chkHalfDay = checkForHalfDay(shiftDiffMin, workingHoursDiffMin, 'NA');
-    return { superStatus: 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: '2.1' };
+    return { superStatus: (chkHalfDay == 'ABSENT') ? 'ABSENT' : 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: '2.1' };
     // if(currentTimeStamp < nextDayTimeStamp){
     //     const overTime = getOverTimeCalculation(shiftStart, shiftEnd, checkIn, checkOut);
     //     return { superStatus: 'PRESENT', subStatus: 'PRESENT', overTimeHours: overTime, msg: '2' };
