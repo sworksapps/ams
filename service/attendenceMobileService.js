@@ -228,15 +228,15 @@ exports.checkOutService = async (tenantDbConnection, userDetails, date, body, de
       attendenceDetails[objIndex].deviceLocationClockOut = body.deviceLocation;
       attendenceDetails[objIndex].deviceLocationIdClockOut = body.locationId;
       attendenceDetails = attendenceDetails.reverse();
+
+      const shiftStart = res.shiftStart.length > 0 && res.shiftStart[res.shiftStart.length -1] ? res.shiftStart[res.shiftStart.length -1] : '';
+      const shiftEnd = res.shiftEnd.length > 0 && res.shiftEnd[res.shiftEnd.length -1] ? res.shiftEnd[res.shiftEnd.length -1] : '';
+      const autoCalculateValue = commonMethods.autoCalculateStatus(shiftStart, shiftEnd, attendenceDetails[0].clockIn, clockOutTimeStamp, '');
+
       const diff = moment.unix(clockOutTimeStamp).startOf('minutes').diff(moment.unix(res.attendenceDetails[0].clockIn).startOf('minutes'), 'minutes');
       totalDuration = Math.floor(diff / 60) + 'hrs ' + diff % 60+ 'min' ;
       clockInTimeStamp = moment.unix(res.attendenceDetails[0].clockIn).format('hh:mm a');
       clockOutTimeStamp = moment.unix(clockOutTimeStamp).format('hh:mm a');
-
-      const shiftStart = res.shiftStart.length > 0 && res.shiftStart[res.shiftStart.length -1] ? res.shiftStart[res.shiftStart.length -1] : '';
-      const shiftEnd = res.shiftEnd.length > 0 && res.shiftEnd[res.shiftEnd.length -1] ? res.shiftEnd[res.shiftEnd.length -1] : '';
-
-      const autoCalculateValue = commonMethods.autoCalculateStatus(shiftStart, shiftEnd, attendenceDetails[0].clockIn, clockOutTimeStamp, '');
 
       const userStatus = res.userStatus;
       userStatus.push(autoCalculateValue.subStatus);

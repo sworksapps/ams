@@ -800,6 +800,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
               'date': '$date',
               'userId': '$userId',
               'attendenceStatus': 1,
+              'primaryStatus': 1,
               'userStatus': { '$arrayElemAt': ['$userStatus', -1] },
               'isHoliday': '$isHoliday',
               'shiftStart': { '$arrayElemAt': ['$shiftStart', -1] },
@@ -1044,6 +1045,7 @@ const calculateCountOfArr = async (resData) => {
   let presentCount = 0;
   let absentCount = 0;
   let yetToCheckIn = 0;
+  let removeDataCount = 0;
   let halfDayCount = 0;
   let leaveCount = 0;
   let wfhCount = 0;
@@ -1127,8 +1129,15 @@ const calculateCountOfArr = async (resData) => {
       absentCount++;
 
     // yetToCheckIn  
-    if (moment().format('YYYY-MM-DD') == item.date && (!clockIn || clockIn == '' || clockIn == 0) && (!clockOut || clockOut == '' || clockOut == 0))
+    if (moment().format('YYYY-MM-DD') == item.date && (clockIn == '' || clockIn == 0) && (clockOut == '' || clockOut == 0) && item.attendenceStatus == 'N/A') {
       yetToCheckIn++;
+    }
+
+    // removedCount
+    if (moment().format('YYYY-MM-DD') == item.date && (clockIn == '' || clockIn == 0) && (clockOut == '' || clockOut == 0) &&
+      item.shiftStart == '' && item.shiftEnd == '' && item.attendenceStatus == 'N/A' && item.primaryStatus == 'N/A' && item.userStatus == 'N/A') {
+      removeDataCount++;
+    }
 
     //  CheckedInCount
     if (clockIn > 0 && item.attendenceStatus != 'AUTOCHECKOUT' && (!clockOut || clockOut == '' || clockOut == 0))
@@ -1140,7 +1149,7 @@ const calculateCountOfArr = async (resData) => {
     'presentCount': presentCount,
     'absentCount': absentCount,
     'wfhCount': wfhCount,
-    'yetToCheckIn_Count': yetToCheckIn,
+    'yetToCheckIn_Count': (yetToCheckIn - removeDataCount),
     'halfDayCount': halfDayCount,
     'leaveCount': leaveCount,
     'totalOverTime': totalOverTime != 'N/A' && totalOverTime != 0 ? totalOverTime : 'N/A'

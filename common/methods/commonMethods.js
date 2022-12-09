@@ -225,7 +225,7 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
       return { superStatus: 'PRESENT', subStatus: 'WOP', overTimeHours: 0, msg: 'WEEK OFF' };
     } else {
       const chkHalfDay = checkForHalfDay(undefined, workingHoursDiffMin, 'WOP');
-      return { superStatus: 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: 'WEEK OFF' };
+      return { superStatus: (chkHalfDay == 'ABSENT') ? 'ABSENT' : 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: 'WEEK OFF' };
     }
   }
   if (shiftStart == -1 && shiftEnd == -1 && !checkIn && !checkOut) {
@@ -247,7 +247,7 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
       return { superStatus: 'PRESENT', subStatus: 'PRESENT', overTimeHours: 0, msg: 'WFH' };
     } else {
       const chkHalfDay = checkForHalfDay(undefined, workingHoursDiffMin, 'NA');
-      return { superStatus: 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: 'WFH' };
+      return { superStatus: (chkHalfDay == 'ABSENT') ? 'ABSENT' : 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: 'WFH' };
     }
   }
   if (shiftStart == -2 && shiftEnd == -2 && !checkIn && !checkOut) {
@@ -269,7 +269,7 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
       return { superStatus: 'PRESENT', subStatus: 'PRESENT', overTimeHours: 0, msg: 'LEAVE' };
     } else {
       const chkHalfDay = checkForHalfDay(undefined, workingHoursDiffMin, 'NA');
-      return { superStatus: 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: 'LEAVE' };
+      return { superStatus: (chkHalfDay == 'ABSENT') ? 'ABSENT' : 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: 'LEAVE' };
     }
   }
   if (shiftStart == -3 && shiftEnd == -3 && !checkIn && !checkOut) {
@@ -291,7 +291,7 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
       return { superStatus: 'PRESENT', subStatus: 'PRESENT', overTimeHours: 0, msg: 'HOLIDAY' };
     } else {
       const chkHalfDay = checkForHalfDay(undefined, workingHoursDiffMin, 'HOP');
-      return { superStatus: 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: 'HOLIDAY' };
+      return { superStatus: (chkHalfDay == 'ABSENT') ? 'ABSENT' : 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: 'HOLIDAY' };
     }
   }
   if (shiftStart == -4 && shiftEnd == -4 && !checkIn && !checkOut) {
@@ -338,7 +338,7 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
       return { superStatus: (chkHalfDay == 'ABSENT') ? 'ABSENT' : 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: '4' };
     } else {
       const chkHalfDay = checkForHalfDay(shiftDiffMin, workingHoursDiffMin, 'NA');
-      return { superStatus: 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: '4' };
+      return { superStatus: (chkHalfDay == 'ABSENT') ? 'ABSENT' : 'PRESENT', subStatus: chkHalfDay, overTimeHours: 0, msg: '4' };
     }
   }
   if (!shiftStart && !shiftEnd && !checkIn && !checkOut) {
