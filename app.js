@@ -43,13 +43,16 @@ app.get('/', async (req, res) => {
   }
 });
 
-app.get('/dvcgdscd', async (req, res) => {
+app.get('/atul-prozo', async (req, res) => {
   try {
     const connection = getConnectionByTenant(process.env.prozoDBName);
     if (!connection) return console.log('Cron Stop Due to connection loss.');
-
+    let dateValue = moment().format('YYYY-MM-DD');
+    if(req.query.date)
+      dateValue =req.query.date;
+    
     const attendencesDataModel = await connection.model('attendences_data');
-    const attendencesData = await attendencesDataModel.find();
+    const attendencesData = await attendencesDataModel.find( { date: dateValue} );
     if(attendencesData.length > 0) {
       attendencesData.forEach( async element => {
         const attendenceDetails = element.attendenceDetails;
@@ -148,19 +151,19 @@ const insertAttData = async (
     }
   } catch (err) {
     console.log(err);
-    const logsModel = await tenantDbConnection.model('logs');
-    const insertData = {
-      user_id: user_id,
-      emp_code: emp_code,
-      card_number: card_number,
-      checkInOut: checkInOut,
-      deviceName: deviceName,
-      deviceNumber :deviceNumber,
-      logStatus: logStatus,
-      logIndex: logIndex,
-      location: location,
-    };
-    await logsModel(insertData).save();
+    // const logsModel = await tenantDbConnection.model('logs');
+    // const insertData = {
+    //   user_id: user_id,
+    //   emp_code: emp_code,
+    //   card_number: card_number,
+    //   checkInOut: checkInOut,
+    //   deviceName: deviceName,
+    //   deviceNumber :deviceNumber,
+    //   logStatus: logStatus,
+    //   logIndex: logIndex,
+    //   location: location,
+    // };
+    // await logsModel(insertData).save();
   }
 };
 
