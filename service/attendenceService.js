@@ -800,7 +800,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
               'date': '$date',
               'userId': '$userId',
               'attendenceStatus': 1,
-              'primaryStatus': 1,
+              'primaryStatus': '$primaryStatus',
               'userStatus': { '$arrayElemAt': ['$userStatus', -1] },
               'isHoliday': '$isHoliday',
               'shiftStart': { '$arrayElemAt': ['$shiftStart', -1] },
