@@ -326,6 +326,13 @@ exports.checkInSubmit = async (req, res) => {
     const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
+    const configRes = await attendenceMobileService.configData(dbConnection);
+    if (configRes.type == false) return res.status(200).json({ 
+      statusText: 'FAIL',
+      statusValue: 400,
+      message: 'Configurations not found..' 
+    });
+
     const decodedjwt = dataValidation.parseJwt(req.headers['authorization']);
 
     if(decodedjwt.clientId == '2137') {
@@ -411,6 +418,10 @@ exports.checkInSubmit = async (req, res) => {
       res.status(200).json({ 
         statusText: 'Success', statusValue: 200, message: response.msg, data: response.data
       });
+      if(configRes.data.isSms == true)
+        if(userDetails.phone)
+          await sendSMS(userDetails, '63970ce9daefe964214fced2', req.body.deviceLocation);
+
     } else if(response.type == false){
       res.status(200).json({ statusText: 'FAIL', statusValue: 400, message: response.msg });
     }else{
@@ -453,6 +464,13 @@ exports.checkOutSubmit = async (req, res) => {
       
     const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
+
+    const configRes = await attendenceMobileService.configData(dbConnection);
+    if (configRes.type == false) return res.status(200).json({ 
+      statusText: 'FAIL',
+      statusValue: 400,
+      message: 'Configurations not found..' 
+    });
     
     const decodedjwt = dataValidation.parseJwt(req.headers['authorization']);
 
@@ -533,6 +551,10 @@ exports.checkOutSubmit = async (req, res) => {
       res.status(200).json({ 
         statusText: 'Success', statusValue: 200, message: response.msg, data: response.data
       });
+      if(configRes.data.isSms == true)
+        if(userDetails.phone)
+          await sendSMS(userDetails, '63970e99fdd6e9478704c314', req.body.deviceLocation);
+
     } else if(response.type == false){
       res.status(202).json({ statusText: 'FAIL', statusValue: 400, message: response.msg });
     }else{
@@ -741,5 +763,30 @@ const validateFace = async (dbConnection, faceImg, decodedjwt) => {
     } else {
       return {status: false, message: 'Somthing went wrong.'} ;
     }
+  }
+};
+
+const sendSMS = async (userDetails, temp_id, deviceLocation) => {
+  try {
+    if(!userDetails.phone || userDetails.phone == null || userDetails.phone == undefined || userDetails.phone == '')
+      return false;
+    const res = await axios.post(
+      'https://api.msg91.com/api/v5/flow/',
+      {
+        'flow_id': temp_id,
+        'mobiles': userDetails.phone,
+        'empN': userDetails.fname,
+        'attD':'2022-12-13',
+        'time': '10:00 AM',
+        'location': deviceLocation
+      },
+      {
+        headers: { 'authkey':'349895A0Urr468QD5fe05f02P1' }
+      }
+    );
+    console.log(res);
+    return true;
+  } catch (error) {
+    return false;
   }
 };
