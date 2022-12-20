@@ -379,7 +379,7 @@ exports.checkInSubmit = async (req, res) => {
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
-        message: `It seems you're not registered with us. Please contact your Company's SPOC`
+        message: `Face not matched, Please check with your admin or try again.`
       });
   
     const userDetails = userData.data.data.result[0];
@@ -507,7 +507,7 @@ exports.checkOutSubmit = async (req, res) => {
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
-        message: `It seems you're not registered with us. Please contact your Company's SPOC`
+        message: `Face not matched, Please check with your admin or try again.`
       });
   
     const userDetails = userData.data.data.result[0];
@@ -714,7 +714,7 @@ const validateFace = async (dbConnection, faceImg, decodedjwt) => {
     const faceDataOne = await client.send(commandOne);
 
     if (faceDataOne.FaceMatches.length == 0)
-      return {status: false, message: `It seems you're not registered with our face recognition. Please contact your Company's SPOC`};
+      return {status: false, message: `Face not matched, Please check with your admin or try again.`};
     
     const faceArray = [];
     for (let i = 0; i < faceDataOne.FaceMatches.length; i++) {
@@ -730,7 +730,7 @@ const validateFace = async (dbConnection, faceImg, decodedjwt) => {
       return {status: false, message: `SPOC Internal Server Error. Please contact your Company's SPOC`};
 
     if (userData.data.data.result.length == 0)
-      return {status: false, message: `It seems you're not registered with us. Please contact your Company's SPOC`};
+      return {status: false, message: `Face not matched, Please check with your admin or try again.`};
 
 
     return {status: true, message: 'Face Data.', data: userData.data.data.result[0] };
