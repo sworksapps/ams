@@ -378,3 +378,16 @@ exports.validateFaceData = async (tenantDbConnection) => {
     return { type: false, data: {} };
   }
 };
+
+exports.configData = async (tenantDbConnection) => {
+  try {
+    const configurations = await tenantDbConnection.model('configurations');
+    const res = await configurations.findOne();
+    if (!res)
+      return { type: false, data: res };
+
+    return { type: true, data: res };
+  } catch (err) {
+    return { type: false, data: {} };
+  }
+};

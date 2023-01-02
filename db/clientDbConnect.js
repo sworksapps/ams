@@ -4,6 +4,7 @@ const { attendenceSchema } = require('../dbModel/clients/attendenceModel');
 const { holidayListSchema } = require('../dbModel/clients/holidayListModel');
 const { faceMatchSchema } = require('../dbModel/clients/faceMatchModel');
 const { logSchema } = require('../dbModel/clients/logModel');
+const { configSchema } = require('../dbModel/clients/configModel');
 
 // const clientOption = {
 //   socketTimeoutMS: 30000,
@@ -73,6 +74,7 @@ const initTenantDbConnection = (DB_URL) => {
     holidayListSchema(db);
     faceMatchSchema(db);
     logSchema(db);
+    configSchema(db);
 
     return db;
   } catch (error) {
