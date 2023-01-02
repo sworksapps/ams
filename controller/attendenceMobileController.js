@@ -776,15 +776,20 @@ const sendSMS = async (userDetails, temp_id, deviceLocation) => {
         'flow_id': temp_id,
         'mobiles': userDetails.phone,
         'empN': userDetails.fname,
-        'attD':'2022-12-13',
-        'time': '10:00 AM',
-        'location': deviceLocation
+        'attD': moment().format('YYYY-MM-DD'),
+        'time': moment().format('hh:mm a'),
+        'loc': deviceLocation.substr(0, 20)
       },
       {
-        headers: { 'authkey':'349895A0Urr468QD5fe05f02P1' }
+        headers: { 
+          'authKey': '377287AwtcY6HngH2T62887a11P1', 
+          'Content-Type': 'application/json', 
+          'Cookie': 'PHPSESSID=ncrkakovnnqjcs9sp6bqmd2vr4'
+        }
       }
     );
     console.log(res);
+    console.log(deviceLocation);
     return true;
   } catch (error) {
     return false;
