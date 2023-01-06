@@ -420,7 +420,7 @@ exports.checkInSubmit = async (req, res) => {
       });
       if(configRes.data.isSms == true)
         if(userDetails.phone)
-          await sendSMS(userDetails, '63970ce9daefe964214fced2', req.body.deviceLocation);
+          await sendSMS(userDetails, '63970ce9daefe964214fced2', req.body.deviceLocation, '');
 
     } else if(response.type == false){
       res.status(200).json({ statusText: 'FAIL', statusValue: 400, message: response.msg });
@@ -553,7 +553,7 @@ exports.checkOutSubmit = async (req, res) => {
       });
       if(configRes.data.isSms == true)
         if(userDetails.phone)
-          await sendSMS(userDetails, '63970e99fdd6e9478704c314', req.body.deviceLocation);
+          await sendSMS(userDetails, '63970e99fdd6e9478704c314', req.body.deviceLocation, response.data.totalDuration);
 
     } else if(response.type == false){
       res.status(202).json({ statusText: 'FAIL', statusValue: 400, message: response.msg });
@@ -766,20 +766,32 @@ const validateFace = async (dbConnection, faceImg, decodedjwt) => {
   }
 };
 
-const sendSMS = async (userDetails, temp_id, deviceLocation) => {
+const sendSMS = async (userDetails, temp_id, deviceLocation, totalDuration) => {
   try {
     if(!userDetails.phone || userDetails.phone == null || userDetails.phone == undefined || userDetails.phone == '')
       return false;
-    const res = await axios.post(
-      'https://api.msg91.com/api/v5/flow/',
-      {
+    let reqData = {
+      'flow_id': temp_id,
+      'mobiles': userDetails.phone,
+      'empN': userDetails.fname,
+      'attD': moment().format('YYYY-MM-DD'),
+      'time': moment().format('hh:mm a'),
+      'loc': deviceLocation.substr(0, 20)
+    };
+    if(totalDuration) {
+      reqData = {
         'flow_id': temp_id,
         'mobiles': userDetails.phone,
         'empN': userDetails.fname,
         'attD': moment().format('YYYY-MM-DD'),
         'time': moment().format('hh:mm a'),
-        'loc': deviceLocation.substr(0, 20)
-      },
+        'loc': deviceLocation.substr(0, 20),
+        'dura': totalDuration
+      };
+    }
+    const res = await axios.post(
+      'https://api.msg91.com/api/v5/flow/',
+      reqData,
       {
         headers: { 
           'authKey': '377287AwtcY6HngH2T62887a11P1', 
