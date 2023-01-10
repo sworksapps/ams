@@ -119,7 +119,7 @@ exports.checkIn = async (req, res) => {
 
     const userDetails = validateFaceData.data;
 
-    if(userDetails.is_active != 1 && userDetails.isSpocApproved != 1)
+    if(userDetails.is_active != 1 || userDetails.isSpocApproved != 1)
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
@@ -257,7 +257,7 @@ exports.checkOut = async (req, res) => {
   
     const userDetails = validateFaceData.data;
 
-    if(userDetails.is_active != 1 && userDetails.isSpocApproved != 1)
+    if(userDetails.is_active != 1 || userDetails.isSpocApproved != 1)
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
@@ -398,7 +398,7 @@ exports.checkInSubmit = async (req, res) => {
   
     const userDetails = userData.data.data.result[0];
 
-    if(userDetails.is_active != 1 && userDetails.isSpocApproved != 1)
+    if(userDetails.is_active != 1 || userDetails.isSpocApproved != 1)
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
@@ -533,7 +533,7 @@ exports.checkOutSubmit = async (req, res) => {
   
     const userDetails = userData.data.data.result[0];
 
-    if(userDetails.is_active != 1 && userDetails.isSpocApproved != 1)
+    if(userDetails.is_active != 1 || userDetails.isSpocApproved != 1)
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
