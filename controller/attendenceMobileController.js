@@ -119,7 +119,7 @@ exports.checkIn = async (req, res) => {
 
     const userDetails = validateFaceData.data;
 
-    if(userDetails.is_active == 0)
+    if(userDetails.is_active != 1 && userDetails.isSpocApproved != 1)
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
@@ -257,11 +257,11 @@ exports.checkOut = async (req, res) => {
   
     const userDetails = validateFaceData.data;
 
-    if(userDetails.is_active == 0)
+    if(userDetails.is_active != 1 && userDetails.isSpocApproved != 1)
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
-        message: 'It seams you are not authorised to checkout, Please contact to your company Admin.',
+        message: 'It seams you are not authorised to checkin, Please contact to your company Admin.',
       });
 
     if(decodedjwt.clientId == '2137' && userDetails.emp_code == '')
@@ -398,7 +398,7 @@ exports.checkInSubmit = async (req, res) => {
   
     const userDetails = userData.data.data.result[0];
 
-    if(userDetails.is_active == 0)
+    if(userDetails.is_active != 1 && userDetails.isSpocApproved != 1)
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
@@ -533,11 +533,11 @@ exports.checkOutSubmit = async (req, res) => {
   
     const userDetails = userData.data.data.result[0];
 
-    if(userDetails.is_active == 0)
+    if(userDetails.is_active != 1 && userDetails.isSpocApproved != 1)
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
-        message: 'It seams you are not authorised to checkout, Please contact to your company Admin.',
+        message: 'It seams you are not authorised to checkin, Please contact to your company Admin.',
       });
   
     if(userDetails.company_id != decodedjwt.clientId)
