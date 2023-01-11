@@ -918,7 +918,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
         // presentCount
         // if (itemObj.attendenceDetails.length > 0)
         //   presentCount++;
-        if (itemObj.primaryStatus == 'PRESENT' || itemObj.userStatus == 'WFH')
+        if (itemObj.primaryStatus == 'PRESENT' || itemObj.userStatus == 'WFH' || itemObj.userStatus == 'SP')
           presentCount++;
 
         //WOP Count 
@@ -1121,7 +1121,7 @@ const calculateCountOfArr = async (resData) => {
     //     primaryStatus = '-';
     // }
 
-    if (item.primaryStatus == 'PRESENT' || item.userStatus == 'WFH')
+    if (item.primaryStatus == 'PRESENT' || item.userStatus == 'WFH' ||  item.userStatus == 'SP')
       presentCount++;
 
     // absentCount 

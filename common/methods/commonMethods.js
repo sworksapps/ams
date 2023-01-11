@@ -211,7 +211,7 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
   const currentTimeStamp = moment().unix();
   /*------Week Off------*/
   if (shiftStart == -1 && shiftEnd == -1 && checkIn && isAutoChkOut == 'AUTOCHECKOUT') {
-    return { superStatus: 'ABSENT', subStatus: 'SP', overTimeHours: 0, msg: 'WEEK OFF' };
+    return { superStatus: 'PRESENT', subStatus: 'SP', overTimeHours: 0, msg: 'WEEK OFF' };
   }
   if (shiftStart == -1 && shiftEnd == -1 && checkIn && !checkOut) {
     if (currentTimeStamp < nextDayTimeStamp) {
@@ -233,7 +233,7 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
   }
   /*------WFH------*/
   if (shiftStart == -2 && shiftEnd == -2 && checkIn && isAutoChkOut == 'AUTOCHECKOUT') {
-    return { superStatus: 'ABSENT', subStatus: 'SP', overTimeHours: 0, msg: 'WFH' };
+    return { superStatus: 'PRESENT', subStatus: 'SP', overTimeHours: 0, msg: 'WFH' };
   }
   if (shiftStart == -2 && shiftEnd == -2 && checkIn && !checkOut) {
     if (currentTimeStamp < nextDayTimeStamp) {
@@ -255,13 +255,13 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
   }
   /*------Leave------*/
   if (shiftStart == -3 && shiftEnd == -3 && checkIn && isAutoChkOut == 'AUTOCHECKOUT') {
-    return { superStatus: 'ABSENT', subStatus: 'SP', overTimeHours: 0, msg: 'LEAVE' };
+    return { superStatus: 'PRESENT', subStatus: 'SP', overTimeHours: 0, msg: 'LEAVE' };
   }
   if (shiftStart == -3 && shiftEnd == -3 && checkIn && !checkOut) {
     if (currentTimeStamp < nextDayTimeStamp) {
       return { superStatus: 'PRESENT', subStatus: 'PRESENT', overTimeHours: 0, msg: 'LEAVE' };
     } else {
-      return { superStatus: 'ABSENT', subStatus: 'SP', overTimeHours: 0, msg: 'LEAVE' };
+      return { superStatus: 'PRESENT', subStatus: 'SP', overTimeHours: 0, msg: 'LEAVE' };
     }
   }
   if (shiftStart == -3 && shiftEnd == -3 && checkIn && checkOut) {
@@ -277,13 +277,13 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
   }
   /*------Holiday------*/
   if (shiftStart == -4 && shiftEnd == -4 && checkIn && isAutoChkOut == 'AUTOCHECKOUT') {
-    return { superStatus: 'ABSENT', subStatus: 'SP', overTimeHours: 0, msg: 'HOLIDAY' };
+    return { superStatus: 'PRESENT', subStatus: 'SP', overTimeHours: 0, msg: 'HOLIDAY' };
   }
   if (shiftStart == -4 && shiftEnd == -4 && checkIn && !checkOut) {
     if (currentTimeStamp < nextDayTimeStamp) {
       return { superStatus: 'PRESENT', subStatus: 'PRESENT', overTimeHours: 0, msg: 'HOLIDAY' };
     } else {
-      return { superStatus: 'ABSENT', subStatus: 'SP', overTimeHours: 0, msg: 'HOLIDAY' };
+      return { superStatus: 'PRESENT', subStatus: 'SP', overTimeHours: 0, msg: 'HOLIDAY' };
     }
   }
   if (shiftStart == -4 && shiftEnd == -4 && checkIn && checkOut) {
@@ -299,13 +299,13 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
   }
   /*-------------------*/
   if (shiftStart > 0 && shiftEnd > 0 && checkIn && isAutoChkOut == 'AUTOCHECKOUT') {
-    return { superStatus: 'ABSENT', subStatus: 'SP', overTimeHours: 0, msg: '1' };
+    return { superStatus: 'PRESENT', subStatus: 'SP', overTimeHours: 0, msg: '1' };
   }
   if (shiftStart && shiftEnd && checkIn && !checkOut) {
     if (currentTimeStamp < nextDayTimeStamp) {
       return { superStatus: 'PRESENT', subStatus: 'PRESENT', overTimeHours: 0, msg: '1' };
     } else {
-      return { superStatus: 'ABSENT', subStatus: 'SP', overTimeHours: 0, msg: '1' };
+      return { superStatus: 'PRESENT', subStatus: 'SP', overTimeHours: 0, msg: '1' };
     }
   }
   if (shiftStart && shiftEnd && checkIn && checkOut) {
@@ -324,12 +324,12 @@ const autoCalculateStatus = (shiftStart1, shiftEnd1, checkIn1, checkOut1, isAuto
   }
   if (!shiftStart && !shiftEnd && checkIn && !checkOut) {
     if (shiftStart == 0 && shiftEnd == 0 && checkIn && isAutoChkOut == 'AUTOCHECKOUT') {
-      return { superStatus: 'ABSENT', subStatus: 'SP', overTimeHours: 0, msg: 'WEEK OFF SP' };
+      return { superStatus: 'PRESENT', subStatus: 'SP', overTimeHours: 0, msg: 'WEEK OFF SP' };
     }
     if (currentTimeStamp < nextDayTimeStamp) {
       return { superStatus: 'PRESENT', subStatus: 'PRESENT', overTimeHours: 0, msg: '3' };
     } else {
-      return { superStatus: 'ABSENT', subStatus: 'SP', overTimeHours: 0, msg: '3' };
+      return { superStatus: 'PRESENT', subStatus: 'SP', overTimeHours: 0, msg: '3' };
     }
   }
   if (!shiftStart && !shiftEnd && checkIn && checkOut) {

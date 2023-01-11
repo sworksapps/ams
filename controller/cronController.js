@@ -23,7 +23,7 @@ exports.autoCheckoutAtMidnight = async (req, res) => {
         const attModel = await tenantDb.model('attendences_data');
 
         const update = {
-          $set: { attendenceStatus: 'AUTOCHECKOUT', primaryStatus: 'ABSENT' },
+          $set: { attendenceStatus: 'AUTOCHECKOUT', primaryStatus: 'PRESENT' },
           $push: { userStatus: 'SP' }
         };
         await attModel.updateMany( { date: previousDate, attendenceStatus: 'CLOCKIN' }, update );
