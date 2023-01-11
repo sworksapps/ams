@@ -261,7 +261,7 @@ exports.checkOut = async (req, res) => {
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
-        message: 'It seams you are not authorised to checkin, Please contact to your company Admin.',
+        message: 'It seams you are not authorised to checkout, Please contact to your company Admin.',
       });
 
     if(decodedjwt.clientId == '2137' && userDetails.emp_code == '')
@@ -555,7 +555,7 @@ exports.checkOutSubmit = async (req, res) => {
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
-        message: 'It seams you are not authorised to checkin, Please contact to your company Admin.',
+        message: 'It seams you are not authorised to checkout, Please contact to your company Admin.',
       });
   
     if(userDetails.company_id != decodedjwt.clientId)
