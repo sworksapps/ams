@@ -328,6 +328,12 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
             totalSpendTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
           }
         }
+        else if (!flag && element.actionBy && element.actionBy != 'ADMIN') {
+          // clockIn = element.clockIn;
+          // clockInLocId = element.deviceLocationIdClockIn;
+          if (element.clockOut && element.clockOut != '')
+            clockOut = element.clockOut;
+        }
       });
 
       if (flag) {
@@ -335,7 +341,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
       }
       else {
         clockIn = item['firstEnrty'];
-        clockOut = item['lastExit'];
+        // clockOut = item['lastExit'];
         clockInLocId = item['checkedInLocationId'];
         if (clockIn && clockIn != '' && clockOut && clockOut != '')
           totalSpendTime = getTimeDiff(clockIn, clockOut, 'minutes');
@@ -604,6 +610,12 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
             totalShiftTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
           }
         }
+        else if (!flag && element.actionBy && element.actionBy != 'ADMIN') {
+          // clockIn = element.clockIn;
+          // clockInLocId = element.deviceLocationIdClockIn;
+          if (element.clockOut && element.clockOut != '')
+            clockOut = element.clockOut;
+        }
       });
 
       if (flag)
@@ -611,7 +623,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
       else {
         // totalSpendTime = totalSpendTimeByUser;
         clockIn = item['firstEnrty'];
-        clockOut = item['lastExit'];
+        // clockOut = item['lastExit'];
         clockInLocId = item['checkedInLocationId'];
 
         if (clockIn && clockIn != '' && clockOut && clockOut != '')
@@ -1094,11 +1106,17 @@ const calculateCountOfArr = async (resData) => {
         clockOut = element.clockOut;
         flag = true;
       }
+      else if (!flag && element.actionBy && element.actionBy != 'ADMIN') {
+        // clockIn = element.clockIn;
+        // clockInLocId = element.deviceLocationIdClockIn;
+        if (element.clockOut && element.clockOut != '')
+          clockOut = element.clockOut;
+      }
     });
 
     if (!flag) {
       clockIn = item['firstEnrty'];
-      clockOut = item['lastExit'];
+      // clockOut = item['lastExit'];
     }
 
     // overTime
@@ -1121,7 +1139,7 @@ const calculateCountOfArr = async (resData) => {
     //     primaryStatus = '-';
     // }
 
-    if (item.primaryStatus == 'PRESENT' || item.userStatus == 'WFH' ||  item.userStatus == 'SP')
+    if (item.primaryStatus == 'PRESENT' || item.userStatus == 'WFH' || item.userStatus == 'SP')
       presentCount++;
 
     // absentCount 
@@ -1427,11 +1445,17 @@ const filterKpiData = (resData, filterName) => {
         clockOut = element.clockOut;
         flag = true;
       }
+      else if (!flag && element.actionBy && element.actionBy != 'ADMIN') {
+        // clockIn = element.clockIn;
+        // clockInLocId = element.deviceLocationIdClockIn;
+        if (element.clockOut && element.clockOut != '')
+          clockOut = element.clockOut;
+      }
     });
 
     if (!flag) {
       clockIn = item['firstEnrty'];
-      clockOut = item['lastExit'];
+      // clockOut = item['lastExit'];
     }
     if (filterName == 'CHECKEDIN') {
       if (clockIn > 0 && item.attendenceStatus != 'AUTOCHECKOUT' && (!clockOut || clockOut == '' || clockOut == 0))
