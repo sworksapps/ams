@@ -328,7 +328,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
             totalSpendTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
           }
         }
-        else if (!flag && element.actionBy && element.actionBy != 'ADMIN') {
+        else if (!flag) {
           // clockIn = element.clockIn;
           // clockInLocId = element.deviceLocationIdClockIn;
           if (element.clockOut && element.clockOut != '')
@@ -610,7 +610,7 @@ exports.fetchUserSpecReportData = async (dbConnection, limit, page, sort_by, sea
             totalShiftTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
           }
         }
-        else if (!flag && element.actionBy && element.actionBy != 'ADMIN') {
+        else if (!flag) {
           // clockIn = element.clockIn;
           // clockInLocId = element.deviceLocationIdClockIn;
           if (element.clockOut && element.clockOut != '')
@@ -1106,7 +1106,7 @@ const calculateCountOfArr = async (resData) => {
         clockOut = element.clockOut;
         flag = true;
       }
-      else if (!flag && element.actionBy && element.actionBy != 'ADMIN') {
+      else if (!flag) {
         // clockIn = element.clockIn;
         // clockInLocId = element.deviceLocationIdClockIn;
         if (element.clockOut && element.clockOut != '')
@@ -1445,7 +1445,7 @@ const filterKpiData = (resData, filterName) => {
         clockOut = element.clockOut;
         flag = true;
       }
-      else if (!flag && element.actionBy && element.actionBy != 'ADMIN') {
+      else if (!flag) {
         // clockIn = element.clockIn;
         // clockInLocId = element.deviceLocationIdClockIn;
         if (element.clockOut && element.clockOut != '')
