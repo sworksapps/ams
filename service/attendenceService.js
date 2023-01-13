@@ -897,6 +897,12 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
               totalShiftTimeByAdmin = getTimeDiff(element.clockIn, element.clockOut, 'minutes');
             }
           }
+          else if (!flag) {
+            // clockIn = element.clockIn;
+            // clockInLocId = element.deviceLocationIdClockIn;
+            if (element.clockOut && element.clockOut != '')
+              clockOut = element.clockOut;
+          }
         });
 
         if (flag)
@@ -904,7 +910,7 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
         else {
           // spendTime = totalSpendTimeByUser;
           clockIn = itemObj['firstEnrty'];
-          clockOut = itemObj['lastExit'];
+          // clockOut = itemObj['lastExit'];
           if (clockIn && clockIn != '' && clockOut && clockOut != '')
             spendTime = getTimeDiff(clockIn, clockOut, 'minutes');
         }
