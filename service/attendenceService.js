@@ -1474,3 +1474,51 @@ const filterKpiData = (resData, filterName) => {
   });
   return filterData;
 };
+
+/* ---------------get payroll report----------------------*/
+exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
+  try {
+    const attModel = await dbConnection.model('attendences_data');
+    const resData = [];
+    const query = await attModel.find({date: {
+      $gte: startDate,
+      $lte: endDate
+    }}).select({_id:1, userId: 1, date:1, primaryStatus:1, userStatus:1}).sort({userId: -1, date: 1});
+    let userDetails = [];
+    if (query && query.length > 0) {
+      let userIds = query.map(i => i.userId);
+      userIds = filterArray(userIds);
+
+      // get user name
+      if (userIds && userIds.length > 0) {
+        const userData = await axios.post(
+          `${process.env.CLIENTSPOC}api/v1/user/get-user-name`,
+          { rec_id: userIds }
+        );
+
+        if (userData.data.status == 200)
+          userDetails = userData.data.data;
+      }
+      for (let i = 0; i < query.length; i++) {
+        const ele = query[i];
+        const userData = userDetails.find(o => o.rec_id == 200);
+        if(userData) {
+          resData.push({
+            'User ID': ele.userId,
+            'EMP Code': userData.rec_id,
+            'First Name': userData.fname,
+            'Last Name': userData.lname,
+            'Name': userData.name,
+            'Email': userData.email,
+            'Attendance Status': ele.userStatus[ele.userStatus.length - 1],
+            'Date': ele.date
+          });
+        }
+      }
+      return { resData };
+    }
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+};
