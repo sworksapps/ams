@@ -1504,7 +1504,7 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
         const userData = userDetails.find(o => o.rec_id == 200);
         if(userData) {
           resData.push({
-            'user_iD': ele.userId,
+            'user_id': ele.userId,
             'emp_code': userData.rec_id,
             'first_ame': userData.fname,
             'last_name': userData.lname,
