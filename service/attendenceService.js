@@ -1480,6 +1480,12 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
   try {
     const attModel = await dbConnection.model('attendences_data');
     const resData = [];
+    const respData = [];
+    let headerSheet = ['Emp Code', 'User ID', 'Emp Name', 'Email', 'Department', 'Designation'];
+    const dateLists = getDaysBetweenDates(moment(startDate),moment(endDate));
+    headerSheet = headerSheet.concat(dateLists);
+    const headerSheet2 = ['Total Present (P)', 'Total Absent (A)', 'LOP', 'Casual Leave', 'Paid Leave', 'SP', 'COMPOFF', 'WFH', 'H (Holiday)', 'HP (Holiday Present)', 'WEEKOFF(WO)', 'WOP(Weekoff Present)', 'OT Hours', 'Total Paid Days'];
+    headerSheet = headerSheet.concat(headerSheet2);
     const query = await attModel.find({date: {
       $gte: startDate,
       $lte: endDate
@@ -1501,18 +1507,77 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
       }
       for (let i = 0; i < query.length; i++) {
         const ele = query[i];
-        const userData = userDetails.find(o => o.rec_id == 200);
+        const userData = userDetails.find(o => o.rec_id == ele.userId);
+        const userReport = userReportFun(ele.userId, query);
         if(userData) {
-          resData.push({
-            'user_id': ele.userId,
+          respData.push({
             'emp_code': userData.rec_id,
-            'first_ame': userData.fname,
-            'last_name': userData.lname,
+            'userId': ele.userId,
             'name': userData.name,
             'email': userData.email,
-            'attendance_status': ele.userStatus[ele.userStatus.length - 1],
-            'date': ele.date
+            'department': '',
+            'designation': userData.designation,
+            'date': ele.date,
+            'userStatus': ele.userStatus[ele.userStatus.length - 1],
+            'total_present': userReport.total_present,
+            'total_absent': userReport.total_absent,
+            'lop': userReport.lop,
+            'casual_leave': userReport.casual_leave,
+            'paid_leave': userReport.paid_leave,
+            'sp': userReport.sp,
+            'compoft': userReport.compoft,
+            'wfh': userReport.wfh,
+            'holiday': userReport.holiday,
+            'holiday_present': userReport.holiday_present,
+            'weekoff': userReport.weekoff,
+            'wop': userReport.wop,
+            'ot_ours': userReport.ot_ours,
+            'total_paid_days': userReport.total_paid_days,
           });
+        }
+      }
+      if( respData && respData.length > 0 ) {
+        for (let y = 0; y < userDetails.length; y++) {
+          const userData = userDetails[y];
+          const repDataObj = {};
+          const currentUser = [];
+          respData.map(o => {if(o.userId == userData.rec_id) return currentUser.push(o); });
+          for (let k = 0; k < headerSheet.length; k++) {
+            const hValue = headerSheet[k];
+            if(hValue == 'Emp Code') repDataObj[hValue] = userData.emp_code;
+            if(hValue == 'User ID') repDataObj[hValue] = userData.rec_id;
+            if(hValue == 'Emp Name') repDataObj[hValue] = userData.name;
+            if(hValue == 'Email') repDataObj[hValue] = userData.email;
+            if(hValue == 'Department') repDataObj[hValue] = '';
+            if(hValue == 'Designation') repDataObj[hValue] = userData.designation;
+            // date
+            if(moment(hValue, 'YYYY-MM-DD', true).isValid()) {
+              const userStatusData = currentUser.find(o => o.date == hValue);
+              if(userStatusData && userStatusData != undefined) {
+                repDataObj[hValue] = userStatusData.userStatus;
+              } else {
+                repDataObj[hValue] = 'N/A';
+              }
+            }
+            // current user
+            if(currentUser && currentUser.length > 0) {
+              if(hValue == 'Total Present (P)') repDataObj[hValue] = currentUser[0]['total_present'];
+              if(hValue == 'Total Absent (A)') repDataObj[hValue] = currentUser[0]['total_absent'];
+              if(hValue == 'LOP') repDataObj[hValue] = currentUser[0]['lop'];
+              if(hValue == 'Casual Leave') repDataObj[hValue] = currentUser[0]['casual_leave'];
+              if(hValue == 'Paid Leave') repDataObj[hValue] = currentUser[0]['paid_leave'];
+              if(hValue == 'SP') repDataObj[hValue] = currentUser[0]['sp'];
+              if(hValue == 'COMPOFF') repDataObj[hValue] = currentUser[0]['compoft'];
+              if(hValue == 'WFH') repDataObj[hValue] = currentUser[0]['wfh'];
+              if(hValue == 'H (Holiday)') repDataObj[hValue] = currentUser[0]['holiday'];
+              if(hValue == 'HP (Holiday Present)') repDataObj[hValue] = currentUser[0]['holiday_present'];
+              if(hValue == 'WEEKOFF(WO)') repDataObj[hValue] = currentUser[0]['weekoff'];
+              if(hValue == 'WOP(Weekoff Present)') repDataObj[hValue] = currentUser[0]['wop'];
+              if(hValue == 'OT Hours') repDataObj[hValue] = currentUser[0]['ot_ours'];
+              if(hValue == 'Total Paid Days') repDataObj[hValue] = currentUser[0]['total_paid_days'];
+            }
+          }
+          resData.push(repDataObj);
         }
       }
       return { resData };
@@ -1521,4 +1586,53 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
     console.log(err);
     return false;
   }
+};
+
+const userReportFun = (userId, data) => {
+  let total_present= 0;
+  let total_absent= 0;
+  let lop= 0;
+  let casual_leave= 0;
+  const paid_leave= 0;
+  let sp= 0;
+  let compoft= 0;
+  let wfh= 0;
+  let holiday= 0;
+  let holiday_present= 0;
+  let weekoff= 0;
+  let wop= 0;
+  const ot_ours= 0;
+  let total_paid_days= 0;
+  
+  data.map((e) => {
+    if(e.userId == userId) {
+      const attendance_status = e.userStatus[e.userStatus.length - 1];
+      if( attendance_status == 'PRESENT' ) total_present++;
+      if( attendance_status == 'ABSENT' ) total_absent++;
+      if( attendance_status == 'LOP' ) lop++;
+      if( attendance_status == 'CL' ) casual_leave++;
+      // if( attendance_status == 'PRESENT' ) paid_leave++;
+      if( attendance_status == 'SP' ) sp++;
+      if( attendance_status == 'CO' ) compoft++;
+      if( attendance_status == 'WFH' ) wfh++;
+      if( attendance_status == 'HO' ) holiday++;
+      if( attendance_status == 'HOP' ) holiday_present++;
+      if( attendance_status == 'WEEKLYOFF' ) weekoff++;
+      if( attendance_status == 'WOP' ) wop++;
+    }
+  });
+
+  total_paid_days = parseInt(total_present) + parseInt(paid_leave) + parseInt(compoft) + parseInt(holiday_present) + parseInt(wop) + ' Days';
+
+  return { total_present, total_absent, lop, casual_leave, paid_leave, sp, compoft, wfh, holiday, holiday_present, weekoff, wop, ot_ours, total_paid_days  };
+};
+
+const getDaysBetweenDates = function(startDate, endDate) {
+  const now = startDate.clone(), dates = [];
+  
+  while (now.isSameOrBefore(endDate)) {
+    dates.push(now.format('YYYY-MM-DD'));
+    now.add(1, 'days');
+  }
+  return dates;
 };
