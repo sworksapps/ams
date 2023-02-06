@@ -1504,14 +1504,14 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
         const userData = userDetails.find(o => o.rec_id == 200);
         if(userData) {
           resData.push({
-            'User ID': ele.userId,
-            'EMP Code': userData.rec_id,
-            'First Name': userData.fname,
-            'Last Name': userData.lname,
-            'Name': userData.name,
-            'Email': userData.email,
-            'Attendance Status': ele.userStatus[ele.userStatus.length - 1],
-            'Date': ele.date
+            'user_iD': ele.userId,
+            'emp_code': userData.rec_id,
+            'first_ame': userData.fname,
+            'last_name': userData.lname,
+            'name': userData.name,
+            'email': userData.email,
+            'attendance_status': ele.userStatus[ele.userStatus.length - 1],
+            'date': ele.date
           });
         }
       }
