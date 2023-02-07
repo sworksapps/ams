@@ -1459,7 +1459,7 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
     const query = await attModel.find({date: {
       $gte: startDate,
       $lte: endDate
-    }}).select({_id:1, userId: 1, date:1, primaryStatus:1, userStatus:1}).sort({userId: -1, date: 1});
+    }}).select({_id:1, userId: 1, date:1, primaryStatus:1, userStatus:1, attendenceDetails:1, shiftStart:1, shiftEnd:1 }).sort({userId: -1, date: 1});
     let userDetails = [];
     if (query && query.length > 0) {
       let userIds = query.map(i => i.userId);
@@ -1576,7 +1576,7 @@ const userReportFun = (userId, data) => {
   let holiday_present= 0;
   let weekoff= 0;
   let wop= 0;
-  const ot_ours= 0;
+  let ot_ours= '00:00';
   let total_paid_days= 0;
   
   data.map((e) => {
@@ -1595,6 +1595,28 @@ const userReportFun = (userId, data) => {
       if( attendance_status == 'HOP' ) holiday_present++;
       if( attendance_status == 'WEEKLYOFF' ) weekoff++;
       if( attendance_status == 'WOP' ) wop++;
+      if(e.attendenceDetails.length > 0) {
+        const shiftStart = e.shiftStart[e.shiftStart.length - 1];
+        const shiftEnd = e.shiftEnd[e.shiftEnd.length - 1];
+        let clockIn = '';
+        let clockOut = '';
+        const userAttData = e.attendenceDetails.find(o => o.actionBy == 'ADMIN');
+        if(userAttData && userAttData != undefined) {
+          clockIn = userAttData.clockIn;
+          clockOut = userAttData.clockOut;
+        } else {
+          clockIn = e.attendenceDetails[0]['clockIn'];
+          const revAttDetails =  e.attendenceDetails.reverse();
+          clockOut = revAttDetails[0]['clockOut'];
+        }
+        if (clockIn && clockIn != '' && clockOut && clockOut != '' && shiftStart && shiftStart != '' && shiftEnd && shiftEnd != '') {
+          const resOverTime = getOverTime(shiftStart, shiftEnd, clockIn, clockOut);
+          if(resOverTime != 'N/A') {
+            const dd = moment.duration(ot_ours).add(moment.duration(resOverTime));
+            ot_ours = moment.utc(dd.as('milliseconds')).format('HH:mm');
+          }
+        }
+      }
     }
   });
   
