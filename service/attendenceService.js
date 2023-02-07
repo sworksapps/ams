@@ -1454,7 +1454,7 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
     let headerSheet = ['Emp Code', 'User ID', 'Emp Name', 'Email', 'Department', 'Designation'];
     const dateLists = getDaysBetweenDates(moment(startDate),moment(endDate));
     headerSheet = headerSheet.concat(dateLists);
-    const headerSheet2 = ['Total Present (P)', 'Total Absent (A)', 'LOP', 'Casual Leave', 'Paid Leave', 'SP', 'COMPOFF', 'WFH', 'H (Holiday)', 'HP (Holiday Present)', 'WEEKOFF(WO)', 'WOP(Weekoff Present)', 'OT Hours', 'Total Paid Days'];
+    const headerSheet2 = ['Total Present (P)', 'Total Absent (A)', 'LOP', 'Casual Leave', 'Sick Leave', 'Half Day', 'SP', 'COMPOFF', 'WFH', 'H (Holiday)', 'HP (Holiday Present)', 'WEEKOFF(WO)', 'WOP(Weekoff Present)', 'OT Hours', 'Total Paid Days'];
     headerSheet = headerSheet.concat(headerSheet2);
     const query = await attModel.find({date: {
       $gte: startDate,
@@ -1493,7 +1493,8 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
             'total_absent': userReport.total_absent,
             'lop': userReport.lop,
             'casual_leave': userReport.casual_leave,
-            'paid_leave': userReport.paid_leave,
+            'sick_leave': userReport.sick_leave,
+            'halfDay': userReport.halfDay,
             'sp': userReport.sp,
             'compoft': userReport.compoft,
             'wfh': userReport.wfh,
@@ -1518,13 +1519,13 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
             if(hValue == 'User ID') repDataObj[hValue] = userData.rec_id;
             if(hValue == 'Emp Name') repDataObj[hValue] = userData.name;
             if(hValue == 'Email') repDataObj[hValue] = userData.email;
-            if(hValue == 'Department') repDataObj[hValue] = '';
+            if(hValue == 'Department') repDataObj[hValue] = userData.dept_name;
             if(hValue == 'Designation') repDataObj[hValue] = userData.designation;
             // date
             if(moment(hValue, 'YYYY-MM-DD', true).isValid()) {
               const userStatusData = currentUser.find(o => o.date == hValue);
               if(userStatusData && userStatusData != undefined) {
-                repDataObj[hValue] = userStatusData.userStatus;
+                repDataObj[hValue] = getShortNameAttStatus(userStatusData.userStatus);
               } else {
                 repDataObj[hValue] = 'N/A';
               }
@@ -1535,7 +1536,8 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
               if(hValue == 'Total Absent (A)') repDataObj[hValue] = currentUser[0]['total_absent'];
               if(hValue == 'LOP') repDataObj[hValue] = currentUser[0]['lop'];
               if(hValue == 'Casual Leave') repDataObj[hValue] = currentUser[0]['casual_leave'];
-              if(hValue == 'Paid Leave') repDataObj[hValue] = currentUser[0]['paid_leave'];
+              if(hValue == 'Sick Leave') repDataObj[hValue] = currentUser[0]['sick_leave'];
+              if(hValue == 'Half Day') repDataObj[hValue] = currentUser[0]['halfDay'];
               if(hValue == 'SP') repDataObj[hValue] = currentUser[0]['sp'];
               if(hValue == 'COMPOFF') repDataObj[hValue] = currentUser[0]['compoft'];
               if(hValue == 'WFH') repDataObj[hValue] = currentUser[0]['wfh'];
@@ -1559,11 +1561,14 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
 };
 
 const userReportFun = (userId, data) => {
+  let present= 0;
+  let absent= 0;
   let total_present= 0;
   let total_absent= 0;
   let lop= 0;
   let casual_leave= 0;
-  const paid_leave= 0;
+  let sick_leave= 0;
+  let halfDay= 0;
   let sp= 0;
   let compoft= 0;
   let wfh= 0;
@@ -1577,11 +1582,12 @@ const userReportFun = (userId, data) => {
   data.map((e) => {
     if(e.userId == userId) {
       const attendance_status = e.userStatus[e.userStatus.length - 1];
-      if( attendance_status == 'PRESENT' ) total_present++;
-      if( attendance_status == 'ABSENT' ) total_absent++;
+      if( attendance_status == 'PRESENT' ) present++;
+      if( attendance_status == 'ABSENT' ) absent++;
       if( attendance_status == 'LOP' ) lop++;
       if( attendance_status == 'CL' ) casual_leave++;
-      // if( attendance_status == 'PRESENT' ) paid_leave++;
+      if( attendance_status == 'SL' ) sick_leave++;
+      if( attendance_status == 'HALFDAY' ) halfDay++;
       if( attendance_status == 'SP' ) sp++;
       if( attendance_status == 'CO' ) compoft++;
       if( attendance_status == 'WFH' ) wfh++;
@@ -1591,10 +1597,12 @@ const userReportFun = (userId, data) => {
       if( attendance_status == 'WOP' ) wop++;
     }
   });
+  
+  total_present = parseInt(present) + parseInt(halfDay) + parseInt(wfh) + parseInt(compoft) + parseInt(sp) + parseInt(wop) + parseInt(holiday_present);
+  total_absent = parseInt(absent) + parseInt(lop) + parseInt(sick_leave) + parseInt(casual_leave);
+  total_paid_days = parseInt(total_present) + parseInt(holiday) + parseInt(weekoff);
 
-  total_paid_days = parseInt(total_present) + parseInt(paid_leave) + parseInt(compoft) + parseInt(holiday_present) + parseInt(wop) + ' Days';
-
-  return { total_present, total_absent, lop, casual_leave, paid_leave, sp, compoft, wfh, holiday, holiday_present, weekoff, wop, ot_ours, total_paid_days  };
+  return { total_present, total_absent, lop, casual_leave, sick_leave, halfDay, sp, compoft, wfh, holiday, holiday_present, weekoff, wop, ot_ours, total_paid_days  };
 };
 
 const getDaysBetweenDates = function(startDate, endDate) {
@@ -1606,3 +1614,21 @@ const getDaysBetweenDates = function(startDate, endDate) {
   }
   return dates;
 };
+
+const getShortNameAttStatus = (value) => {
+  if(value == 'PRESENT') return 'P';
+  else if(value == 'WOP') return 'WOP';
+  else if(value == 'HOP') return 'HOP';
+  else if(value == 'HALFDAY') return 'HD';
+  else if(value == 'ABSENT') return 'A';
+  else if(value == 'WEEKLYOFF') return 'WO';
+  else if(value == 'LOP') return 'LOP';
+  else if(value == 'SL') return 'SL';
+  else if(value == 'CL') return 'CL';
+  else if(value == 'HO') return 'HO';
+  else if(value == 'CO') return 'CO';
+  else if(value == 'SP') return 'SP';
+  else if(value == 'WFH') return 'WFH';
+  else return 'N/A';
+};
+/* ---------------get payroll report end----------------------*/
