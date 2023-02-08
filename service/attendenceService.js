@@ -1486,10 +1486,27 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
     headerSheet = headerSheet.concat(dateLists);
     const headerSheet2 = ['Total Present (P)', 'Total Absent (A)', 'LOP', 'Casual Leave', 'Sick Leave', 'Half Day', 'SP', 'COMPOFF', 'WFH', 'H (Holiday)', 'HP (Holiday Present)', 'WEEKOFF(WO)', 'WOP(Weekoff Present)', 'OT Hours', 'Total Paid Days'];
     headerSheet = headerSheet.concat(headerSheet2);
-    const query = await attModel.find({date: {
+    let query = await attModel.find({date: {
       $gte: startDate,
       $lte: endDate
-    }}).select({_id:1, userId: 1, date:1, primaryStatus:1, userStatus:1, attendenceDetails:1, shiftStart:1, shiftEnd:1 }).sort({userId: -1, date: 1});
+    }}).select({_id:1, userId: 1, date:1, primaryStatus:1, userStatus:1, attendenceDetails:1, shiftStart:1, shiftEnd:1 }).sort({userId: -1, date: 1}).lean();
+    query = query.map( (e) => {
+      if(e.attendenceDetails.length == 0 && e.userStatus[0] == 'N/A' && moment(e.date).isBefore(moment().format('YYYY-MM-DD'))) {
+        return {
+          _id: e._id,
+          userId: e.userId,
+          date: e.date,
+          primaryStatus: e.primaryStatus,
+          attendenceDetails: [],
+          shiftEnd: e.shiftEnd,
+          shiftStart: e.shiftStart,
+          userStatus: [ 'ABSENT' ]
+        };
+      } else {
+        return e;
+      }
+    });
+    console.log(query);
     let userDetails = [];
     if (query && query.length > 0) {
       let userIds = query.map(i => i.userId);
