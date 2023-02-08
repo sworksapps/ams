@@ -1506,7 +1506,6 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
         return e;
       }
     });
-    console.log(query);
     let userDetails = [];
     if (query && query.length > 0) {
       let userIds = query.map(i => i.userId);
@@ -1572,9 +1571,17 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
             if(moment(hValue, 'YYYY-MM-DD', true).isValid()) {
               const userStatusData = currentUser.find(o => o.date == hValue);
               if(userStatusData && userStatusData != undefined) {
-                repDataObj[hValue] = getShortNameAttStatus(userStatusData.userStatus);
+                if(moment(hValue).isSameOrAfter(moment().format('YYYY-MM-DD')) &&  userStatusData.userStatus == 'N/A') {
+                  repDataObj[hValue] = '-';
+                } else {
+                  repDataObj[hValue] = getShortNameAttStatus(userStatusData.userStatus);
+                }
               } else {
-                repDataObj[hValue] = 'N/A';
+                if(moment(hValue).isSameOrAfter(moment().format('YYYY-MM-DD'))) {
+                  repDataObj[hValue] = '-';
+                } else {
+                  repDataObj[hValue] = 'N/A';
+                }
               }
             }
             // current user
@@ -1698,6 +1705,6 @@ const getShortNameAttStatus = (value) => {
   else if(value == 'CO') return 'CO';
   else if(value == 'SP') return 'SP';
   else if(value == 'WFH') return 'WFH';
-  else return 'N/A';
+  else return value;
 };
 /* ---------------get payroll report end----------------------*/
