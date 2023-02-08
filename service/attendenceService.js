@@ -1580,7 +1580,7 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
                 if(moment(hValue).isSameOrAfter(moment().format('YYYY-MM-DD'))) {
                   repDataObj[hValue] = '-';
                 } else {
-                  repDataObj[hValue] = 'N/A';
+                  repDataObj[hValue] = 'A';
                 }
               }
             }
