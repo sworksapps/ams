@@ -1491,7 +1491,7 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
       $lte: endDate
     }}).select({_id:1, userId: 1, date:1, primaryStatus:1, userStatus:1, attendenceDetails:1, shiftStart:1, shiftEnd:1 }).sort({userId: -1, date: 1}).lean();
     query = query.map( (e) => {
-      if(e.attendenceDetails.length == 0 && e.userStatus[0] == 'N/A' && moment(e.date).isBefore(moment().format('YYYY-MM-DD'))) {
+      if(e.attendenceDetails.length == 0 && e.userStatus[e.userStatus.length - 1] == 'N/A' && moment(e.date).isBefore(moment().format('YYYY-MM-DD'))) {
         return {
           _id: e._id,
           userId: e.userId,
