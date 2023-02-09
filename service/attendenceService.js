@@ -1474,3 +1474,245 @@ const filterKpiData = (resData, filterName) => {
   });
   return filterData;
 };
+
+/* ---------------get payroll report----------------------*/
+exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
+  try {
+    const attModel = await dbConnection.model('attendences_data');
+    const resData = [];
+    const respData = [];
+    let headerSheet = ['Emp Code', 'User ID', 'Emp Name', 'Email', 'Department', 'Designation'];
+    const dateLists = getDaysBetweenDates(moment(startDate),moment(endDate));
+    headerSheet = headerSheet.concat(dateLists);
+    const headerSheet2 = ['Present (P)', 'Absent (A)', 'LOP', 'Casual Leave', 'Sick Leave', 'Half Day', 'SP', 'COMPOFF', 'WFH', 'H (Holiday)', 'HP (Holiday Present)', 'WEEKOFF(WO)', 'WOP(Weekoff Present)', 'Total Paid Days', 'OT Hours'];
+    headerSheet = headerSheet.concat(headerSheet2);
+    let query = await attModel.find({date: {
+      $gte: startDate,
+      $lte: endDate
+    }}).select({_id:1, userId: 1, date:1, primaryStatus:1, userStatus:1, attendenceDetails:1, shiftStart:1, shiftEnd:1 }).sort({userId: -1, date: 1}).lean();
+    query = query.map( (e) => {
+      if(e.attendenceDetails.length == 0 && e.userStatus[e.userStatus.length - 1] == 'N/A' && moment(e.date).isBefore(moment().format('YYYY-MM-DD'))) {
+        return {
+          _id: e._id,
+          userId: e.userId,
+          date: e.date,
+          primaryStatus: e.primaryStatus,
+          attendenceDetails: [],
+          shiftEnd: e.shiftEnd,
+          shiftStart: e.shiftStart,
+          userStatus: [ 'ABSENT' ]
+        };
+      } else {
+        return e;
+      }
+    });
+    let userDetails = [];
+    if (query && query.length > 0) {
+      let userIds = query.map(i => i.userId);
+      userIds = filterArray(userIds);
+
+      // get user name
+      if (userIds && userIds.length > 0) {
+        const userData = await axios.post(
+          `${process.env.CLIENTSPOC}api/v1/user/get-user-name`,
+          { rec_id: userIds }
+        );
+
+        if (userData.data.status == 200)
+          userDetails = userData.data.data;
+      }
+      for (let i = 0; i < query.length; i++) {
+        const ele = query[i];
+        const userData = userDetails.find(o => o.rec_id == ele.userId);
+        const userReport = userReportFun(ele.userId, query, startDate, endDate);
+        if(userData) {
+          respData.push({
+            'emp_code': userData.rec_id,
+            'userId': ele.userId,
+            'name': userData.name,
+            'email': userData.email,
+            'department': '',
+            'designation': userData.designation,
+            'date': ele.date,
+            'userStatus': ele.userStatus[ele.userStatus.length - 1],
+            'present': userReport.present,
+            'absent': userReport.absent,
+            'lop': userReport.lop,
+            'casual_leave': userReport.casual_leave,
+            'sick_leave': userReport.sick_leave,
+            'halfDay': userReport.halfDay,
+            'sp': userReport.sp,
+            'compoft': userReport.compoft,
+            'wfh': userReport.wfh,
+            'holiday': userReport.holiday,
+            'holiday_present': userReport.holiday_present,
+            'weekoff': userReport.weekoff,
+            'wop': userReport.wop,
+            'ot_ours': userReport.ot_ours,
+            'total_paid_days': userReport.total_paid_days,
+          });
+        }
+      }
+      if( respData && respData.length > 0 ) {
+        for (let y = 0; y < userDetails.length; y++) {
+          const userData = userDetails[y];
+          const repDataObj = {};
+          const currentUser = [];
+          respData.map(o => {if(o.userId == userData.rec_id) return currentUser.push(o); });
+          for (let k = 0; k < headerSheet.length; k++) {
+            const hValue = headerSheet[k];
+            if(hValue == 'Emp Code') repDataObj[hValue] = userData.emp_code;
+            if(hValue == 'User ID') repDataObj[hValue] = userData.rec_id;
+            if(hValue == 'Emp Name') repDataObj[hValue] = userData.name;
+            if(hValue == 'Email') repDataObj[hValue] = userData.email;
+            if(hValue == 'Department') repDataObj[hValue] = userData.dept_name;
+            if(hValue == 'Designation') repDataObj[hValue] = userData.designation;
+            // date
+            if(moment(hValue, 'YYYY-MM-DD', true).isValid()) {
+              const newHValue = moment(hValue).format('DD-MMM');
+              const userStatusData = currentUser.find(o => o.date == hValue);
+              if(userStatusData && userStatusData != undefined) {
+                if(moment(hValue).isSameOrAfter(moment().format('YYYY-MM-DD')) &&  userStatusData.userStatus == 'N/A') {
+                  repDataObj[newHValue] = '-';
+                } else {
+                  repDataObj[newHValue] = getShortNameAttStatus(userStatusData.userStatus);
+                }
+              } else {
+                if(moment(hValue).isSameOrAfter(moment().format('YYYY-MM-DD'))) {
+                  repDataObj[newHValue] = '-';
+                } else {
+                  repDataObj[newHValue] = 'A';
+                }
+              }
+            }
+            // current user
+            if(currentUser && currentUser.length > 0) {
+              if(hValue == 'Present (P)') repDataObj[hValue] = currentUser[0]['present'];
+              if(hValue == 'Absent (A)') repDataObj[hValue] = currentUser[0]['absent'];
+              if(hValue == 'LOP') repDataObj[hValue] = currentUser[0]['lop'];
+              if(hValue == 'Casual Leave') repDataObj[hValue] = currentUser[0]['casual_leave'];
+              if(hValue == 'Sick Leave') repDataObj[hValue] = currentUser[0]['sick_leave'];
+              if(hValue == 'Half Day') repDataObj[hValue] = currentUser[0]['halfDay'];
+              if(hValue == 'SP') repDataObj[hValue] = currentUser[0]['sp'];
+              if(hValue == 'COMPOFF') repDataObj[hValue] = currentUser[0]['compoft'];
+              if(hValue == 'WFH') repDataObj[hValue] = currentUser[0]['wfh'];
+              if(hValue == 'H (Holiday)') repDataObj[hValue] = currentUser[0]['holiday'];
+              if(hValue == 'HP (Holiday Present)') repDataObj[hValue] = currentUser[0]['holiday_present'];
+              if(hValue == 'WEEKOFF(WO)') repDataObj[hValue] = currentUser[0]['weekoff'];
+              if(hValue == 'WOP(Weekoff Present)') repDataObj[hValue] = currentUser[0]['wop'];
+              if(hValue == 'Total Paid Days') repDataObj[hValue] = currentUser[0]['total_paid_days'];
+              if(hValue == 'OT Hours') repDataObj[hValue] = currentUser[0]['ot_ours'];
+            }
+          }
+          resData.push(repDataObj);
+        }
+      }
+      return { resData };
+    }
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+};
+
+const userReportFun = (userId, data, startDate, endDate) => {
+  let present= 0;
+  let absent= 0;
+  let total_present= 0;
+  let total_absent= 0;
+  let lop= 0;
+  let casual_leave= 0;
+  let sick_leave= 0;
+  let halfDay= 0;
+  let sp= 0;
+  let compoft= 0;
+  let wfh= 0;
+  let holiday= 0;
+  let holiday_present= 0;
+  let weekoff= 0;
+  let wop= 0;
+  let ot_ours= '00:00';
+  let total_paid_days= 0;
+  let calDate = moment().format('YYYY-MM-DD');
+  if(moment(endDate) < calDate) calDate = endDate;
+  else calDate = moment(calDate).subtract(1, 'days');
+  const totalDays = moment(calDate).diff(moment(startDate), 'days')+1;
+  let attDays = 0;
+  
+  data.map((e) => {
+    if(e.userId == userId) {
+      if(moment(e.date).isBefore(moment().format('YYYY-MM-DD'))) attDays++;
+      const attendance_status = e.userStatus[e.userStatus.length - 1];
+      if( attendance_status == 'PRESENT' ) present++;
+      if( attendance_status == 'ABSENT' ) absent++;
+      if( attendance_status == 'LOP' ) lop++;
+      if( attendance_status == 'CL' ) casual_leave++;
+      if( attendance_status == 'SL' ) sick_leave++;
+      if( attendance_status == 'HALFDAY' ) halfDay++;
+      if( attendance_status == 'SP' ) sp++;
+      if( attendance_status == 'CO' ) compoft++;
+      if( attendance_status == 'WFH' ) wfh++;
+      if( attendance_status == 'HO' ) holiday++;
+      if( attendance_status == 'HOP' ) holiday_present++;
+      if( attendance_status == 'WEEKLYOFF' ) weekoff++;
+      if( attendance_status == 'WOP' ) wop++;
+      if(e.attendenceDetails.length > 0) {
+        const shiftStart = e.shiftStart[e.shiftStart.length - 1];
+        const shiftEnd = e.shiftEnd[e.shiftEnd.length - 1];
+        let clockIn = '';
+        let clockOut = '';
+        const userAttData = e.attendenceDetails.reverse().find(o => o.actionBy == 'ADMIN');
+        if(userAttData && userAttData != undefined) {
+          clockIn = userAttData.clockIn;
+          clockOut = userAttData.clockOut;
+        } else {
+          clockIn = e.attendenceDetails[0]['clockIn'];
+          const revAttDetails =  e.attendenceDetails.reverse();
+          clockOut = revAttDetails[0]['clockOut'];
+        }
+        if (clockIn && clockIn != '' && clockOut && clockOut != '' && shiftStart && shiftStart != '' && shiftEnd && shiftEnd != '') {
+          const resOverTime = getOverTime(shiftStart, shiftEnd, clockIn, clockOut);
+          if(resOverTime != 'N/A') {
+            const dd = moment.duration(ot_ours).add(moment.duration(resOverTime));
+            ot_ours = moment.utc(dd.as('milliseconds')).format('HH:mm');
+          }
+        }
+      }
+    }
+  });
+  total_present = parseInt(present) + parseInt(halfDay) + parseInt(wfh) + parseInt(compoft) + parseInt(sp) + parseInt(wop) + parseInt(holiday_present);
+  total_absent = parseInt(absent) + parseInt(lop) + parseInt(sick_leave) + parseInt(casual_leave);
+  const nonAttDays = parseInt(totalDays) - parseInt(attDays);
+  absent = parseInt(absent) + parseInt(nonAttDays);
+  total_paid_days = parseInt(total_present) + parseInt(holiday) + parseInt(weekoff);
+
+  return { total_present, total_absent, present, absent, lop, casual_leave, sick_leave, halfDay, sp, compoft, wfh, holiday, holiday_present, weekoff, wop, ot_ours, total_paid_days  };
+};
+
+const getDaysBetweenDates = function(startDate, endDate) {
+  const now = startDate.clone(), dates = [];
+  
+  while (now.isSameOrBefore(endDate)) {
+    dates.push(now.format('YYYY-MM-DD'));
+    now.add(1, 'days');
+  }
+  return dates;
+};
+
+const getShortNameAttStatus = (value) => {
+  if(value == 'PRESENT') return 'P';
+  else if(value == 'WOP') return 'WOP';
+  else if(value == 'HOP') return 'HOP';
+  else if(value == 'HALFDAY') return 'HD';
+  else if(value == 'ABSENT') return 'A';
+  else if(value == 'WEEKLYOFF') return 'WO';
+  else if(value == 'LOP') return 'LOP';
+  else if(value == 'SL') return 'SL';
+  else if(value == 'CL') return 'CL';
+  else if(value == 'HO') return 'HO';
+  else if(value == 'CO') return 'CO';
+  else if(value == 'SP') return 'SP';
+  else if(value == 'WFH') return 'WFH';
+  else return value;
+};
+/* ---------------get payroll report end----------------------*/

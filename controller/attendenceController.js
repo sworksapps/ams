@@ -296,3 +296,46 @@ exports.changeUserStatus = async (req, res) => {
     res.status(500).json({ statusText: 'ERROR', statusValue: 500, message: 'Unable to Process your Request' });
   }
 };
+
+/*----------------Get payroll Report------------*/
+exports.getPayrollReport = async (req, res) => {
+  try {
+    const dbConnection = getConnection();
+    if (!dbConnection) {
+      return res.status(400)
+        .json({ statusText: 'FAIL', statusValue: 400, message: 'The provided Client is not available' });
+    }
+
+    if (!req.query.startDate || !req.query.endDate)
+      return res.status(400).json({
+        statusText: 'FAIL',
+        statusValue: 400,
+        message: 'Please provide Start and End Date',
+      });
+
+    const isValidStartDate = moment(req.query.startDate, 'YYYY-MM-DD', true).isValid();
+    if (!isValidStartDate)
+      return res.status(400).json({
+        statusText: 'FAIL',
+        statusValue: 400,
+        message: 'Please start date in YYYY-MM-DD format',
+      });
+
+    const isValidEndDate = moment(req.query.endDate, 'YYYY-MM-DD', true).isValid();
+    if (!isValidEndDate)
+      return res.status(400).json({
+        statusText: 'FAIL',
+        statusValue: 400,
+        message: 'Please end date in YYYY-MM-DD format',
+      });
+
+    const dataRes = await attendenceService.fetchPayrollReport(dbConnection, req.query.startDate, req.query.endDate);
+    if (dataRes)
+      return res.status(200).json({ statusText: 'OK', statusValue: 200, data: dataRes.resData });
+    else
+      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: 'No Data Found' });
+  } catch (err) {
+    res.status(500).json({ statusText: 'ERROR', statusValue: 500, message: 'Unable to Process your Request' });
+  }
+};
+
