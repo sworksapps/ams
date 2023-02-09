@@ -1524,7 +1524,7 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
       for (let i = 0; i < query.length; i++) {
         const ele = query[i];
         const userData = userDetails.find(o => o.rec_id == ele.userId);
-        const userReport = userReportFun(ele.userId, query);
+        const userReport = userReportFun(ele.userId, query, startDate, endDate);
         if(userData) {
           respData.push({
             'emp_code': userData.rec_id,
@@ -1615,7 +1615,7 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
   }
 };
 
-const userReportFun = (userId, data) => {
+const userReportFun = (userId, data, startDate, endDate) => {
   let present= 0;
   let absent= 0;
   let total_present= 0;
@@ -1633,9 +1633,15 @@ const userReportFun = (userId, data) => {
   let wop= 0;
   let ot_ours= '00:00';
   let total_paid_days= 0;
+  let calDate = moment().format('YYYY-MM-DD');
+  if(moment(endDate) < calDate) calDate = endDate;
+  else calDate = moment(calDate).subtract(1, 'days');
+  const totalDays = moment(calDate).diff(moment(startDate), 'days')+1;
+  let attDays = 0;
   
   data.map((e) => {
     if(e.userId == userId) {
+      if(moment(e.date).isBefore(moment().format('YYYY-MM-DD'))) attDays++;
       const attendance_status = e.userStatus[e.userStatus.length - 1];
       if( attendance_status == 'PRESENT' ) present++;
       if( attendance_status == 'ABSENT' ) absent++;
@@ -1674,9 +1680,10 @@ const userReportFun = (userId, data) => {
       }
     }
   });
-  
   total_present = parseInt(present) + parseInt(halfDay) + parseInt(wfh) + parseInt(compoft) + parseInt(sp) + parseInt(wop) + parseInt(holiday_present);
   total_absent = parseInt(absent) + parseInt(lop) + parseInt(sick_leave) + parseInt(casual_leave);
+  const nonAttDays = parseInt(totalDays) - parseInt(attDays);
+  absent = parseInt(absent) + parseInt(nonAttDays);
   total_paid_days = parseInt(total_present) + parseInt(holiday) + parseInt(weekoff);
 
   return { total_present, total_absent, present, absent, lop, casual_leave, sick_leave, halfDay, sp, compoft, wfh, holiday, holiday_present, weekoff, wop, ot_ours, total_paid_days  };
