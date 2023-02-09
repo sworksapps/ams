@@ -1631,7 +1631,7 @@ const userReportFun = (userId, data, startDate, endDate) => {
         const shiftEnd = e.shiftEnd[e.shiftEnd.length - 1];
         let clockIn = '';
         let clockOut = '';
-        const userAttData = e.attendenceDetails.find(o => o.actionBy == 'ADMIN');
+        const userAttData = e.attendenceDetails.reverse().find(o => o.actionBy == 'ADMIN');
         if(userAttData && userAttData != undefined) {
           clockIn = userAttData.clockIn;
           clockOut = userAttData.clockOut;
