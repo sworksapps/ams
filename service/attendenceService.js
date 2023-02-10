@@ -1634,7 +1634,7 @@ const userReportFun = (userId, data, startDate, endDate) => {
   let ot_ours= '00:00';
   let total_paid_days= 0;
   let calDate = moment().format('YYYY-MM-DD');
-  if(moment(endDate) < calDate) calDate = endDate;
+  if(moment(endDate) < moment(calDate)) calDate = endDate;
   else calDate = moment(calDate).subtract(1, 'days');
   const totalDays = moment(calDate).diff(moment(startDate), 'days')+1;
   let attDays = 0;
@@ -1680,6 +1680,7 @@ const userReportFun = (userId, data, startDate, endDate) => {
       }
     }
   });
+
   total_present = parseInt(present) + parseInt(halfDay) + parseInt(wfh) + parseInt(compoft) + parseInt(sp) + parseInt(wop) + parseInt(holiday_present);
   total_absent = parseInt(absent) + parseInt(lop) + parseInt(sick_leave) + parseInt(casual_leave);
   const nonAttDays = parseInt(totalDays) - parseInt(attDays);
