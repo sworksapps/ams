@@ -1624,7 +1624,7 @@ const userReportFun = (userId, data, startDate, endDate) => {
       if( attendance_status == 'WFH' ) wfh++;
       if( attendance_status == 'HO' ) holiday++;
       if( attendance_status == 'HOP' ) holiday_present++;
-      if( attendance_status == 'WEEKLYOFF' ) weekoff++;
+      if( attendance_status == 'WEEKLYOFF' || attendance_status == 'WEEKOFF' ) weekoff++;
       if( attendance_status == 'WOP' ) wop++;
       if(e.attendenceDetails.length > 0) {
         const shiftStart = e.shiftStart[e.shiftStart.length - 1];
@@ -1675,7 +1675,7 @@ const getShortNameAttStatus = (value) => {
   else if(value == 'HOP') return 'HOP';
   else if(value == 'HALFDAY') return 'HD';
   else if(value == 'ABSENT') return 'A';
-  else if(value == 'WEEKLYOFF') return 'WO';
+  else if(value == 'WEEKLYOFF' || value == 'WEEKOFF') return 'WO';
   else if(value == 'LOP') return 'LOP';
   else if(value == 'SL') return 'SL';
   else if(value == 'CL') return 'CL';
