@@ -333,7 +333,7 @@ exports.getPayrollReport = async (req, res) => {
     if (dataRes)
       return res.status(200).json({ statusText: 'OK', statusValue: 200, data: dataRes.resData });
     else
-      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: 'No Data Found' });
+      return res.status(200).json({ statusText: 'FAIL', statusValue: 400, message: 'No Data Found', data: [] });
   } catch (err) {
     res.status(500).json({ statusText: 'ERROR', statusValue: 500, message: 'Unable to Process your Request' });
   }
