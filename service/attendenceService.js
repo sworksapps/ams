@@ -1481,7 +1481,7 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
     const attModel = await dbConnection.model('attendences_data');
     const resData = [];
     const respData = [];
-    let headerSheet = ['Emp Code', 'User ID', 'Emp Name', 'Email', 'Department', 'Designation'];
+    let headerSheet = ['Emp Code', 'User ID', 'Emp Name', 'Email', 'Department', 'Designation', 'Location'];
     const dateLists = getDaysBetweenDates(moment(startDate),moment(endDate));
     headerSheet = headerSheet.concat(dateLists);
     const headerSheet2 = ['Present (P)', 'Absent (A)', 'LOP', 'Casual Leave', 'Sick Leave', 'Half Day', 'SP', 'COMPOFF', 'WFH', 'H (Holiday)', 'HP (Holiday Present)', 'WEEKOFF(WO)', 'WOP(Weekoff Present)', 'Total Paid Days', 'OT Hours'];
@@ -1531,7 +1531,8 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
             'userId': ele.userId,
             'name': userData.name,
             'email': userData.email,
-            'department': '',
+            'department': userData.dept_name,
+            'location_name': userData.location_name,
             'designation': userData.designation,
             'date': ele.date,
             'userStatus': ele.userStatus[ele.userStatus.length - 1],
@@ -1567,6 +1568,7 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
             if(hValue == 'Email') repDataObj[hValue] = userData.email;
             if(hValue == 'Department') repDataObj[hValue] = userData.dept_name;
             if(hValue == 'Designation') repDataObj[hValue] = userData.designation;
+            if(hValue == 'Location') repDataObj[hValue] = userData.location_name;
             // date
             if(moment(hValue, 'YYYY-MM-DD', true).isValid()) {
               const newHValue = moment(hValue).format('DD-MMM');
