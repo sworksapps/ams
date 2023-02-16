@@ -108,7 +108,14 @@ exports.checkIn = async (req, res) => {
         message: fileUpRes.message,
       });
 
-    const validateFaceData = await validateFace(dbConnection, fileUpRes.imgName, decodedjwt);
+    const configRes = await attendenceMobileService.configData(dbConnection);
+    if (configRes.type == false) return res.status(200).json({ 
+      statusText: 'FAIL',
+      statusValue: 400,
+      message: 'Configurations not found..' 
+    });
+
+    let validateFaceData = await validateFace(dbConnection, fileUpRes.imgName, decodedjwt, 'No');
     if(validateFaceData.status == false)
       return res.status(400).json({
         statusText: 'FAIL',
@@ -117,7 +124,22 @@ exports.checkIn = async (req, res) => {
         data: validateFaceData.data
       });
 
-    const userDetails = validateFaceData.data;
+    let userDetails = validateFaceData.data;
+
+    if(configRes.data.isUserTwin.length > 0) {
+      if(configRes.data.isUserTwin.indexOf(parseInt(userDetails.user_id)) !== -1) {
+        console.log('Twin fun called');
+        validateFaceData = await validateFace(dbConnection, fileUpRes.imgName, decodedjwt, 'Yes');
+        if(validateFaceData.status == false)
+          return res.status(400).json({
+            statusText: 'FAIL',
+            statusValue: 400,
+            message: validateFaceData.message,
+            data: validateFaceData.data
+          });
+        userDetails = validateFaceData.data;
+      } 
+    }
 
     if(userDetails.is_active != 1 || userDetails.isSpocApproved != 1)
       return res.status(200).json({
@@ -245,8 +267,15 @@ exports.checkOut = async (req, res) => {
         statusValue: 400,
         message: fileUpRes.message,
       });
+
+    const configRes = await attendenceMobileService.configData(dbConnection);
+    if (configRes.type == false) return res.status(200).json({ 
+      statusText: 'FAIL',
+      statusValue: 400,
+      message: 'Configurations not found..' 
+    });
   
-    const validateFaceData = await validateFace(dbConnection, fileUpRes.imgName, decodedjwt);
+    let validateFaceData = await validateFace(dbConnection, fileUpRes.imgName, decodedjwt, 'No');
     if(validateFaceData.status == false)
       return res.status(400).json({
         statusText: 'FAIL',
@@ -255,7 +284,22 @@ exports.checkOut = async (req, res) => {
         data: validateFaceData.data
       });
   
-    const userDetails = validateFaceData.data;
+    let userDetails = validateFaceData.data;
+
+    if(configRes.data.isUserTwin.length > 0) {
+      if(configRes.data.isUserTwin.indexOf(parseInt(userDetails.user_id)) !== -1) {
+        console.log('Twin fun called');
+        validateFaceData = await validateFace(dbConnection, fileUpRes.imgName, decodedjwt, 'Yes');
+        if(validateFaceData.status == false)
+          return res.status(400).json({
+            statusText: 'FAIL',
+            statusValue: 400,
+            message: validateFaceData.message,
+            data: validateFaceData.data
+          });
+        userDetails = validateFaceData.data;
+      } 
+    }
 
     if(userDetails.is_active != 1 || userDetails.isSpocApproved != 1)
       return res.status(200).json({
@@ -688,7 +732,7 @@ exports.createJwtToken = async (req, res) => {
   }
 };
 
-const validateFace = async (dbConnection, faceImg, decodedjwt) => {
+const validateFace = async (dbConnection, faceImg, decodedjwt, checkStatus) => {
   try {
     const params = {
       CollectionId: process.env.COLLECTIONID,
@@ -748,9 +792,12 @@ const validateFace = async (dbConnection, faceImg, decodedjwt) => {
     if(userFaceId.MouthOpen.Value !=  validateFaceValue.MouthOpen)
       return {status: false, message: 'Face not captured properly, It seems like your mouth was open.'};
 
+    let thresholdValue = validateFaceValue.FaceMatchThreshold;
+    if(checkStatus == 'Yes')
+      thresholdValue = validateFaceValue.MaxFaceMatchThreshold;
     const paramsOne = {
       CollectionId: process.env.COLLECTIONID,
-      FaceMatchThreshold: validateFaceValue.FaceMatchThreshold,
+      FaceMatchThreshold: thresholdValue,
       Image: {
         S3Object: {
           Bucket: process.env.BUCKETNAME,
