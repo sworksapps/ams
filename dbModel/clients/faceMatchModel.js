@@ -15,7 +15,8 @@ const faceMatchSchema = async (dbconn) => {
     PitchMax: { type: Number, default: 30, required: true },
     YawMin: { type: Number, default: -30, required: true },
     YawMax: { type: Number, default: 30, required: true },
-    FaceMatchThreshold: { type: Number, default: 80, required: true },
+    FaceMatchThreshold: { type: Number, default: 95, required: true },
+    MaxFaceMatchThreshold: { type: Number, default: 98, required: true },
     MaxFaces: { type: Number, default: 10, required: true },
   }, {
     timestamps: true
