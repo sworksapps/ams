@@ -1484,7 +1484,7 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
     let headerSheet = ['Emp Code', 'Emp Name', 'Department', 'Designation', 'Base Location'];
     const dateLists = getDaysBetweenDates(moment(startDate),moment(endDate));
     headerSheet = headerSheet.concat(dateLists);
-    const headerSheet2 = ['Present (P)', 'Absent (A)', 'LOP', 'Casual Leave', 'Sick Leave', 'Half Day', 'SP', 'COMPOFF', 'WFH', 'H (Holiday)', 'HP (Holiday Present)', 'WEEKOFF(WO)', 'WOP(Weekoff Present)', 'Total Paid Days', 'OT Hours'];
+    const headerSheet2 = ['Present (P)', 'Absent (A)', 'Leave', 'Half Day', 'SP', 'COMPOFF', 'H (Holiday)', 'HP (Holiday Present)', 'WEEKOFF(WO)', 'WOP(Weekoff Present)', 'Total Paid Days', 'OT Hours'];
     headerSheet = headerSheet.concat(headerSheet2);
     let query = await attModel.find({date: {
       $gte: startDate,
@@ -1591,13 +1591,13 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
             if(currentUser && currentUser.length > 0) {
               if(hValue == 'Present (P)') repDataObj[hValue] = currentUser[0]['present'];
               if(hValue == 'Absent (A)') repDataObj[hValue] = currentUser[0]['absent'];
-              if(hValue == 'LOP') repDataObj[hValue] = currentUser[0]['lop'];
+              // if(hValue == 'LOP') repDataObj[hValue] = currentUser[0]['lop'];
               if(hValue == 'Casual Leave') repDataObj[hValue] = currentUser[0]['casual_leave'];
-              if(hValue == 'Sick Leave') repDataObj[hValue] = currentUser[0]['sick_leave'];
+              // if(hValue == 'Sick Leave') repDataObj[hValue] = currentUser[0]['sick_leave'];
               if(hValue == 'Half Day') repDataObj[hValue] = currentUser[0]['halfDay'];
               if(hValue == 'SP') repDataObj[hValue] = currentUser[0]['sp'];
               if(hValue == 'COMPOFF') repDataObj[hValue] = currentUser[0]['compoft'];
-              if(hValue == 'WFH') repDataObj[hValue] = currentUser[0]['wfh'];
+              // if(hValue == 'WFH') repDataObj[hValue] = currentUser[0]['wfh'];
               if(hValue == 'H (Holiday)') repDataObj[hValue] = currentUser[0]['holiday'];
               if(hValue == 'HP (Holiday Present)') repDataObj[hValue] = currentUser[0]['holiday_present'];
               if(hValue == 'WEEKOFF(WO)') repDataObj[hValue] = currentUser[0]['weekoff'];
@@ -1683,8 +1683,8 @@ const userReportFun = (userId, data, startDate, endDate) => {
     }
   });
 
-  total_present = parseInt(present) + parseInt(halfDay) + parseInt(wfh) + parseInt(compoft) + parseInt(sp) + parseInt(wop) + parseInt(holiday_present);
-  total_absent = parseInt(absent) + parseInt(lop) + parseInt(sick_leave) + parseInt(casual_leave);
+  total_present = parseInt(present) + parseInt(halfDay) + parseInt(compoft) + parseInt(sp) + parseInt(wop) + parseInt(holiday_present);
+  total_absent = parseInt(absent) +  parseInt(casual_leave);
   const nonAttDays = parseInt(totalDays) - parseInt(attDays);
   absent = parseInt(absent) + parseInt(nonAttDays);
   total_paid_days = parseInt(total_present) + parseInt(holiday) + parseInt(weekoff);
