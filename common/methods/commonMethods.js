@@ -119,17 +119,17 @@ const checkForHalfDay = (shiftTime1 = 9 * 60, workingTime, type) => {
       return 'ABSENT';
     }
   } else if (shiftTime == 8 * 60) {
-    if (workingTime >= 4 * 60 && workingTime <= 7 * 60) {
+    if (workingTime >= 4 * 60 && workingTime <= 6 * 60) {
       return 'HALFDAY';
-    } else if (workingTime > 7 * 60) {
+    } else if (workingTime > 6 * 60) {
       return (type != 'NA') ? type : 'PRESENT';
     } else {
       return 'ABSENT';
     }
   } else if (shiftTime == 9 * 60) {
-    if (workingTime >= 5 * 60 && workingTime <= 8 * 60) {
+    if (workingTime >= 5 * 60 && workingTime <= 7 * 60) {
       return 'HALFDAY';
-    } else if (workingTime > 8 * 60) {
+    } else if (workingTime > 7 * 60) {
       return (type != 'NA') ? type : 'PRESENT';
     } else {
       return 'ABSENT';
