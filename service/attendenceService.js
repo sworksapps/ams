@@ -1592,7 +1592,7 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
               if(hValue == 'Present (P)') repDataObj[hValue] = currentUser[0]['present'];
               if(hValue == 'Absent (A)') repDataObj[hValue] = currentUser[0]['absent'];
               // if(hValue == 'LOP') repDataObj[hValue] = currentUser[0]['lop'];
-              if(hValue == 'Casual Leave') repDataObj[hValue] = currentUser[0]['casual_leave'];
+              if(hValue == 'Leave') repDataObj[hValue] = currentUser[0]['casual_leave'];
               // if(hValue == 'Sick Leave') repDataObj[hValue] = currentUser[0]['sick_leave'];
               if(hValue == 'Half Day') repDataObj[hValue] = currentUser[0]['halfDay'];
               if(hValue == 'SP') repDataObj[hValue] = currentUser[0]['sp'];
