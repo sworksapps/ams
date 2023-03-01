@@ -1532,7 +1532,7 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
             'name': userData.name,
             'email': userData.email,
             'department': userData.dept_name,
-            'location_name': userData.location_name,
+            'location_name': userData.location_short_code,
             'designation': userData.designation,
             'date': ele.date,
             'userStatus': ele.userStatus[ele.userStatus.length - 1],
