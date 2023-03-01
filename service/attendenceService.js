@@ -1568,7 +1568,7 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
             // if(hValue == 'Email') repDataObj[hValue] = userData.email;
             if(hValue == 'Department') repDataObj[hValue] = userData.dept_name;
             if(hValue == 'Designation') repDataObj[hValue] = userData.designation;
-            if(hValue == 'Base Location') repDataObj[hValue] = userData.location_name;
+            if(hValue == 'Base Location') repDataObj[hValue] = userData.location_short_code;
             // date
             if(moment(hValue, 'YYYY-MM-DD', true).isValid()) {
               const newHValue = moment(hValue).format('DD-MMM');
