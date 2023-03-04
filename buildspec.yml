@@ -18,7 +18,7 @@ phases:
         sed -i 's/ENV_DBPASSWORD/'"${DBPASSWORD}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
         sed -i 's/ENV_JWTToken/'"${JWTToken}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
         sed -i 's/ENV_sqlpassword/'"${sqlpassword}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
-      - "cat .env.${ENV}"
+      - "cat .env.${ENV_NAME}"
       - echo Logging in to Amazon ECR...
       - $(aws ecr get-login --no-include-email --region ap-south-1)
       - APP_NAME=ams-${ENV_NAME}
