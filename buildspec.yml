@@ -1,21 +1,45 @@
 version: 0.2
 env:
   shell: bash
+  secrets-manager:
+      ENV_AWSKEYID: $SECRET/AMS:AWSKEYID
+      ENV_AWSSECRETACCESSKEY: $SECRET/AMS:AWSSECRETACCESSKEY
+      ENV_DBPASSWORD: $SECRET/AMS:DBPASSWORD
+      ENV_JWTToken: $SECRET/AMS:JWTToken
+      ENV_sqlpassword: $SECRET/AMS:sqlpassword
 phases:
-  build:
+  pre_build:
     commands:
       - |
         #!/bin/bash       
-          sed -i 's/ENV/'"${ENV_NAME}"'/g' $CODEBUILD_SRC_DIR/Dockerfile
-          sed -i 's/ENV/'"${ENV_NAME}"'/g' $CODEBUILD_SRC_DIR/scripts/docker_build.sh
-          sed -i 's/ENV/'"${ENV_NAME}"'/g' $CODEBUILD_SRC_DIR/scripts/docker_start.sh
-          sed -i 's/PORT/'"${PORT}"'/g' $CODEBUILD_SRC_DIR/scripts/docker_start.sh
-          sed -i 's/ENV/'"${ENV_NAME}"'/g' $CODEBUILD_SRC_DIR/scripts/docker_stop.sh 
-      - "echo ${ENV_NAME}"
-      - "echo ${PORT}"
-      - "echo $BRANCH_NAME"
+        sed -i 's/ENV/'"${ENV_NAME}"'/g' $CODEBUILD_SRC_DIR/Dockerfile
+        sed -i 's/ENV_AWSKEYID/'"${AWSKEYID}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
+        sed -i 's/ENV_AWSSECRETACCESSKEY/'"${AWSSECRETACCESSKEY}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
+        sed -i 's/ENV_DBPASSWORD/'"${DBPASSWORD}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
+        sed -i 's/ENV_JWTToken/'"${JWTToken}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
+        sed -i 's/ENV_sqlpassword/'"${sqlpassword}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
+      - "cat .env.${ENV}"
+      - echo Logging in to Amazon ECR...
+      - $(aws ecr get-login --no-include-email --region ap-south-1)
+      - APP_NAME=ams-${ENV_NAME}
+      - REPOSITORY_URI=919795083283.dkr.ecr.ap-south-1.amazonaws.com/$APP_NAME
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-8)
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      - docker build -t $REPOSITORY_URI:latest .
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$APP_NAME-$COMMIT_HASH
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker image...
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$APP_NAME-$COMMIT_HASH
+      - rm -f imagedefinitions.json
+      - echo "Writing image definitions file....."
+      - printf '[{"name":"ams-'${ENV_NAME}'","imageUri":"%s"}]' $REPOSITORY_URI:latest > imagedefinitions.json
+      - cat imagedefinitions.json
 
 artifacts:
-  files:
-  - '**/*'
-  discard-paths: no
+    files: imagedefinitions.json
