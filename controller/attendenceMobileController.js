@@ -4,17 +4,23 @@ const fs = require('fs');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const moment = require('moment');
-const {
-  RekognitionClient,
-  SearchFacesByImageCommand,
-  DetectFacesCommand
-} = require('@aws-sdk/client-rekognition');
-
-const client = new RekognitionClient({
-  accessKeyId: process.env.AWSKEYID,
-  secretAccessKey: process.env.AWSSECRETACCESSKEY,
+const AWS = require('aws-sdk');
+const { Rekognition} = require('aws-sdk');
+AWS.config.loadFromPath('./config.json');
+const rekognition = new Rekognition({
   region: process.env.REGION,
 });
+// const {
+//   RekognitionClient,
+//   SearchFacesByImageCommand,
+//   DetectFacesCommand
+// } = require('@aws-sdk/client-rekognition');
+
+// const client = new RekognitionClient({
+//   accessKeyId: process.env.AWSKEYID,
+//   secretAccessKey: process.env.AWSSECRETACCESSKEY,
+//   region: process.env.REGION,
+// });
 
 const awsMethods = require('../common/methods/awsMethods');
 const dataValidation = require('../common/methods/dataValidation');
@@ -735,7 +741,6 @@ exports.createJwtToken = async (req, res) => {
 const validateFace = async (dbConnection, faceImg, decodedjwt, checkStatus) => {
   try {
     const params = {
-      CollectionId: process.env.COLLECTIONID,
       Image: {
         S3Object: {
           Bucket: process.env.BUCKETNAME,
@@ -744,8 +749,9 @@ const validateFace = async (dbConnection, faceImg, decodedjwt, checkStatus) => {
       },
       Attributes: ['ALL'],
     };
-    const command = new DetectFacesCommand(params);
-    const faceData = await client.send(command);
+    // const command = new DetectFacesCommand(params);
+    // const faceData = await client.send(command);
+    const faceData = await getDetectFace(params);
     if (faceData.FaceDetails.length == 0)
       return {status: false, message: 'Face not found.'};
     const userFaceId = faceData.FaceDetails[0];
@@ -806,9 +812,10 @@ const validateFace = async (dbConnection, faceImg, decodedjwt, checkStatus) => {
       },
       MaxFaces: validateFaceValue.MaxFaces,
     };
-    const commandOne = new SearchFacesByImageCommand(paramsOne);
+    // const commandOne = new SearchFacesByImageCommand(paramsOne);
   
-    const faceDataOne = await client.send(commandOne);
+    // const faceDataOne = await client.send(commandOne);
+    const faceDataOne = await getSearchFacesByImage(paramsOne);
 
     if (faceDataOne.FaceMatches.length == 0)
       return {status: false, message: `Face not matched, Please check with your admin or try again.`};
@@ -881,4 +888,31 @@ const sendSMS = async (userDetails, temp_id, deviceLocation, totalDuration) => {
   } catch (error) {
     return false;
   }
+};
+
+
+const getDetectFace = (params) => {
+
+  return new Promise((resolve, reject) => {
+  
+    rekognition.detectFaces(params, function(err, data) {
+      if (err) reject (err);
+      else     resolve(data);
+    });
+  
+  });
+
+};
+
+const getSearchFacesByImage = (params) => {
+
+  return new Promise((resolve, reject) => {
+  
+    rekognition.searchFacesByImage(params, function(err, data) {
+      if (err) reject (err);
+      else     resolve(data);
+    });
+  
+  });
+
 };
