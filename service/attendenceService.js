@@ -29,12 +29,15 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
         const updateObj = {};
         const insertObj = {};
 
+        let alreadyHoliday = await attModel.find({ date: iterator.date, userId: iterator.userId }).select({ isHoliday: 1 });
+        alreadyHoliday = alreadyHoliday[0]['isHoliday'];
+
         const holidayRes = await holidayModel.find({
           date: iterator.date,
           locationId: { $in: [iterator.locationId] }
         }).select({ _id: 1 });
 
-        if (holidayRes.length > 0) {
+        if (alreadyHoliday == null && holidayRes.length > 0) {
           const holidayId = holidayRes[0]['_id'].toString();
           Object.assign(updateObj, { 'isHoliday': holidayId });
           Object.assign(insertObj, { 'userStatus': ['HO'] });
