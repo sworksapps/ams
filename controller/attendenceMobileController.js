@@ -890,7 +890,6 @@ const sendSMS = async (userDetails, temp_id, deviceLocation, totalDuration) => {
   }
 };
 
-
 const getDetectFace = (params) => {
 
   return new Promise((resolve, reject) => {
