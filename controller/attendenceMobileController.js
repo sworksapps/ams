@@ -752,7 +752,6 @@ const validateFace = async (dbConnection, faceImg, decodedjwt, checkStatus) => {
     // const command = new DetectFacesCommand(params);
     // const faceData = await client.send(command);
     const faceData = await getDetectFace(params);
-
     if (faceData.FaceDetails.length == 0)
       return {status: false, message: 'Face not found.'};
     const userFaceId = faceData.FaceDetails[0];
