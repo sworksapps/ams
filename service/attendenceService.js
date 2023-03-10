@@ -28,9 +28,8 @@ exports.insertShiftData = async (tenantDbConnection, bodyData) => {
       if (!isShiftOverlap) {
         const updateObj = {};
         const insertObj = {};
-
         let alreadyHoliday = await attModel.find({ date: iterator.date, userId: iterator.userId }).select({ isHoliday: 1 });
-        alreadyHoliday = alreadyHoliday[0]['isHoliday'];
+        alreadyHoliday = alreadyHoliday && alreadyHoliday.length > 0 ? alreadyHoliday[0]['isHoliday'] : null;
 
         const holidayRes = await holidayModel.find({
           date: iterator.date,
