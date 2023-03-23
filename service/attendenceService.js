@@ -1486,22 +1486,22 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate, locationId
     headerSheet = headerSheet.concat(dateLists);
     const headerSheet2 = ['Present (P)', 'Absent (A)', 'LOP', 'Casual Leave', 'Sick Leave', 'Half Day', 'SP', 'COMPOFF', 'WFH', 'H (Holiday)', 'HP (Holiday Present)', 'WEEKOFF(WO)', 'WOP(Weekoff Present)', 'Total Paid Days', 'OT Hours'];
     headerSheet = headerSheet.concat(headerSheet2);
-    let queryCondition = {
+    const queryCondition = {
       date: {
         $gte: startDate,
         $lte: endDate
       }}
     ;
-    if(locationIds)
-      queryCondition = {
-        date: {
-          $gte: startDate,
-          $lte: endDate
-        },
-        locationId: {
-          '$in': locationIds
-        }
-      };
+    // if(locationIds)
+    //   queryCondition = {
+    //     date: {
+    //       $gte: startDate,
+    //       $lte: endDate
+    //     },
+    //     locationId: {
+    //       '$in': locationIds
+    //     }
+    //   };
     let query = await attModel.find(queryCondition).select({_id:1, userId: 1, date:1, primaryStatus:1, userStatus:1, attendenceDetails:1, shiftStart:1, shiftEnd:1 }).sort({userId: -1, date: 1}).lean();
     query = query.map( (e) => {
       if(e.attendenceDetails.length == 0 && e.userStatus[e.userStatus.length - 1] == 'N/A' && moment(e.date).isBefore(moment().format('YYYY-MM-DD'))) {
@@ -1528,7 +1528,7 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate, locationId
       if (userIds && userIds.length > 0) {
         const userData = await axios.post(
           `${process.env.CLIENTSPOC}api/v1/user/get-user-name`,
-          { rec_id: userIds }
+          { rec_id: userIds, location_id: locationIds }
         );
 
         if (userData.data.status == 200)
