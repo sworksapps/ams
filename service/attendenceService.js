@@ -1478,7 +1478,7 @@ const filterKpiData = (resData, filterName) => {
 };
 
 /* ---------------get payroll report----------------------*/
-exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
+exports.fetchPayrollReport = async (dbConnection, startDate, endDate, locationIds) => {
   try {
     const attModel = await dbConnection.model('attendences_data');
     const resData = [];
@@ -1488,10 +1488,23 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
     headerSheet = headerSheet.concat(dateLists);
     const headerSheet2 = ['Present (P)', 'Absent (A)', 'Leave', 'Half Day', 'SP', 'COMPOFF', 'H (Holiday)', 'HP (Holiday Present)', 'WEEKOFF(WO)', 'WOP(Weekoff Present)', 'Total Paid Days', 'OT Hours'];
     headerSheet = headerSheet.concat(headerSheet2);
-    let query = await attModel.find({date: {
-      $gte: startDate,
-      $lte: endDate
-    }}).select({_id:1, userId: 1, date:1, primaryStatus:1, userStatus:1, attendenceDetails:1, shiftStart:1, shiftEnd:1 }).sort({userId: -1, date: 1}).lean();
+    const queryCondition = {
+      date: {
+        $gte: startDate,
+        $lte: endDate
+      }}
+    ;
+    // if(locationIds)
+    //   queryCondition = {
+    //     date: {
+    //       $gte: startDate,
+    //       $lte: endDate
+    //     },
+    //     locationId: {
+    //       '$in': locationIds
+    //     }
+    //   };
+    let query = await attModel.find(queryCondition).select({_id:1, userId: 1, date:1, primaryStatus:1, userStatus:1, attendenceDetails:1, shiftStart:1, shiftEnd:1 }).sort({userId: -1, date: 1}).lean();
     query = query.map( (e) => {
       if(e.attendenceDetails.length == 0 && e.userStatus[e.userStatus.length - 1] == 'N/A' && moment(e.date).isBefore(moment().format('YYYY-MM-DD'))) {
         return {
@@ -1517,7 +1530,7 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate) => {
       if (userIds && userIds.length > 0) {
         const userData = await axios.post(
           `${process.env.CLIENTSPOC}api/v1/user/get-user-name`,
-          { rec_id: userIds }
+          { rec_id: userIds, location_id: locationIds.split(',') }
         );
 
         if (userData.data.status == 200)

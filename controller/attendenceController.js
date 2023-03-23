@@ -312,7 +312,9 @@ exports.getPayrollReport = async (req, res) => {
         statusValue: 400,
         message: 'Please provide Start and End Date',
       });
-
+    let locationIds = '';
+    if(req.query.locationId)
+      locationIds = req.query.locationId;
     const isValidStartDate = moment(req.query.startDate, 'YYYY-MM-DD', true).isValid();
     if (!isValidStartDate)
       return res.status(400).json({
@@ -329,7 +331,7 @@ exports.getPayrollReport = async (req, res) => {
         message: 'Please end date in YYYY-MM-DD format',
       });
 
-    const dataRes = await attendenceService.fetchPayrollReport(dbConnection, req.query.startDate, req.query.endDate);
+    const dataRes = await attendenceService.fetchPayrollReport(dbConnection, req.query.startDate, req.query.endDate, locationIds);
     if (dataRes)
       return res.status(200).json({ statusText: 'OK', statusValue: 200, data: dataRes.resData });
     else
