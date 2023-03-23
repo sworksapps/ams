@@ -1531,7 +1531,7 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate, locationId
       if (userIds && userIds.length > 0) {
         const userData = await axios.post(
           `${process.env.CLIENTSPOC}api/v1/user/get-user-name`,
-          { rec_id: userIds, location_id: locationIds }
+          { rec_id: userIds, location_id: locationIds.split(',') }
         );
 
         if (userData.data.status == 200)
