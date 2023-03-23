@@ -1500,6 +1500,9 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate, locationId
         date: {
           $gte: startDate,
           $lte: endDate
+        },
+        locationId: {
+          '$in': locationIds.split(',')
         }
       };
     let query = await attModel.find(queryCondition).select({_id:1, userId: 1, date:1, primaryStatus:1, userStatus:1, attendenceDetails:1, shiftStart:1, shiftEnd:1 }).sort({userId: -1, date: 1}).lean();
