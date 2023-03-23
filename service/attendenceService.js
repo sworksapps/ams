@@ -1495,7 +1495,7 @@ exports.fetchPayrollReport = async (dbConnection, startDate, endDate, locationId
         $lte: endDate
       }}
     ;
-    if(locationIds.length > 0)
+    if(locationIds)
       queryCondition = {
         date: {
           $gte: startDate,
