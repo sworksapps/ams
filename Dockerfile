@@ -1,4 +1,4 @@
-FROM node:16
+FROM 919795083283.dkr.ecr.ap-south-1.amazonaws.com/node16
 
 # Create app directory
 WORKDIR /usr/src/app
