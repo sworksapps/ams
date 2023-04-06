@@ -123,7 +123,7 @@ exports.checkIn = async (req, res) => {
 
     let validateFaceData = await validateFace(dbConnection, fileUpRes.imgName, decodedjwt, 'No');
     if(validateFaceData.status == false)
-      return res.status(400).json({
+      return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
         message: validateFaceData.message,
@@ -137,7 +137,7 @@ exports.checkIn = async (req, res) => {
         console.log('Twin fun called');
         validateFaceData = await validateFace(dbConnection, fileUpRes.imgName, decodedjwt, 'Yes');
         if(validateFaceData.status == false)
-          return res.status(400).json({
+          return res.status(200).json({
             statusText: 'FAIL',
             statusValue: 400,
             message: validateFaceData.message,
@@ -283,7 +283,7 @@ exports.checkOut = async (req, res) => {
   
     let validateFaceData = await validateFace(dbConnection, fileUpRes.imgName, decodedjwt, 'No');
     if(validateFaceData.status == false)
-      return res.status(400).json({
+      return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
         message: validateFaceData.message,
@@ -297,7 +297,7 @@ exports.checkOut = async (req, res) => {
         console.log('Twin fun called');
         validateFaceData = await validateFace(dbConnection, fileUpRes.imgName, decodedjwt, 'Yes');
         if(validateFaceData.status == false)
-          return res.status(400).json({
+          return res.status(200).json({
             statusText: 'FAIL',
             statusValue: 400,
             message: validateFaceData.message,
