@@ -201,7 +201,7 @@ exports.checkIn = async (req, res) => {
     if(err.Code == 'InvalidParameterException'){
       res.status(400).json({statusText: 'FAIL', statusValue: 400, message: 'No face detected. Please stand in the front of the camera.'});
     } else {
-      res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'Somthing went erong'});
+      res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'ServeR Eror 400'});
     }
   }
 };
@@ -344,7 +344,7 @@ exports.checkOut = async (req, res) => {
     } else if(userTimeData.type == false){
       res.status(200).json({ statusText: 'FAIL', statusValue: 400, message: userTimeData.msg });
     }else{
-      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `Went Something Wrong.` });
+      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `ServeR Eror 400` });
     }
     // return res.status(200).json({ 
     //   statusText: 'Success', statusValue: 200, message: 'Proceed to Check-out.', data: userTimeData
@@ -353,7 +353,7 @@ exports.checkOut = async (req, res) => {
     if(err.Code == 'InvalidParameterException'){
       res.status(400).json({statusText: 'FAIL', statusValue: 400, message: 'No face detected. Please stand in the front of the camera.'});
     } else {
-      res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'Somthing Went Wrong'});
+      res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'ServeR Eror 400'});
     }
   }
 };
@@ -496,11 +496,11 @@ exports.checkInSubmit = async (req, res) => {
     } else if(response.type == false){
       res.status(200).json({ statusText: 'FAIL', statusValue: 400, message: response.msg });
     }else{
-      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `Went Something Wrong.` });
+      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `ServeR Eror 400` });
     }
   }  catch (err) {
     console.log(err);
-    res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'Somthing went erong'});
+    res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'ServeR Eror 400'});
   }
 };
 
@@ -636,10 +636,10 @@ exports.checkOutSubmit = async (req, res) => {
     } else if(response.type == false){
       res.status(202).json({ statusText: 'FAIL', statusValue: 400, message: response.msg });
     }else{
-      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `Went Something Wrong.` });
+      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `ServeR Eror 400` });
     }
   }  catch (err) {
-    res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'Somthing went erong'});
+    res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'ServeR Eror 400'});
   }
 };
 /*
@@ -725,7 +725,7 @@ exports.createJwtToken = async (req, res) => {
     } else if(response.type == false){
       return res.status(202).json({ statusText: 'FAIL', statusValue: 400, message: response.msg });
     }else{
-      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `Went Something Wrong.` });
+      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `ServeR Eror 400` });
     }
 
   } catch (err) {
@@ -733,7 +733,7 @@ exports.createJwtToken = async (req, res) => {
     if(err.Code == 'InvalidParameterException'){
       res.status(400).json({statusText: 'FAIL', statusValue: 400, message: 'There are no faces in the image. Should be at least 1'});
     } else {
-      res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'Somthing went erong'});
+      res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'ServeR Eror 400'});
     }
   }
 };
@@ -843,7 +843,7 @@ const validateFace = async (dbConnection, faceImg, decodedjwt, checkStatus) => {
     if(err.Code == 'InvalidParameterException'){
       return {status: false, message: 'Face not found..'};
     } else {
-      return {status: false, message: 'Somthing went wrong.'} ;
+      return {status: false, message: 'ServeR Eror 400'} ;
     }
   }
 };
