@@ -51,12 +51,12 @@ exports.checkIn = async (req, res) => {
     
     const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
     
-    let dbConnection = getConnection(decodedHeader.clientDbName);
-    if(!dbConnection || dbConnection == null) {
-      console.log('db reconnect');
-      connectAllDb();
-      dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
-    }
+    const dbConnection = getConnection(decodedHeader.clientDbName);
+    // if(!dbConnection || dbConnection == null) {
+    //   console.log('db reconnect');
+    //   connectAllDb();
+    //   dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    // }
 
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
@@ -216,12 +216,12 @@ exports.checkOut = async (req, res) => {
     
     const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
         
-    let dbConnection = getConnection(decodedHeader.clientDbName);
-    if(!dbConnection || dbConnection == null) {
-      console.log('db reconnect');
-      connectAllDb();
-      dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
-    }
+    const dbConnection = getConnection(decodedHeader.clientDbName);
+    // if(!dbConnection || dbConnection == null) {
+    //   console.log('db reconnect');
+    //   connectAllDb();
+    //   dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    // }
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
     
@@ -382,12 +382,12 @@ exports.checkInSubmit = async (req, res) => {
       
     const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
           
-    let dbConnection = getConnection(decodedHeader.clientDbName);
-    if(!dbConnection || dbConnection == null) {
-      console.log('db reconnect');
-      connectAllDb();
-      dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
-    }
+    const dbConnection = getConnection(decodedHeader.clientDbName);
+    // if(!dbConnection || dbConnection == null) {
+    //   console.log('db reconnect');
+    //   connectAllDb();
+    //   dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    // }
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
     const configRes = await attendenceMobileService.configData(dbConnection);
@@ -533,12 +533,12 @@ exports.checkOutSubmit = async (req, res) => {
       
     const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
           
-    let dbConnection = getConnection(decodedHeader.clientDbName);
-    if(!dbConnection || dbConnection == null) {
-      console.log('db reconnect');
-      connectAllDb();
-      dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
-    }
+    const dbConnection = getConnection(decodedHeader.clientDbName);
+    // if(!dbConnection || dbConnection == null) {
+    //   console.log('db reconnect');
+    //   connectAllDb();
+    //   dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    // }
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
     const configRes = await attendenceMobileService.configData(dbConnection);
