@@ -46,6 +46,8 @@ const getConnectionByTenant = tenantName => {
   //console.log(`Getting connection for ${tenantName}`);
   if (connectionMap) {
     return connectionMap[tenantName];
+  } else {
+    return null;
   }
 };
 

@@ -24,26 +24,9 @@ const rekognition = new Rekognition({
 
 const awsMethods = require('../common/methods/awsMethods');
 const dataValidation = require('../common/methods/dataValidation');
-const { getConnection, getAdminConnection, getConnectionByTenant } = require('../connectionManager');
+const { getConnection, getAdminConnection, getConnectionByTenant, connectAllDb } = require('../connectionManager');
 const attendenceMobileService = require('../service/attendenceMobileService');
 
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const radlat1 = (Math.PI * lat1) / 180;
-  const radlat2 = (Math.PI * lat2) / 180;
-  const theta = lon1 - lon2;
-  const radtheta = (Math.PI * theta) / 180;
-  let dist =
-  Math.sin(radlat1) * Math.sin(radlat2) +
-  Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
-  dist = Math.acos(dist);
-  dist = (dist * 180) / Math.PI;
-  dist = dist * 60 * 1.1515;
-  dist = dist * 1.609344; // km
-  dist = dist * 1000; // m
-  return dist.toFixed(2);
-};
-
-const range = 400;
 /*
  *----------------Routes Section------------
  */
@@ -68,7 +51,13 @@ exports.checkIn = async (req, res) => {
     
     const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
     
-    const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    let dbConnection = getConnection(decodedHeader.clientDbName);
+    if(!dbConnection || dbConnection == null) {
+      console.log('db reconnect');
+      connectAllDb();
+      dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    }
+
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
     const decodedjwt = dataValidation.parseJwt(req.headers['authorization']);
@@ -197,7 +186,7 @@ exports.checkIn = async (req, res) => {
       }
     });
   } catch (err) {
-    console.log(err);
+    console.log('checkIn, err', err);
     if(err.Code == 'InvalidParameterException'){
       res.status(400).json({statusText: 'FAIL', statusValue: 400, message: 'No face detected. Please stand in the front of the camera.'});
     } else {
@@ -226,8 +215,13 @@ exports.checkOut = async (req, res) => {
       return res.status(403).json({ statusText: 'FAIL', statusValue: 403, message: `Please provide auth Token` });
     
     const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
-    
-    const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+        
+    let dbConnection = getConnection(decodedHeader.clientDbName);
+    if(!dbConnection || dbConnection == null) {
+      console.log('db reconnect');
+      connectAllDb();
+      dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    }
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
     
@@ -350,6 +344,7 @@ exports.checkOut = async (req, res) => {
     //   statusText: 'Success', statusValue: 200, message: 'Proceed to Check-out.', data: userTimeData
     // });
   }  catch (err) {
+    console.log('checkOut, err',err);
     if(err.Code == 'InvalidParameterException'){
       res.status(400).json({statusText: 'FAIL', statusValue: 400, message: 'No face detected. Please stand in the front of the camera.'});
     } else {
@@ -386,8 +381,13 @@ exports.checkInSubmit = async (req, res) => {
       return res.status(403).json({ statusText: 'FAIL', statusValue: 403, message: `Please provide auth Token` });
       
     const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
-      
-    const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+          
+    let dbConnection = getConnection(decodedHeader.clientDbName);
+    if(!dbConnection || dbConnection == null) {
+      console.log('db reconnect');
+      connectAllDb();
+      dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    }
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
     const configRes = await attendenceMobileService.configData(dbConnection);
@@ -499,7 +499,7 @@ exports.checkInSubmit = async (req, res) => {
       return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `ServeR Eror 400` });
     }
   }  catch (err) {
-    console.log(err);
+    console.log('checkInSubmit, err',err);
     res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'ServeR Eror 400'});
   }
 };
@@ -532,8 +532,13 @@ exports.checkOutSubmit = async (req, res) => {
       return res.status(403).json({ statusText: 'FAIL', statusValue: 403, message: `Please provide auth Token` });
       
     const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
-      
-    const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+          
+    let dbConnection = getConnection(decodedHeader.clientDbName);
+    if(!dbConnection || dbConnection == null) {
+      console.log('db reconnect');
+      connectAllDb();
+      dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    }
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
     const configRes = await attendenceMobileService.configData(dbConnection);
@@ -639,6 +644,7 @@ exports.checkOutSubmit = async (req, res) => {
       return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `ServeR Eror 400` });
     }
   }  catch (err) {
+    console.log('checkOutSubmit, err',err);
     res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'ServeR Eror 400'});
   }
 };
@@ -729,12 +735,8 @@ exports.createJwtToken = async (req, res) => {
     }
 
   } catch (err) {
-    console.log(err);
-    if(err.Code == 'InvalidParameterException'){
-      res.status(400).json({statusText: 'FAIL', statusValue: 400, message: 'There are no faces in the image. Should be at least 1'});
-    } else {
-      res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'ServeR Eror 400'});
-    }
+    console.log('createJwtToken',err);
+    res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'ServeR Eror 400'});
   }
 };
 
@@ -786,8 +788,8 @@ const validateFace = async (dbConnection, faceImg, decodedjwt, checkStatus) => {
     if(userFaceId.Pose.Yaw >  validateFaceValue.YawMax)
       return {status: false, message: 'Please look straight into the camera. Looks like you are looking towards left.'};
 
-    if(userFaceId.EyesOpen.Value !=  validateFaceValue.EyesOpen)
-      return {status: false, message: 'Face not captured properly. It seems your eyes were closed.'};
+    // if(userFaceId.EyesOpen.Value !=  validateFaceValue.EyesOpen)
+    // return {status: false, message: 'Face not captured properly. It seems your eyes were closed.'};
 
     // if(userFaceId.Eyeglasses.Value !=  validateFaceValue.Eyeglasses)
     //   return {status: false, message: 'It seems like you are wearing glasses. Please remove them and capture again.'};
@@ -839,7 +841,7 @@ const validateFace = async (dbConnection, faceImg, decodedjwt, checkStatus) => {
 
     return {status: true, message: 'Face Data.', data: userData.data.data.result[0] };
   } catch (err) {
-    console.log(err);
+    console.log('facevalidation',err);
     if(err.Code == 'InvalidParameterException'){
       return {status: false, message: 'Face not found..'};
     } else {
@@ -871,7 +873,7 @@ const sendSMS = async (userDetails, temp_id, deviceLocation, totalDuration) => {
         'dura': totalDuration
       };
     }
-    const res = await axios.post(
+    await axios.post(
       'https://api.msg91.com/api/v5/flow/',
       reqData,
       {
@@ -882,8 +884,6 @@ const sendSMS = async (userDetails, temp_id, deviceLocation, totalDuration) => {
         }
       }
     );
-    console.log(res);
-    console.log(deviceLocation);
     return true;
   } catch (error) {
     return false;
