@@ -4,7 +4,7 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "prod": "env-cmd -f .env.prod node app.js",
+    "prod": "env-cmd -f .env.prod nodemon app.js",
     "dev": "env-cmd -f .env.dev nodemon app.js",
     "qa": "env-cmd -f .env.qa node app.js",
     "uat": "env-cmd -f .env.uat node app.js"

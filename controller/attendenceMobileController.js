@@ -4,6 +4,10 @@ const fs = require('fs');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const moment = require('moment');
+const util = require('util');
+const swMysql = require('../db/swConnection');
+const swQuery = util.promisify(swMysql.query).bind(swMysql);
+
 const AWS = require('aws-sdk');
 const { Rekognition} = require('aws-sdk');
 AWS.config.loadFromPath('./config.json');
@@ -24,7 +28,7 @@ const rekognition = new Rekognition({
 
 const awsMethods = require('../common/methods/awsMethods');
 const dataValidation = require('../common/methods/dataValidation');
-const { getConnection, getAdminConnection, getConnectionByTenant, connectAllDb } = require('../connectionManager');
+const { getAdminConnection, getConnectionByTenant, connectAllDb } = require('../connectionManager');
 const attendenceMobileService = require('../service/attendenceMobileService');
 
 /*
@@ -51,12 +55,12 @@ exports.checkIn = async (req, res) => {
     
     const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
     
-    const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
-    // if(!dbConnection || dbConnection == null) {
-    //   console.log('db reconnect');
-    //   connectAllDb();
-    //   dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
-    // }
+    let dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    if(!dbConnection || dbConnection == null) {
+      console.log('db reconnect');
+      connectAllDb();
+      dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    }
 
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
@@ -216,12 +220,12 @@ exports.checkOut = async (req, res) => {
     
     const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
         
-    const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
-    // if(!dbConnection || dbConnection == null) {
-    //   console.log('db reconnect');
-    //   connectAllDb();
-    //   dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
-    // }
+    let dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    if(!dbConnection || dbConnection == null) {
+      console.log('db reconnect');
+      connectAllDb();
+      dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    }
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
     
@@ -382,12 +386,12 @@ exports.checkInSubmit = async (req, res) => {
       
     const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
           
-    const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
-    // if(!dbConnection || dbConnection == null) {
-    //   console.log('db reconnect');
-    //   connectAllDb();
-    //   dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
-    // }
+    let dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    if(!dbConnection || dbConnection == null) {
+      console.log('db reconnect');
+      connectAllDb();
+      dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    }
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
     const configRes = await attendenceMobileService.configData(dbConnection);
@@ -400,24 +404,15 @@ exports.checkInSubmit = async (req, res) => {
     const decodedjwt = dataValidation.parseJwt(req.headers['authorization']);
 
     if(decodedjwt.clientId == '2137') {
-      const amsDeviceDetails = await axios.post(
-        `${process.env.CLIENTSPOC}api/v1/basic-data/get-ams-device-detail`,
-        { userid: req.body.deviceNumber }
-      );
-      if (amsDeviceDetails.data.status != 'success')
-        return res.status(200).json({
-          statusText: 'FAIL',
-          statusValue: 400,
-          message: `Device is not registered with us. Please contact your Company's SPOC`
-        });
-      if (!amsDeviceDetails.data.data)
+      const amsDeviceDetail = await amsDeviceDetails(req.body.deviceNumber);
+      if (!amsDeviceDetail)
         return res.status(200).json({
           statusText: 'FAIL',
           statusValue: 400,
           message: `Device is not registered with us. Please contact your Company's SPOC`
         });
 
-      if (amsDeviceDetails.data.data.is_whitelist == 0)
+      if (amsDeviceDetail.is_whitelist == 0)
         return res.status(200).json({
           statusText: 'FAIL',
           statusValue: 400,
@@ -434,26 +429,16 @@ exports.checkInSubmit = async (req, res) => {
     //     message: `User outside of geofencing area`,
     //   });
 
-    const userData = await axios.post(
-      `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
-      { faceId: req.body.userFaceId, company_id: decodedjwt.clientId }
-    );
+    const userData = await getUserUsingFaceId( req.body.userFaceId, decodedjwt.clientId); 
   
-    if (userData.data.status != 'success')
-      return res.status(200).json({
-        statusText: 'FAIL',
-        statusValue: 400,
-        message: `SPOC Internal Server Error. Please contact your Company's SPOC`
-      });
-  
-    if (userData.data.data.result.length == 0)
+    if (userData.length == 0)
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
         message: `Face not matched, Please check with your admin or try again.`
       });
   
-    const userDetails = userData.data.data.result[0];
+    const userDetails = userData[0];
 
     if(userDetails.is_active != 1 || userDetails.isSpocApproved != 1)
       return res.status(200).json({
@@ -533,12 +518,12 @@ exports.checkOutSubmit = async (req, res) => {
       
     const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
           
-    const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
-    // if(!dbConnection || dbConnection == null) {
-    //   console.log('db reconnect');
-    //   connectAllDb();
-    //   dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
-    // }
+    let dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    if(!dbConnection || dbConnection == null) {
+      console.log('db reconnect');
+      connectAllDb();
+      dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    }
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
     const configRes = await attendenceMobileService.configData(dbConnection);
@@ -551,24 +536,15 @@ exports.checkOutSubmit = async (req, res) => {
     const decodedjwt = dataValidation.parseJwt(req.headers['authorization']);
 
     if(decodedjwt.clientId == '2137') {
-      const amsDeviceDetails = await axios.post(
-        `${process.env.CLIENTSPOC}api/v1/basic-data/get-ams-device-detail`,
-        { userid: req.body.deviceNumber }
-      );
-      if (amsDeviceDetails.data.status != 'success')
-        return res.status(200).json({
-          statusText: 'FAIL',
-          statusValue: 400,
-          message: `Device is not registered with us. Please contact your Company's SPOC`
-        });
-      if (!amsDeviceDetails.data.data)
+      const amsDeviceDetail = await amsDeviceDetails(req.body.deviceNumber);
+      if (!amsDeviceDetail)
         return res.status(200).json({
           statusText: 'FAIL',
           statusValue: 400,
           message: `Device is not registered with us. Please contact your Company's SPOC`
         });
 
-      if (amsDeviceDetails.data.data.is_whitelist == 0)
+      if (amsDeviceDetail.is_whitelist == 0)
         return res.status(200).json({
           statusText: 'FAIL',
           statusValue: 400,
@@ -585,26 +561,16 @@ exports.checkOutSubmit = async (req, res) => {
     //     message: `User outside of geofencing area`,
     //   });
 
-    const userData = await axios.post(
-      `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
-      { faceId: req.body.userFaceId, company_id: decodedjwt.clientId }
-    );
+    const userData = await getUserUsingFaceId( req.body.userFaceId, decodedjwt.clientId); 
   
-    if (userData.data.status != 'success')
-      return res.status(200).json({
-        statusText: 'FAIL',
-        statusValue: 400,
-        message: `SPOC Internal Server Error. Please contact your Company's SPOC`
-      });
-  
-    if (userData.data.data.result.length == 0)
+    if (userData.length == 0)
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
         message: `Face not matched, Please check with your admin or try again.`
       });
   
-    const userDetails = userData.data.data.result[0];
+    const userDetails = userData[0];
 
     if(userDetails.is_active != 1 || userDetails.isSpocApproved != 1)
       return res.status(200).json({
@@ -828,18 +794,13 @@ const validateFace = async (dbConnection, faceImg, decodedjwt, checkStatus) => {
       faceArray.push(element.Face.FaceId);
     } 
     const faceString = faceArray.toString();
-    const userData = await axios.post(
-      `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
-      { faceId: faceString, company_id: decodedjwt.clientId }
-    ); 
-    if (userData.data.status != 'success')
-      return {status: false, message: `SPOC Internal Server Error. Please contact your Company's SPOC`};
+    const userData = await getUserUsingFaceId( faceString, decodedjwt.clientId); 
 
-    if (userData.data.data.result.length == 0)
+    if (userData.length == 0)
       return {status: false, message: `Face not matched, Please check with your admin or try again.`};
 
 
-    return {status: true, message: 'Face Data.', data: userData.data.data.result[0] };
+    return {status: true, message: 'Face Data.', data: userData[0] };
   } catch (err) {
     console.log('facevalidation',err);
     if(err.Code == 'InvalidParameterException'){
@@ -914,4 +875,25 @@ const getSearchFacesByImage = (params) => {
   
   });
 
+};
+
+const getUserUsingFaceId = async (faceIds, company_id) => {
+  const faceId = faceIds.split(',');
+  const result = [];
+  
+  for (let i = 0; i < faceId.length; i++) {
+    const element = faceId[i];
+    const resData = await swQuery(
+      `SELECT user_faceid.user_id, user_faceid.face_id, user.fname, user.lname, user.email, user.phone, user.profile_img_url, user.user_dept_id, user.company_id, user.location_id, user.emp_code, user.isGlobalCheckInOut, department_master.dept_name, user.is_active, user.isSpocApproved FROM user_faceid LEFT JOIN user ON user_faceid.user_id=user.rec_id LEFT JOIN department_master ON user.user_dept_id = department_master.id WHERE face_id = '${element}' AND user.company_id = '${company_id}'`
+    );
+    if(resData.length > 0)
+      result.push(resData[0]);
+  }
+  return result;
+};
+
+const amsDeviceDetails = async (deviceId) => {
+  const amsDeviceData = await swMysql(`SELECT * FROM ams_device_details WHERE rec_id = ${deviceId}`);
+  if(amsDeviceData.length == 0) return {};
+  return amsDeviceData[0];
 };
