@@ -51,7 +51,7 @@ exports.checkIn = async (req, res) => {
     
     const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
     
-    const dbConnection = getConnection(decodedHeader.clientDbName);
+    const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
     // if(!dbConnection || dbConnection == null) {
     //   console.log('db reconnect');
     //   connectAllDb();
@@ -216,7 +216,7 @@ exports.checkOut = async (req, res) => {
     
     const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
         
-    const dbConnection = getConnection(decodedHeader.clientDbName);
+    const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
     // if(!dbConnection || dbConnection == null) {
     //   console.log('db reconnect');
     //   connectAllDb();
@@ -382,7 +382,7 @@ exports.checkInSubmit = async (req, res) => {
       
     const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
           
-    const dbConnection = getConnection(decodedHeader.clientDbName);
+    const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
     // if(!dbConnection || dbConnection == null) {
     //   console.log('db reconnect');
     //   connectAllDb();
@@ -533,7 +533,7 @@ exports.checkOutSubmit = async (req, res) => {
       
     const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
           
-    const dbConnection = getConnection(decodedHeader.clientDbName);
+    const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
     // if(!dbConnection || dbConnection == null) {
     //   console.log('db reconnect');
     //   connectAllDb();
