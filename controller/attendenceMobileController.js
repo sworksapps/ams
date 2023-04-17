@@ -4,6 +4,10 @@ const fs = require('fs');
 const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const moment = require('moment');
+const util = require('util');
+const swMysql = require('../db/swConnection');
+const swQuery = util.promisify(swMysql.query).bind(swMysql);
+
 const AWS = require('aws-sdk');
 const { Rekognition} = require('aws-sdk');
 AWS.config.loadFromPath('./config.json');
@@ -24,26 +28,11 @@ const rekognition = new Rekognition({
 
 const awsMethods = require('../common/methods/awsMethods');
 const dataValidation = require('../common/methods/dataValidation');
-const { getConnection, getAdminConnection, getConnectionByTenant } = require('../connectionManager');
+const { getAdminConnection, getConnectionByTenant, connectAllDb } = require('../connectionManager');
 const attendenceMobileService = require('../service/attendenceMobileService');
 
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const radlat1 = (Math.PI * lat1) / 180;
-  const radlat2 = (Math.PI * lat2) / 180;
-  const theta = lon1 - lon2;
-  const radtheta = (Math.PI * theta) / 180;
-  let dist =
-  Math.sin(radlat1) * Math.sin(radlat2) +
-  Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
-  dist = Math.acos(dist);
-  dist = (dist * 180) / Math.PI;
-  dist = dist * 60 * 1.1515;
-  dist = dist * 1.609344; // km
-  dist = dist * 1000; // m
-  return dist.toFixed(2);
-};
-
-const range = 400;
+let jwtExpiresIn = 13500000;
+if(process.env.NODE_ENV == 'dev' || process.env.NODE_ENV == 'uat') jwtExpiresIn= 300;
 /*
  *----------------Routes Section------------
  */
@@ -68,7 +57,13 @@ exports.checkIn = async (req, res) => {
     
     const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
     
-    const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    let dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    if(!dbConnection || dbConnection == null) {
+      console.log('db reconnect');
+      connectAllDb();
+      dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    }
+
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
     const decodedjwt = dataValidation.parseJwt(req.headers['authorization']);
@@ -197,11 +192,11 @@ exports.checkIn = async (req, res) => {
       }
     });
   } catch (err) {
-    console.log(err);
+    console.log('checkIn, err', err);
     if(err.Code == 'InvalidParameterException'){
       res.status(400).json({statusText: 'FAIL', statusValue: 400, message: 'No face detected. Please stand in the front of the camera.'});
     } else {
-      res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'Somthing went erong'});
+      res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'ServeR Eror 400'});
     }
   }
 };
@@ -226,8 +221,13 @@ exports.checkOut = async (req, res) => {
       return res.status(403).json({ statusText: 'FAIL', statusValue: 403, message: `Please provide auth Token` });
     
     const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
-    
-    const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+        
+    let dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    if(!dbConnection || dbConnection == null) {
+      console.log('db reconnect');
+      connectAllDb();
+      dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    }
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
     
@@ -344,16 +344,17 @@ exports.checkOut = async (req, res) => {
     } else if(userTimeData.type == false){
       res.status(200).json({ statusText: 'FAIL', statusValue: 400, message: userTimeData.msg });
     }else{
-      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `Went Something Wrong.` });
+      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `ServeR Eror 400` });
     }
     // return res.status(200).json({ 
     //   statusText: 'Success', statusValue: 200, message: 'Proceed to Check-out.', data: userTimeData
     // });
   }  catch (err) {
+    console.log('checkOut, err',err);
     if(err.Code == 'InvalidParameterException'){
       res.status(400).json({statusText: 'FAIL', statusValue: 400, message: 'No face detected. Please stand in the front of the camera.'});
     } else {
-      res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'Somthing Went Wrong'});
+      res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'ServeR Eror 400'});
     }
   }
 };
@@ -386,8 +387,13 @@ exports.checkInSubmit = async (req, res) => {
       return res.status(403).json({ statusText: 'FAIL', statusValue: 403, message: `Please provide auth Token` });
       
     const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
-      
-    const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+          
+    let dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    if(!dbConnection || dbConnection == null) {
+      console.log('db reconnect');
+      connectAllDb();
+      dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    }
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
     const configRes = await attendenceMobileService.configData(dbConnection);
@@ -400,24 +406,15 @@ exports.checkInSubmit = async (req, res) => {
     const decodedjwt = dataValidation.parseJwt(req.headers['authorization']);
 
     if(decodedjwt.clientId == '2137') {
-      const amsDeviceDetails = await axios.post(
-        `${process.env.CLIENTSPOC}api/v1/basic-data/get-ams-device-detail`,
-        { userid: req.body.deviceNumber }
-      );
-      if (amsDeviceDetails.data.status != 'success')
-        return res.status(200).json({
-          statusText: 'FAIL',
-          statusValue: 400,
-          message: `Device is not registered with us. Please contact your Company's SPOC`
-        });
-      if (!amsDeviceDetails.data.data)
+      const amsDeviceDetail = await amsDeviceDetails(req.body.deviceNumber);
+      if (!amsDeviceDetail)
         return res.status(200).json({
           statusText: 'FAIL',
           statusValue: 400,
           message: `Device is not registered with us. Please contact your Company's SPOC`
         });
 
-      if (amsDeviceDetails.data.data.is_whitelist == 0)
+      if (amsDeviceDetail.is_whitelist == 0)
         return res.status(200).json({
           statusText: 'FAIL',
           statusValue: 400,
@@ -434,26 +431,16 @@ exports.checkInSubmit = async (req, res) => {
     //     message: `User outside of geofencing area`,
     //   });
 
-    const userData = await axios.post(
-      `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
-      { faceId: req.body.userFaceId, company_id: decodedjwt.clientId }
-    );
+    const userData = await getUserUsingFaceId( req.body.userFaceId, decodedjwt.clientId); 
   
-    if (userData.data.status != 'success')
-      return res.status(200).json({
-        statusText: 'FAIL',
-        statusValue: 400,
-        message: `SPOC Internal Server Error. Please contact your Company's SPOC`
-      });
-  
-    if (userData.data.data.result.length == 0)
+    if (userData.length == 0)
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
         message: `Face not matched, Please check with your admin or try again.`
       });
   
-    const userDetails = userData.data.data.result[0];
+    const userDetails = userData[0];
 
     if(userDetails.is_active != 1 || userDetails.isSpocApproved != 1)
       return res.status(200).json({
@@ -496,11 +483,11 @@ exports.checkInSubmit = async (req, res) => {
     } else if(response.type == false){
       res.status(200).json({ statusText: 'FAIL', statusValue: 400, message: response.msg });
     }else{
-      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `Went Something Wrong.` });
+      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `ServeR Eror 400` });
     }
   }  catch (err) {
-    console.log(err);
-    res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'Somthing went erong'});
+    console.log('checkInSubmit, err',err);
+    res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'ServeR Eror 400'});
   }
 };
 
@@ -532,8 +519,13 @@ exports.checkOutSubmit = async (req, res) => {
       return res.status(403).json({ statusText: 'FAIL', statusValue: 403, message: `Please provide auth Token` });
       
     const decodedHeader = dataValidation.parseJwt(req.headers['authorization']);
-      
-    const dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+          
+    let dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    if(!dbConnection || dbConnection == null) {
+      console.log('db reconnect');
+      connectAllDb();
+      dbConnection = getConnectionByTenant(decodedHeader.clientDbName);
+    }
     if (!dbConnection) return res.status(400).json({ message: 'The provided Client is not available' });
 
     const configRes = await attendenceMobileService.configData(dbConnection);
@@ -546,24 +538,15 @@ exports.checkOutSubmit = async (req, res) => {
     const decodedjwt = dataValidation.parseJwt(req.headers['authorization']);
 
     if(decodedjwt.clientId == '2137') {
-      const amsDeviceDetails = await axios.post(
-        `${process.env.CLIENTSPOC}api/v1/basic-data/get-ams-device-detail`,
-        { userid: req.body.deviceNumber }
-      );
-      if (amsDeviceDetails.data.status != 'success')
-        return res.status(200).json({
-          statusText: 'FAIL',
-          statusValue: 400,
-          message: `Device is not registered with us. Please contact your Company's SPOC`
-        });
-      if (!amsDeviceDetails.data.data)
+      const amsDeviceDetail = await amsDeviceDetails(req.body.deviceNumber);
+      if (!amsDeviceDetail)
         return res.status(200).json({
           statusText: 'FAIL',
           statusValue: 400,
           message: `Device is not registered with us. Please contact your Company's SPOC`
         });
 
-      if (amsDeviceDetails.data.data.is_whitelist == 0)
+      if (amsDeviceDetail.is_whitelist == 0)
         return res.status(200).json({
           statusText: 'FAIL',
           statusValue: 400,
@@ -580,26 +563,16 @@ exports.checkOutSubmit = async (req, res) => {
     //     message: `User outside of geofencing area`,
     //   });
 
-    const userData = await axios.post(
-      `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
-      { faceId: req.body.userFaceId, company_id: decodedjwt.clientId }
-    );
+    const userData = await getUserUsingFaceId( req.body.userFaceId, decodedjwt.clientId); 
   
-    if (userData.data.status != 'success')
-      return res.status(200).json({
-        statusText: 'FAIL',
-        statusValue: 400,
-        message: `SPOC Internal Server Error. Please contact your Company's SPOC`
-      });
-  
-    if (userData.data.data.result.length == 0)
+    if (userData.length == 0)
       return res.status(200).json({
         statusText: 'FAIL',
         statusValue: 400,
         message: `Face not matched, Please check with your admin or try again.`
       });
   
-    const userDetails = userData.data.data.result[0];
+    const userDetails = userData[0];
 
     if(userDetails.is_active != 1 || userDetails.isSpocApproved != 1)
       return res.status(200).json({
@@ -636,10 +609,11 @@ exports.checkOutSubmit = async (req, res) => {
     } else if(response.type == false){
       res.status(202).json({ statusText: 'FAIL', statusValue: 400, message: response.msg });
     }else{
-      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `Went Something Wrong.` });
+      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `ServeR Eror 400` });
     }
   }  catch (err) {
-    res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'Somthing went erong'});
+    console.log('checkOutSubmit, err',err);
+    res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'ServeR Eror 400'});
   }
 };
 /*
@@ -718,23 +692,19 @@ exports.createJwtToken = async (req, res) => {
         'clientLat': latValue,
         'clientLong': longValue,
         'clientDbName': response.data.clientDbName
-      }, process.env.JWTToken, { expiresIn: 800000 });
+      }, process.env.JWTToken, { expiresIn: jwtExpiresIn });
       return res.status(200).json({ 
         statusText: 'Success', statusValue: 200, message: 'Attendance token', data: {attToken, locationId: locationIdValue, address, device_id, device_name }
       });
     } else if(response.type == false){
       return res.status(202).json({ statusText: 'FAIL', statusValue: 400, message: response.msg });
     }else{
-      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `Went Something Wrong.` });
+      return res.status(400).json({ statusText: 'FAIL', statusValue: 400, message: `ServeR Eror 400` });
     }
 
   } catch (err) {
-    console.log(err);
-    if(err.Code == 'InvalidParameterException'){
-      res.status(400).json({statusText: 'FAIL', statusValue: 400, message: 'There are no faces in the image. Should be at least 1'});
-    } else {
-      res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'Somthing went erong'});
-    }
+    console.log('createJwtToken',err);
+    res.status(500).json({statusText: 'ERROR', statusValue: 500, message: 'ServeR Eror 400'});
   }
 };
 
@@ -786,8 +756,8 @@ const validateFace = async (dbConnection, faceImg, decodedjwt, checkStatus) => {
     if(userFaceId.Pose.Yaw >  validateFaceValue.YawMax)
       return {status: false, message: 'Please look straight into the camera. Looks like you are looking towards left.'};
 
-    if(userFaceId.EyesOpen.Value !=  validateFaceValue.EyesOpen)
-      return {status: false, message: 'Face not captured properly. It seems your eyes were closed.'};
+    // if(userFaceId.EyesOpen.Value !=  validateFaceValue.EyesOpen)
+    // return {status: false, message: 'Face not captured properly. It seems your eyes were closed.'};
 
     // if(userFaceId.Eyeglasses.Value !=  validateFaceValue.Eyeglasses)
     //   return {status: false, message: 'It seems like you are wearing glasses. Please remove them and capture again.'};
@@ -826,24 +796,19 @@ const validateFace = async (dbConnection, faceImg, decodedjwt, checkStatus) => {
       faceArray.push(element.Face.FaceId);
     } 
     const faceString = faceArray.toString();
-    const userData = await axios.post(
-      `${process.env.CLIENTSPOC}api/v1/userRoles/getUserUsingFaceId`,
-      { faceId: faceString, company_id: decodedjwt.clientId }
-    ); 
-    if (userData.data.status != 'success')
-      return {status: false, message: `SPOC Internal Server Error. Please contact your Company's SPOC`};
+    const userData = await getUserUsingFaceId( faceString, decodedjwt.clientId); 
 
-    if (userData.data.data.result.length == 0)
+    if (userData.length == 0)
       return {status: false, message: `Face not matched, Please check with your admin or try again.`};
 
 
-    return {status: true, message: 'Face Data.', data: userData.data.data.result[0] };
+    return {status: true, message: 'Face Data.', data: userData[0] };
   } catch (err) {
-    console.log(err);
+    console.log('facevalidation',err);
     if(err.Code == 'InvalidParameterException'){
       return {status: false, message: 'Face not found..'};
     } else {
-      return {status: false, message: 'Somthing went wrong.'} ;
+      return {status: false, message: 'ServeR Eror 400'} ;
     }
   }
 };
@@ -871,7 +836,7 @@ const sendSMS = async (userDetails, temp_id, deviceLocation, totalDuration) => {
         'dura': totalDuration
       };
     }
-    const res = await axios.post(
+    await axios.post(
       'https://api.msg91.com/api/v5/flow/',
       reqData,
       {
@@ -882,8 +847,6 @@ const sendSMS = async (userDetails, temp_id, deviceLocation, totalDuration) => {
         }
       }
     );
-    console.log(res);
-    console.log(deviceLocation);
     return true;
   } catch (error) {
     return false;
@@ -914,4 +877,25 @@ const getSearchFacesByImage = (params) => {
   
   });
 
+};
+
+const getUserUsingFaceId = async (faceIds, company_id) => {
+  const faceId = faceIds.split(',');
+  const result = [];
+  
+  for (let i = 0; i < faceId.length; i++) {
+    const element = faceId[i];
+    const resData = await swQuery(
+      `SELECT user_faceid.user_id, user_faceid.face_id, user.fname, user.lname, user.email, user.phone, user.profile_img_url, user.user_dept_id, user.company_id, user.location_id, user.emp_code, user.isGlobalCheckInOut, department_master.dept_name, user.is_active, user.isSpocApproved FROM user_faceid LEFT JOIN user ON user_faceid.user_id=user.rec_id LEFT JOIN department_master ON user.user_dept_id = department_master.id WHERE face_id = '${element}' AND user.company_id = '${company_id}'`
+    );
+    if(resData.length > 0)
+      result.push(resData[0]);
+  }
+  return result;
+};
+
+const amsDeviceDetails = async (deviceId) => {
+  const amsDeviceData = await swQuery(`SELECT * FROM ams_device_details WHERE rec_id = ${deviceId}`);
+  if(amsDeviceData.length == 0) return {};
+  return amsDeviceData[0];
 };
