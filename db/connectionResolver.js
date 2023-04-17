@@ -27,6 +27,7 @@ const resolveTenant = (req, res, next) => {
   // Run the application in the defined namespace. It will contextualize every underlying function calls.
   nameSpace.run(() => {
     const tenantDbConnection = getConnectionByTenant(dbString);
+    console.log(dbString);
     //console.log('resolveTenant tenantDbConnection');
     //console.log('resolveTenant tenantDbConnection', tenantDbConnection && tenantDbConnection.clientDbName);
     nameSpace.set('connection', tenantDbConnection);

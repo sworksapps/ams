@@ -4,7 +4,7 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "prod": "env-cmd -f .env.prod node app.js",
+    "prod": "env-cmd -f .env.prod nodemon app.js",
     "dev": "env-cmd -f .env.dev nodemon app.js",
     "qa": "env-cmd -f .env.qa node app.js",
     "uat": "env-cmd -f .env.uat node app.js"
@@ -24,6 +24,7 @@
     "exceljs": "^4.3.0",
     "express": "^4.17.1",
     "express-mongo-sanitize": "^2.1.0",
+    "express-session": "^1.17.3",
     "helmet": "^4.6.0",
     "hpp": "^0.2.3",
     "joi": "^17.4.2",

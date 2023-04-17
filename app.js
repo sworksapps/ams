@@ -7,6 +7,7 @@ const mongoSanitize = require('express-mongo-sanitize');
 const cron = require('node-cron');
 const moment = require('moment');
 const axios = require('axios');
+const session = require('express-session');
 
 const { connectAllDb, getConnectionByTenant } = require('./connectionManager');
 
@@ -31,6 +32,11 @@ app.use(mongoSanitize());
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.json({ limit: '50mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(session({
+  secret: 'pnNOIfWVqmT6bNOsW7Z3YCJnu71H16nry',
+  resave: true,
+  saveUninitialized: true
+}));
 connectAllDb();
 
 /*------------------------*/
