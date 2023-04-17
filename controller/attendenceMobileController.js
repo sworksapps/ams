@@ -31,6 +31,8 @@ const dataValidation = require('../common/methods/dataValidation');
 const { getAdminConnection, getConnectionByTenant, connectAllDb } = require('../connectionManager');
 const attendenceMobileService = require('../service/attendenceMobileService');
 
+let jwtExpiresIn = 13500000;
+if(process.env.NODE_ENV == 'dev' || process.env.NODE_ENV == 'uat') jwtExpiresIn= 300;
 /*
  *----------------Routes Section------------
  */
@@ -690,7 +692,7 @@ exports.createJwtToken = async (req, res) => {
         'clientLat': latValue,
         'clientLong': longValue,
         'clientDbName': response.data.clientDbName
-      }, process.env.JWTToken, { expiresIn: 800000 });
+      }, process.env.JWTToken, { expiresIn: jwtExpiresIn });
       return res.status(200).json({ 
         statusText: 'Success', statusValue: 200, message: 'Attendance token', data: {attToken, locationId: locationIdValue, address, device_id, device_name }
       });
