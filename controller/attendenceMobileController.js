@@ -893,7 +893,7 @@ const getUserUsingFaceId = async (faceIds, company_id) => {
 };
 
 const amsDeviceDetails = async (deviceId) => {
-  const amsDeviceData = await swMysql(`SELECT * FROM ams_device_details WHERE rec_id = ${deviceId}`);
+  const amsDeviceData = await swQuery(`SELECT * FROM ams_device_details WHERE rec_id = ${deviceId}`);
   if(amsDeviceData.length == 0) return {};
   return amsDeviceData[0];
 };
