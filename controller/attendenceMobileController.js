@@ -805,10 +805,10 @@ const validateFace = async (dbConnection, faceImg, decodedjwt, checkStatus) => {
     return {status: true, message: 'Face Data.', data: userData[0] };
   } catch (err) {
     console.log('facevalidation',err);
-    if(err.Code == 'InvalidParameterException'){
-      return {status: false, message: 'Face not found..'};
+    if(err){
+      return {status: false, message: 'Face not found. Please try again.', data: err.code};
     } else {
-      return {status: false, message: 'ServeR Eror 400'} ;
+      return {status: false, message: 'Face not found. Please try again.'} ;
     }
   }
 };
