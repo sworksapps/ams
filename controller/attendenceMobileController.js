@@ -8,9 +8,9 @@ const util = require('util');
 const swMysql = require('../db/swConnection');
 const swQuery = util.promisify(swMysql.query).bind(swMysql);
 
-const AWS = require('aws-sdk');
+// const AWS = require('aws-sdk');
 const { Rekognition} = require('aws-sdk');
-AWS.config.loadFromPath('./config.json');
+// AWS.config.loadFromPath('./config.json');
 const rekognition = new Rekognition({
   region: process.env.REGION,
 });
