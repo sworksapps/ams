@@ -18,6 +18,7 @@ const { autoCheckoutAtMidnight } = require('./controller/cronController');
 
 const attendenceRoutes = require('./routes/attendenceRoutes');
 const attendenceMobileRoutes = require('./routes/attendenceMobileRoutes');
+const accessControlRoutes = require('./routes/accessControlRoutes');
 
 
 /*
@@ -42,7 +43,6 @@ connectAllDb();
 /*------------------------*/
 app.get('/', async (req, res) => {
   try {
-    // throw new Error('dvcgdscd');
     res.status(200).json({ statusText: 'OK', statusValue: 200, message: 'Message From index 😊'});
   } catch (err) {
     console.log(err);
@@ -177,6 +177,7 @@ const insertAttData = async (
 
 app.use('/', attendenceRoutes);
 app.use('/', attendenceMobileRoutes);
+app.use('/', accessControlRoutes);
 
 // Cron for prozo log
 cron.schedule('0 0 */3 * * *', async () => {
