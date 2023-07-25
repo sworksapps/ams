@@ -151,7 +151,7 @@ const checkForHalfDay = (shiftTime1 = 9 * 60, workingTime, type) => {
       return 'ABSENT';
     }
   } else {
-    return 'N/A';
+    return 'PRESENT';
   }
 };
 
