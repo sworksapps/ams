@@ -149,7 +149,7 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
         if (filter.kpiFilter === 'HALFDAY')
           dbQuery1.userStatus = filter.kpiFilter;
         if (filter.kpiFilter === 'CHECKEDIN') {
-          dbQuery1.lastExit = '';
+          // dbQuery1.lastExit = '';
           dbQuery3.push({ firstEnrty: { $ne: '' } }, { attendenceStatus: { $ne: 'AUTOCHECKOUT' } });
         }
         if (filter.kpiFilter === 'YETCHECKIN') {
@@ -260,9 +260,10 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
     let resData = await attModel.aggregate([...query]);
 
-    if (filter.kpiFilter == 'CHECKEDIN')
+    if (filter.kpiFilter == 'CHECKEDIN') {
       resData = await filterKpiData(resData, 'CHECKEDIN');
-
+      console.log('resData, resData', resData);
+    }
     else if (filter.kpiFilter == 'YETCHECKIN')
       resData = await filterKpiData(resData, 'YETCHECKIN');
 
@@ -1105,6 +1106,8 @@ const calculateCountOfArr = async (resData) => {
     // OverTime
     let clockIn = 0;
     let clockOut = 0;
+    let lastClockIn = 0;
+    let lastClockOut = 0;
     let overTime = 0;
     let flag = false;
 
@@ -1112,13 +1115,19 @@ const calculateCountOfArr = async (resData) => {
       if (element.actionBy && element.actionBy == 'ADMIN') {
         clockIn = element.clockIn;
         clockOut = element.clockOut;
+        lastClockIn = element.clockIn;
+        lastClockOut = element.clockOut;
         flag = true;
       }
       else if (!flag) {
         // clockIn = element.clockIn;
         // clockInLocId = element.deviceLocationIdClockIn;
-        if (element.clockOut && element.clockOut != '')
+        if (element.clockOut && element.clockOut != ''){
           clockOut = element.clockOut;
+          lastClockOut = element.clockOut;
+        }
+        if (element.clockIn && element.clockIn != '')
+          lastClockIn = element.clockIn;
       }
     });
 
@@ -1164,9 +1173,9 @@ const calculateCountOfArr = async (resData) => {
       item.shiftStart == '' && item.shiftEnd == '' && item.attendenceStatus == 'N/A' && item.primaryStatus == 'N/A' && item.userStatus == 'N/A') {
       removeDataCount++;
     }
-
+    console.log(lastClockIn,lastClockOut);
     //  CheckedInCount
-    if (clockIn > 0 && item.attendenceStatus != 'AUTOCHECKOUT' && (!clockOut || clockOut == '' || clockOut == 0))
+    if (Number(lastClockIn) > Number(lastClockOut) && item.attendenceStatus != 'AUTOCHECKOUT')
       checkedInCount++;
   });
 
@@ -1440,24 +1449,34 @@ function filterArray(array) {
 }
 
 const filterKpiData = (resData, filterName) => {
+  console.log('***********', filterName, resData.length);
   const filterData = [];
   resData.map((item) => {
     // OverTime
     let clockIn = 0;
     let clockOut = 0;
+    let lastClockIn = 0;
+    let lastClockOut = 0;
     let flag = false;
 
     item.attendenceDetails.forEach(element => {
       if (element.actionBy && element.actionBy == 'ADMIN') {
         clockIn = element.clockIn;
         clockOut = element.clockOut;
+        lastClockIn = element.clockIn;
+        lastClockOut = element.clockOut;
         flag = true;
       }
       else if (!flag) {
         // clockIn = element.clockIn;
         // clockInLocId = element.deviceLocationIdClockIn;
-        if (element.clockOut && element.clockOut != '')
+        if (element.clockOut && element.clockOut != '') {
           clockOut = element.clockOut;
+          lastClockOut = element.clockOut;
+        }
+
+        if (element.clockIn && element.clockIn != '')
+          lastClockIn = element.clockIn;
       }
     });
 
@@ -1466,7 +1485,8 @@ const filterKpiData = (resData, filterName) => {
       // clockOut = item['lastExit'];
     }
     if (filterName == 'CHECKEDIN') {
-      if (clockIn > 0 && item.attendenceStatus != 'AUTOCHECKOUT' && (!clockOut || clockOut == '' || clockOut == 0))
+      console.log('---------------', lastClockIn, lastClockOut);
+      if (Number(lastClockIn) > Number(lastClockOut) && item.attendenceStatus != 'AUTOCHECKOUT')
         filterData.push(item);
     }
     else if (filterName == 'YETCHECKIN') {

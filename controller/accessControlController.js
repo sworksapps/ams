@@ -64,12 +64,12 @@ exports.checkInOut = async (req, res) => {
         attendenceStatus: 'CLOCKIN',
         userStatus: [autoCalculateValue.subStatus],
         primaryStatus: autoCalculateValue.superStatus,
-        attendenceDetails: [{ actionByTimeStamp: moment(), clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: req.body.deviceName, deviceNumberClockIn: req.body.deviceNumber, deviceLocationClockIn: req.body.locationId, deviceLocationIdClockIn: req.body.locationId }],
+        attendenceDetails: [{ actionByTimeStamp: moment(), clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: req.body.deviceName, deviceNumberClockIn: req.body.deviceNumber, deviceLocationClockIn: req.body.locationId, deviceLocationIdClockIn: req.body.locationId, actionBy: 'USER' }],
       };
       await attendenceModel(insertData).save();
     } else if(req.body.actionType == 'In') {
       const attendenceDetails = CheckData.attendenceDetails;
-      attendenceDetails.push({ actionByTimeStamp: moment(),clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: req.body.deviceName, deviceNumberClockIn: req.body.deviceNumber, deviceLocationClockIn: req.body.locationId, deviceLocationIdClockIn: req.body.locationId });
+      attendenceDetails.push({ actionByTimeStamp: moment(),clockIn: clockInTimeStamp, clockOut: '', deviceNameClockIn: req.body.deviceName, deviceNumberClockIn: req.body.deviceNumber, deviceLocationClockIn: req.body.locationId, deviceLocationIdClockIn: req.body.locationId, actionBy: 'USER' });
       
       const shiftStart = CheckData.shiftStart.length > 0 && CheckData.shiftStart[CheckData.shiftStart.length -1] ? CheckData.shiftStart[CheckData.shiftStart.length -1] : '';
       const shiftEnd = CheckData.shiftEnd.length > 0 && CheckData.shiftEnd[CheckData.shiftEnd.length -1] ? CheckData.shiftEnd[CheckData.shiftEnd.length -1] : '';
@@ -80,7 +80,7 @@ exports.checkInOut = async (req, res) => {
       
       await attendenceModel.findOneAndUpdate(
         { _id: CheckData._id },
-        { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKIN', userStatus: userStatus, primaryStatus: autoCalculateValue.superStatus }
+        { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKIN', userStatus: userStatus, primaryStatus: autoCalculateValue.superStatus, actionBy: 'USER' }
       );
     } else if(req.body.actionType == 'Out') {
       if (CheckData.attendenceStatus == 'CLOCKIN') {
@@ -107,11 +107,11 @@ exports.checkInOut = async (req, res) => {
   
         await attendenceModel.findOneAndUpdate(
           { _id: CheckData._id },
-          { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKOUT', userStatus : userStatus, primaryStatus: autoCalculateValue.superStatus }
+          { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKOUT', userStatus : userStatus, primaryStatus: autoCalculateValue.superStatus, actionBy: 'USER' }
         );
       } else if (CheckData.attendenceStatus == 'CLOCKOUT') {
         const attendenceDetails = CheckData.attendenceDetails;
-        attendenceDetails.push({ actionByTimeStamp: moment(),clockIn: '', clockOut: req.body.InOutTimeStamp, deviceNameClockOut: req.body.deviceName, deviceNumberClockOut: req.body.deviceNumber, deviceLocationClockOut: req.body.locationId, deviceLocationIdClockOut: req.body.locationId });
+        attendenceDetails.push({ actionByTimeStamp: moment(),clockIn: '', clockOut: req.body.InOutTimeStamp, deviceNameClockOut: req.body.deviceName, deviceNumberClockOut: req.body.deviceNumber, deviceLocationClockOut: req.body.locationId, deviceLocationIdClockOut: req.body.locationId, actionBy: 'USER'  });
   
         const shiftStart = CheckData.shiftStart.length > 0 && CheckData.shiftStart[CheckData.shiftStart.length -1] ? CheckData.shiftStart[CheckData.shiftStart.length -1] : '';
         const shiftEnd = CheckData.shiftEnd.length > 0 && CheckData.shiftEnd[CheckData.shiftEnd.length -1] ? CheckData.shiftEnd[CheckData.shiftEnd.length -1] : '';
@@ -122,7 +122,7 @@ exports.checkInOut = async (req, res) => {
               
         await attendenceModel.findOneAndUpdate(
           { _id: CheckData._id },
-          { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKOUT', userStatus: userStatus, primaryStatus: autoCalculateValue.superStatus }
+          { attendenceDetails: attendenceDetails, attendenceStatus: 'CLOCKOUT', userStatus: userStatus, primaryStatus: autoCalculateValue.superStatus, actionBy: 'USER' }
         );
       }
     } 
