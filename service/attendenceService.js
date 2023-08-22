@@ -266,11 +266,11 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
     let resData = await attModel.aggregate([...query]);
 
-    if (filter.kpiFilter == 'CHECKEDIN') {
+    if (filter && filter.kpiFilter == 'CHECKEDIN') {
       resData = await filterKpiData(resData, 'CHECKEDIN');
       console.log('resData, resData', resData);
     }
-    else if (filter.kpiFilter == 'YETCHECKIN')
+    else if (filter && filter.kpiFilter == 'YETCHECKIN')
       resData = await filterKpiData(resData, 'YETCHECKIN');
 
     // calculate kpi
