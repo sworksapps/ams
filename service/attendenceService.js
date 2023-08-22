@@ -120,6 +120,12 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
           dbQuery2.push({ locationId: filter.location.toString() });
       }
 
+      if (filter.userIds) {
+        if (Array.isArray(filter.userIds))
+          dbQuery3.push({ userId: { $in: filter.userIds } });
+        else
+          dbQuery3.push({ userId: filter.userIds.toString() });
+      }
       if (filter.location) {
         if (Array.isArray(filter.location))
           dbQuery2.push({ checkedInLocationId: { $in: filter.location } });
@@ -260,11 +266,11 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
 
     let resData = await attModel.aggregate([...query]);
 
-    if (filter.kpiFilter == 'CHECKEDIN') {
+    if (filter && filter.kpiFilter == 'CHECKEDIN') {
       resData = await filterKpiData(resData, 'CHECKEDIN');
       console.log('resData, resData', resData);
     }
-    else if (filter.kpiFilter == 'YETCHECKIN')
+    else if (filter && filter.kpiFilter == 'YETCHECKIN')
       resData = await filterKpiData(resData, 'YETCHECKIN');
 
     // calculate kpi
@@ -789,6 +795,13 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
           dbQuery.push({ locationId: { $in: filter.location } });
         else
           dbQuery.push({ locationId: filter.location });
+      }
+
+      if (filter.userIds) {
+        if (Array.isArray(filter.userIds))
+          dbQuery.push({ userId: { $in: filter.userIds } });
+        else
+          dbQuery.push({ userId: filter.userIds.toString() });
       }
     }
 
