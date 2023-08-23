@@ -110,8 +110,6 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
     const attModel = await dbConnection.model('attendences_data');
 
     if (filter) {
-      filter = JSON.parse(filter);
-
 
       if (filter.location && filter.baseLocation) {
         if (Array.isArray(filter.location))
@@ -120,12 +118,9 @@ exports.fetchDailyReportData = async (dbConnection, limit, page, sort_by, search
           dbQuery2.push({ locationId: filter.location.toString() });
       }
 
-      if (filter.userIds) {
-        if (Array.isArray(filter.userIds))
-          dbQuery3.push({ userId: { $in: filter.userIds } });
-        else
-          dbQuery3.push({ userId: filter.userIds.toString() });
-      }
+      if (Array.isArray(filter.userIds) && filter.userIds.length > 0)
+        dbQuery3.push({ userId: { $in: filter.userIds } });
+
       if (filter.location) {
         if (Array.isArray(filter.location))
           dbQuery2.push({ checkedInLocationId: { $in: filter.location } });
@@ -784,7 +779,6 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
     const attModel = await dbConnection.model('attendences_data');
 
     if (filter) {
-      filter = JSON.parse(filter);
 
       if (filter.status) {
         dbQuery.push({ userStatus: filter.status });
@@ -797,12 +791,8 @@ exports.fetchReportDataByDate = async (dbConnection, limit, page, sort_by, searc
           dbQuery.push({ locationId: filter.location });
       }
 
-      if (filter.userIds) {
-        if (Array.isArray(filter.userIds))
-          dbQuery.push({ userId: { $in: filter.userIds } });
-        else
-          dbQuery.push({ userId: filter.userIds.toString() });
-      }
+      if (Array.isArray(filter.userIds) && filter.userIds.length > 0)
+        dbQuery.push({ userId: { $in: filter.userIds } });
     }
 
     // filter between dates
@@ -1135,7 +1125,7 @@ const calculateCountOfArr = async (resData) => {
       else if (!flag) {
         // clockIn = element.clockIn;
         // clockInLocId = element.deviceLocationIdClockIn;
-        if (element.clockOut && element.clockOut != ''){
+        if (element.clockOut && element.clockOut != '') {
           clockOut = element.clockOut;
           lastClockOut = element.clockOut;
         }
@@ -1186,7 +1176,6 @@ const calculateCountOfArr = async (resData) => {
       item.shiftStart == '' && item.shiftEnd == '' && item.attendenceStatus == 'N/A' && item.primaryStatus == 'N/A' && item.userStatus == 'N/A') {
       removeDataCount++;
     }
-    console.log(lastClockIn,lastClockOut);
     //  CheckedInCount
     if (Number(lastClockIn) > Number(lastClockOut) && item.attendenceStatus != 'AUTOCHECKOUT')
       checkedInCount++;
@@ -1462,7 +1451,6 @@ function filterArray(array) {
 }
 
 const filterKpiData = (resData, filterName) => {
-  console.log('***********', filterName, resData.length);
   const filterData = [];
   resData.map((item) => {
     // OverTime
@@ -1498,7 +1486,6 @@ const filterKpiData = (resData, filterName) => {
       // clockOut = item['lastExit'];
     }
     if (filterName == 'CHECKEDIN') {
-      console.log('---------------', lastClockIn, lastClockOut);
       if (Number(lastClockIn) > Number(lastClockOut) && item.attendenceStatus != 'AUTOCHECKOUT')
         filterData.push(item);
     }
