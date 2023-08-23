@@ -53,8 +53,8 @@ exports.dailyReport = async (req, res) => {
         .json({ statusText: 'FAIL', statusValue: 400, message: 'The provided Client is not available' });
     }
 
-    const { pgno, row, sort_by, filter, date } = req.query;
-
+    const { pgno, row, sort_by, date } = req.query;
+    const filter = req.body;
     let search = '';
     let dateChk = false;
 
@@ -226,8 +226,8 @@ exports.getReportByDate = async (req, res) => {
         .json({ statusText: 'FAIL', statusValue: 400, message: 'The provided Client is not available' });
     }
 
-    const { pgno, row, sort_by, filter, startDate, endDate } = req.query;
-
+    const { pgno, row, sort_by, startDate, endDate } = req.query;
+    const filter = req.body;
     let search = '';
     let dateChk = false;
 
