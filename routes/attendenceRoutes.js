@@ -12,9 +12,9 @@ v1Routes.post(
   '/client/v1/attendence/get-users-shift-data/:deptId/:startDate/:endDate', 
   attendenceController.getUsersShiftData
 );
-v1Routes.get('/client/v1/attendence/get-daily-report', attendenceController.dailyReport);
+v1Routes.post('/client/v1/attendence/get-daily-report', attendenceController.dailyReport);
 v1Routes.get('/client/v1/attendence/get-user-report', attendenceController.userReport);
-v1Routes.get('/client/v1/attendence/get-user-report-by-date', attendenceController.getReportByDate);
+v1Routes.post('/client/v1/attendence/get-user-report-by-date', attendenceController.getReportByDate);
 v1Routes.post('/client/v1/attendence/change-user-status', attendenceController.changeUserStatus);
 v1Routes.get('/client/v1/attendence/get-details-by-id', attendenceController.getDetailsById);
 
