@@ -2,22 +2,20 @@ version: 0.2
 env:
   shell: bash
   secrets-manager:
-      ENV_AWSKEYID: $SECRET/AMS:AWSKEYID
-      ENV_AWSSECRETACCESSKEY: $SECRET/AMS:AWSSECRETACCESSKEY
-      ENV_DBPASSWORD: $SECRET/AMS:DBPASSWORD
-      ENV_JWTToken: $SECRET/AMS:JWTToken
-      ENV_sqlpassword: $SECRET/AMS:sqlpassword
+      MYSQL_HOST: $SECRET/AMS:MYSQL_HOST
+      MYSQL_USER: $SECRET/AMS:MYSQL_USER
+      MYSQL_DB: $SECRET/AMS:MYSQL_DB
+      MYSQL_PASSWORD: $SECRET/AMS:MYSQL_PASSWORD
 phases:
   pre_build:
     commands:
       - |
-        #!/bin/bash       
-        sed -i 's/ENV/'"${ENV_NAME}"'/g' $CODEBUILD_SRC_DIR/Dockerfile
-        sed -i 's/ENV_AWSKEYID/'"${AWSKEYID}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
-        sed -i 's/ENV_AWSSECRETACCESSKEY/'"${AWSSECRETACCESSKEY}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
-        sed -i 's/ENV_DBPASSWORD/'"${DBPASSWORD}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
-        sed -i 's/ENV_JWTToken/'"${JWTToken}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
-        sed -i 's/ENV_sqlpassword/'"${sqlpassword}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
+        #!/bin/bash
+        sed -i 's/ENV_NAME/'"${ENV_NAME}"'/g' $CODEBUILD_SRC_DIR/Dockerfile
+        sed -i 's/ENV_MYSQL_PASSWORD/'"${MYSQL_PASSWORD}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
+        sed -i 's/ENV_MYSQL_HOST/'"${MYSQL_HOST}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
+        sed -i 's/ENV_MYSQL_USER/'"${MYSQL_USER}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
+        sed -i 's/ENV_MYSQL_DB/'"${MYSQL_DB}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
       - "cat .env.${ENV_NAME}"
       - echo Logging in to Amazon ECR...
       - $(aws ecr get-login --no-include-email --region ap-south-1)
