@@ -79,11 +79,59 @@ const AssetManagement = () => {
         locationsAPI.getAll(),
         categoriesAPI.getAll()
       ]);
-      setLocations(locationsRes.data);
-      setCategories(categoriesRes.data);
+      
+      // Debug: Log raw API response
+      console.log('Raw locations API response:', locationsRes);
+      console.log('Raw locations data:', locationsRes?.data);
+      
+      // Ensure locations is always an array with proper structure
+      // API response structure: {success: true, data: Array(113)}
+      const locationData = locationsRes?.data?.data || [];
+      console.log('Location data type:', typeof locationData, 'isArray:', Array.isArray(locationData));
+      console.log('Location data length:', locationData.length);
+      
+      const processedLocations = Array.isArray(locationData) 
+        ? locationData.map((location, index) => {
+            console.log(`Processing location ${index}:`, location);
+            const processed = {
+              value: location.value || location.name || location.id,
+              label: location.label || location.name,
+              id: location.id,
+              centerId: location.centerId,
+              alternateId: location.alternateId
+            };
+            console.log(`Processed location ${index}:`, processed);
+            return processed;
+          })
+        : [];
+      
+      console.log('Final processed locations:', processedLocations);
+      
+      // Ensure categories is always an array with proper structure
+      const categoryData = categoriesRes?.data || [];
+      const processedCategories = Array.isArray(categoryData) 
+        ? categoryData.map(category => ({
+            id: category.id,
+            name: category.name,
+            value: category.name,
+            label: category.name
+          }))
+        : [];
+      
+      setLocations(processedLocations);
+      setCategories(processedCategories);
+      
+      console.log('Dropdown data loaded:', {
+        locations: processedLocations.length,
+        categories: processedCategories.length
+      });
+      
     } catch (error) {
       console.error('Error fetching dropdown data:', error);
-      alert('Error loading form data');
+      // Set empty arrays as fallback to prevent map errors
+      setLocations([]);
+      setCategories([]);
+      alert('Error loading form data. Please refresh the page.');
     }
   };
 
@@ -511,7 +559,7 @@ const AssetManagement = () => {
                 required
               >
                 <option value="">Select Category</option>
-                {categories.map(category => (
+                {Array.isArray(categories) && categories.map(category => (
                   <option key={category.id} value={category.name}>
                     {category.name}
                   </option>
@@ -530,7 +578,7 @@ const AssetManagement = () => {
                 required
               >
                 <option value="">Select Subcategory</option>
-                {subcategories.map((subcategory) => (
+                {Array.isArray(subcategories) && subcategories.map((subcategory) => (
                   <option key={subcategory.id} value={subcategory.name}>
                     {subcategory.name}
                   </option>
@@ -549,9 +597,9 @@ const AssetManagement = () => {
                 required
               >
                 <option value="">Select Location</option>
-                {locations.map(location => (
-                  <option key={location.value} value={location.value}>
-                    {location.label}
+                {Array.isArray(locations) && locations.map(location => (
+                  <option key={location.value || location.id} value={location.value || location.name}>
+                    {location.label || location.name}
                   </option>
                 ))}
               </select>
@@ -611,7 +659,7 @@ const AssetManagement = () => {
                 disabled={!selectedLocationData}
               >
                 <option value="">{!selectedLocationData ? 'Select Location First' : 'Select Floor'}</option>
-                {floors.map((floor) => (
+                {Array.isArray(floors) && floors.map((floor) => (
                   <option key={floor.value} value={floor.value}>
                     {floor.label}
                   </option>
@@ -802,7 +850,7 @@ const AssetManagement = () => {
               </label>
             </div>
             <div className="grid grid-cols-4 gap-3 mt-3">
-              {formData.photos.map((photo, index) => (
+              {Array.isArray(formData.photos) && formData.photos.map((photo, index) => (
                 <div key={index} className="relative group">
                   <img
                     src={photo.preview || (photo.path && photo.path !== 'undefined' ? `${process.env.REACT_APP_BASE_URL || 'http://localhost:5000'}${photo.path}` : photo.url || '')}
@@ -847,7 +895,7 @@ const AssetManagement = () => {
             </button>
           </div>
           
-          {formData.maintenance_schedules.map((schedule, index) => (
+          {Array.isArray(formData.maintenance_schedules) && formData.maintenance_schedules.map((schedule, index) => (
             <div key={index} className="border border-gray-200 rounded-lg p-4 mb-4">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="font-medium text-gray-900">Schedule {index + 1}</h4>

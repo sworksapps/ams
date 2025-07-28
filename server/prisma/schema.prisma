@@ -45,7 +45,6 @@ model Asset {
   // Relations
   maintenanceSchedules  MaintenanceSchedule[]
   coverage              Coverage[]
-  tickets               Ticket[]
 
   @@map("assets")
 }
@@ -94,44 +93,9 @@ model Coverage {
   @@map("coverage")
 }
 
-// Tickets table
-model Ticket {
-  id                String       @id
-  assetId           String       @map("asset_id")
-  ticketNumber      String       @unique @map("ticket_number")
-  title             String
-  description       String?
-  priority          TicketPriority @default(medium)
-  status            TicketStatus @default(open)
-  assignedTo        String?      @map("assigned_to")
-  reportedBy        String       @map("reported_by")
-  reportedAt        DateTime     @default(now()) @map("reported_at")
-  resolvedAt        DateTime?    @map("resolved_at")
-  estimatedCost     Float?       @map("estimated_cost")
-  actualCost        Float?       @map("actual_cost")
-  workOrderNumber   String?      @map("work_order_number")
-  vendorName        String?      @map("vendor_name")
-  remarks           String?
-  photos            String?      // JSON array of photo paths
-  createdAt         DateTime     @default(now()) @map("created_at")
-  updatedAt         DateTime     @updatedAt @map("updated_at")
 
-  // Relations
-  asset             Asset        @relation(fields: [assetId], references: [id], onDelete: Cascade)
 
-  @@map("tickets")
-}
 
-// Locations table
-model Location {
-  id        String   @id
-  name      String   @unique
-  address   String?
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@map("locations")
-}
 
 // Categories table for dropdown data
 model Category {
@@ -177,17 +141,4 @@ enum CoverageStatus {
   renewed
 }
 
-enum TicketPriority {
-  low
-  medium
-  high
-  critical
-}
 
-enum TicketStatus {
-  open
-  inProgress @map("in_progress")
-  resolved
-  closed
-  cancelled
-}

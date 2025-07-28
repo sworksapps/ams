@@ -25,13 +25,6 @@ class DatabaseService {
 
   async insertDefaultData() {
     try {
-      // Check if locations already exist
-      const locationCount = await this.prisma.location.count();
-      if (locationCount === 0) {
-        console.log('Inserting default locations...');
-        await this.insertDefaultLocations();
-      }
-
       // Check if categories already exist
       const categoryCount = await this.prisma.category.count();
       if (categoryCount === 0) {
@@ -45,24 +38,7 @@ class DatabaseService {
     }
   }
 
-  async insertDefaultLocations() {
-    const locations = [
-      { id: 'loc-1', name: 'Building A', address: 'Main Campus, Floor 1-5' },
-      { id: 'loc-2', name: 'Building B', address: 'Main Campus, Floor 1-3' },
-      { id: 'loc-3', name: 'Building C', address: 'Main Campus, Floor 1-4' },
-      { id: 'loc-4', name: 'Data Center', address: 'Basement Level' },
-      { id: 'loc-5', name: 'Parking Area', address: 'Ground Level' },
-      { id: 'loc-6', name: 'Rooftop', address: 'Top Level' }
-    ];
 
-    for (const location of locations) {
-      await this.prisma.location.upsert({
-        where: { id: location.id },
-        update: {},
-        create: location
-      });
-    }
-  }
 
   async insertDefaultCategories() {
     const categoryData = [
@@ -179,12 +155,70 @@ class DatabaseService {
 
   // Asset operations
   async createAsset(assetData) {
+    // Map API values to Prisma enum values
+    const mappedData = { ...assetData };
+    
+    console.log('Original assetData:', JSON.stringify(assetData, null, 2));
+    
+    // Map asset_type from API format to Prisma enum
+    if (mappedData.asset_type === 'Building asset') {
+      mappedData.assetType = 'building';
+    } else if (mappedData.asset_type === 'Client asset') {
+      mappedData.assetType = 'client';
+    }
+    delete mappedData.asset_type; // Remove the original field
+    
+    console.log('After asset_type mapping:', JSON.stringify(mappedData, null, 2));
+    
+    // Map owned_by to ownedBy and ensure it's a valid value
+    if (mappedData.owned_by) {
+      mappedData.ownedBy = mappedData.owned_by;
+      delete mappedData.owned_by;
+    }
+    
+    // Map other snake_case fields to camelCase for Prisma
+    if (mappedData.equipment_name) {
+      mappedData.equipmentName = mappedData.equipment_name;
+      delete mappedData.equipment_name;
+    }
+    if (mappedData.location_name) {
+      mappedData.locationName = mappedData.location_name;
+      delete mappedData.location_name;
+    }
+    if (mappedData.model_number) {
+      mappedData.modelNumber = mappedData.model_number;
+      delete mappedData.model_number;
+    }
+    if (mappedData.serial_number) {
+      mappedData.serialNumber = mappedData.serial_number;
+      delete mappedData.serial_number;
+    }
+    if (mappedData.purchase_price) {
+      mappedData.purchasePrice = mappedData.purchase_price;
+      delete mappedData.purchase_price;
+    }
+    if (mappedData.poc_number) {
+      mappedData.pocNumber = mappedData.poc_number;
+      delete mappedData.poc_number;
+    }
+    if (mappedData.poc_name) {
+      mappedData.pocName = mappedData.poc_name;
+      delete mappedData.poc_name;
+    }
+    
+    // Generate ID if not provided
+    if (!mappedData.id) {
+      mappedData.id = require('uuid').v4();
+    }
+    
+    console.log('Final mappedData before Prisma call:', JSON.stringify(mappedData, null, 2));
+    console.log('assetType value:', mappedData.assetType);
+    
     return await this.prisma.asset.create({
-      data: assetData,
+      data: mappedData,
       include: {
         maintenanceSchedules: true,
-        coverage: true,
-        tickets: true
+        coverage: true
       }
     });
   }
@@ -194,8 +228,7 @@ class DatabaseService {
       where: { id },
       include: {
         maintenanceSchedules: true,
-        coverage: true,
-        tickets: true
+        coverage: true
       }
     });
   }
@@ -208,12 +241,16 @@ class DatabaseService {
     if (filters.status) where.status = filters.status;
     if (filters.assetType) where.assetType = filters.assetType;
 
+    // Only show active and inactive assets by default (exclude maintenance status if not specifically requested)
+    if (!filters.status) {
+      where.status = { in: ['active', 'inactive'] };
+    }
+
     return await this.prisma.asset.findMany({
       where,
       include: {
         maintenanceSchedules: true,
-        coverage: true,
-        tickets: true
+        coverage: true
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -228,8 +265,7 @@ class DatabaseService {
       },
       include: {
         maintenanceSchedules: true,
-        coverage: true,
-        tickets: true
+        coverage: true
       }
     });
   }
@@ -305,59 +341,9 @@ class DatabaseService {
     });
   }
 
-  // Ticket operations
-  async createTicket(ticketData) {
-    return await this.prisma.ticket.create({
-      data: ticketData,
-      include: { asset: true }
-    });
-  }
 
-  async getTickets(filters = {}) {
-    const where = {};
-    
-    if (filters.assetId) where.assetId = filters.assetId;
-    if (filters.status) where.status = filters.status;
-    if (filters.priority) where.priority = filters.priority;
-    if (filters.assignedTo) where.assignedTo = filters.assignedTo;
 
-    return await this.prisma.ticket.findMany({
-      where,
-      include: { asset: true },
-      orderBy: { createdAt: 'desc' }
-    });
-  }
 
-  async updateTicket(id, updateData) {
-    return await this.prisma.ticket.update({
-      where: { id },
-      data: {
-        ...updateData,
-        updatedAt: new Date()
-      },
-      include: { asset: true }
-    });
-  }
-
-  async deleteTicket(id) {
-    return await this.prisma.ticket.delete({
-      where: { id }
-    });
-  }
-
-  // Location operations
-  async getLocations() {
-    return await this.prisma.location.findMany({
-      where: { isActive: true },
-      orderBy: { name: 'asc' }
-    });
-  }
-
-  async createLocation(locationData) {
-    return await this.prisma.location.create({
-      data: locationData
-    });
-  }
 
   // Category operations
   async getCategories() {

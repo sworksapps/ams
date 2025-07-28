@@ -1,3 +1,8 @@
+// Load New Relic first (must be before any other modules)
+if (process.env.NEW_RELIC_LICENSE_KEY) {
+  require('newrelic');
+}
+
 // Load environment variables first, before any other modules
 require('dotenv').config();
 
@@ -14,6 +19,7 @@ const fetch = require('node-fetch');
 // Import security and validation middleware
 const { handleValidationError, sanitizeInput } = require('./middleware/validation');
 const { upload, uploadMultiple, uploadSingle } = require('./utils/s3Upload');
+const requestResponseLogger = require('./middleware/requestLogger');
 
 const db = require('./database');
 const { extractUserFromHeaders, optionalAuth, debugHeaders } = require('./middleware/auth');
@@ -60,7 +66,7 @@ app.use(cors({
       /^http:\/\/127\.0\.0\.1:\d+$/,
       /^http:\/\/192\.168\.\d+\.\d+:\d+$/,  // Local network 192.168.x.x
       /^http:\/\/10\.\d+\.\d+\.\d+:\d+$/,   // Local network 10.x.x.x
-      /^http:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+:\d+$/ // Local network 172.16-31.x.x
+      /^http:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+:\d+$/ // Local network 172.16-31.x.x
     ];
     
     const isAllowed = allowedOrigins.some(pattern => pattern.test(origin));
@@ -71,6 +77,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(morgan('combined'));
+
+// CloudWatch request/response logging middleware (before other middleware)
+app.use(requestResponseLogger);
 
 // Input sanitization middleware (before parsing)
 app.use(sanitizeInput);
@@ -83,7 +92,9 @@ app.use(express.json({
     try {
       JSON.parse(buf);
     } catch (e) {
-      throw new Error('Invalid JSON payload');
+      console.error('JSON parsing failed:', e.message);
+      res.status(400).json({ error: 'Invalid JSON payload' });
+      return;
     }
   }
 }));

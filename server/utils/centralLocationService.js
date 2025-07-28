@@ -218,14 +218,19 @@ class CentralLocationService {
       return [];
     }
 
-    return locations.map(location => ({
-      value: location.code, // Use code as the primary value
-      label: location.name, // Use name as display name everywhere
-      name: location.name,
-      alternateId: location.code, // Code is the most important - use as alternateId
-      centerId: location.id, // Use id as centerId
-      locationShortCode: location.code // For backward compatibility
-    }));
+    return locations.map(location => {
+      // Use code as primary value, but fallback to name or id if code is empty
+      const value = location.code || location.name || location.id;
+      
+      return {
+        value: value, // Use code, name, or id as fallback
+        label: location.name, // Use name as display name everywhere
+        name: location.name,
+        alternateId: location.code || location.id, // Code or id as alternateId
+        centerId: location.id, // Use id as centerId
+        locationShortCode: location.code || location.id // For backward compatibility
+      };
+    }).filter(location => location.value && location.label); // Filter out locations without value or label
   }
 
   /**

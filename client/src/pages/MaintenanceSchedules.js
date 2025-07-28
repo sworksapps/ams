@@ -207,7 +207,9 @@ const MaintenanceSchedules = () => {
       setSchedules(schedulesRes.data);
       setAssets(assetsRes.data);
       setCategories(categoriesRes.data);
-      setLocations(locationsRes.data || []); // Set dynamic locations
+      // API response structure: {success: true, data: Array}
+      const locationData = locationsRes.data?.data || [];
+      setLocations(Array.isArray(locationData) ? locationData : []); // Set dynamic locations
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {

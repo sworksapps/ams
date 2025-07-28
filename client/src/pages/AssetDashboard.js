@@ -88,7 +88,8 @@ const AssetDashboard = () => {
         
         setAssets(assetsRes.data || []);
         // Ensure locations is always an array
-        const locationData = locationsRes.data || [];
+        // API response structure: {success: true, data: Array(113)}
+        const locationData = locationsRes.data?.data || [];
         setLocations(Array.isArray(locationData) ? locationData : []);
         setCategories(categoriesRes.data || []);
       } catch (error) {

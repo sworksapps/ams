@@ -18,7 +18,7 @@ router.get('/', validate(paginationSchema, 'query'), async (req, res) => {
     
     if (location) filters.location = location;
     if (category) filters.category = category;
-    if (status && status !== 'deleted') filters.status = status;
+    // Remove the old deleted status check since it doesn't exist in AssetStatus enum
     
     // For search, we'll need to use Prisma's OR conditions
     if (search) {
@@ -29,8 +29,12 @@ router.get('/', validate(paginationSchema, 'query'), async (req, res) => {
       ];
     }
     
-    // Exclude deleted assets
-    filters.status = { not: 'deleted' };
+    // Only show active and inactive assets (maintenance assets can be shown if specifically requested)
+    if (!status || status === 'all') {
+      // Don't add status filter - let the database service handle the default filtering
+    } else {
+      filters.status = status;
+    }
     
     const assets = await db.getAllAssets(filters);
     
@@ -203,6 +207,16 @@ router.post('/', validate(assetSchema), async (req, res) => {
 
     const assetId = uuidv4();
     
+    // Map asset_type from API format to Prisma enum
+    let mappedAssetType;
+    if (asset_type === 'Building asset') {
+      mappedAssetType = 'building';
+    } else if (asset_type === 'Client asset') {
+      mappedAssetType = 'client';
+    } else {
+      mappedAssetType = asset_type; // fallback
+    }
+    
     // Prepare asset data for Prisma
     const assetData = {
       id: assetId,
@@ -212,7 +226,7 @@ router.post('/', validate(assetSchema), async (req, res) => {
       locationName: locationData?.name || null,
       locationAlternateId: locationData?.alternateId || null,
       locationCenterId: locationData?.centerId || null,
-      assetType: asset_type,
+      assetType: mappedAssetType,
       client,
       floor,
       floorName: floorData?.name || null,
@@ -301,7 +315,16 @@ router.put('/:id', validate(assetSchema), async (req, res) => {
     
     Object.keys(updateData).forEach(key => {
       if (fieldMapping[key]) {
-        processedData[fieldMapping[key]] = updateData[key];
+        let value = updateData[key];
+        // Map asset_type enum values from API format to Prisma enum
+        if (key === 'asset_type') {
+          if (value === 'Building asset') {
+            value = 'building';
+          } else if (value === 'Client asset') {
+            value = 'client';
+          }
+        }
+        processedData[fieldMapping[key]] = value;
       } else if (key !== 'locationData' && key !== 'floorData' && key !== 'id') {
         processedData[key] = updateData[key];
       }
@@ -342,10 +365,10 @@ router.put('/:id', validate(assetSchema), async (req, res) => {
   }
 });
 
-// Delete asset (soft delete)
+// Delete asset (soft delete) - set to inactive since 'deleted' doesn't exist in AssetStatus enum
 router.delete('/:id', async (req, res) => {
   try {
-    await db.updateAsset(req.params.id, { status: 'deleted' });
+    await db.updateAsset(req.params.id, { status: 'inactive' });
     
     res.json({ message: 'Asset deleted successfully' });
   } catch (error) {

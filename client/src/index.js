@@ -1,3 +1,6 @@
+// Initialize New Relic Browser Agent first
+import './utils/newrelic';
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';

@@ -6,14 +6,12 @@ const router = express.Router();
 // Get all categories (parent categories only)
 router.get('/', async (req, res) => {
   try {
-    const categories = await db.all(`
-      SELECT id, name 
-      FROM categories 
-      WHERE parent_id IS NULL 
-      ORDER BY name ASC
-    `);
+    const categories = await db.getCategories();
     
-    res.json(categories);
+    // Filter to get only parent categories (no parent_id)
+    const parentCategories = categories.filter(cat => !cat.parentId);
+    
+    res.json(parentCategories);
   } catch (error) {
     console.error('Error fetching categories:', error);
     res.status(500).json({ error: 'Failed to fetch categories' });
