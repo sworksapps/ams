@@ -83,8 +83,6 @@ phases:
         sed -i 's/ENV_MYSQL_HOST/'"${MYSQL_HOST}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
         sed -i 's/ENV_MYSQL_USER/'"${MYSQL_USER}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
         sed -i 's/ENV_MYSQL_DB/'"${MYSQL_DB}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
-        sed -i 's/RELIC_LICENCE_KEY/'"${RELIC_LICENCE_KEY}"'/g' $CODEBUILD_SRC_DIR/newrelic.js
-        sed -i 's/ENV_NAME/'"${ENV_NAME}"'/g' $CODEBUILD_SRC_DIR/newrelic.js
 
   build:
     commands:
