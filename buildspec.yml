@@ -7,37 +7,99 @@ env:
       MYSQL_DB: $SECRET/AMS:MYSQL_DB
       MYSQL_PASSWORD: $SECRET/AMS:MYSQL_PASSWORD
 phases:
+  install:
+    commands:
+      - echo "Installing dependencies..."
+      - curl -sL https://rpm.nodesource.com/setup_18.x | sudo -E bash -
+      - yum install nodejs -y
+      - yum -q install -y jq docker
+      - pip3 install -q awscli boto3 --upgrade --user
+      - export SONAR_SCANNER_VERSION="6.2.1.4610"
+      - wget -qO /tmp/sonar-scanner.zip "https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-${SONAR_SCANNER_VERSION}-linux-x64.zip"
+      - unzip -q /tmp/sonar-scanner.zip -d /tmp
+      - /tmp/sonar-scanner-${SONAR_SCANNER_VERSION}-linux-x64/bin/sonar-scanner --version # Verify binary
+
   pre_build:
     commands:
+      - echo "Setting up environment variables..."
+      - APP_NAME=ams-${ENV_NAME}
+      - export SONAR_PROJECT_KEY=$APP_NAME
+      - export RELIC_LICENCE_KEY=$RELIC_LICENCE_KEY
+      - export NEW_RELIC_APPNAME=$APP_NAME
+      - export ENV_NAME=$ENV_NAME
+      - echo "Environment setup complete."
+      - echo "Generating sonar-project.properties file..."
       - |
-        #!/bin/bash
+        cat <<EOF > sonar-project.properties
+        sonar.projectKey=${APP_NAME}
+        sonar.projectName=${APP_NAME}
+        sonar.projectBaseDir=$(pwd)
+        sonar.projectVersion=1.0
+        sonar.scm.disabled=true
+        sonar.javascript.nodejs.executable=/usr/bin/node
+        sonar.javascript.detectBundles=false
+        sonar.coverage.jacoco.xmlReportPaths=
+        sonar.java.coveragePlugin=none
+        sonar.sources=.
+        # sonar.exclusions=**/vendor/**,**/.DS_Store,**/*.log,**/index.html,**/*.json,**/Dockerfile,**/Vagrantfile,**/buildspec.yml,**/public/ckeditor/lang/**,**/*.min.js,**/*.bundle.js
+        sonar.sourceEncoding=UTF-8
+        sonar.host.url=$SONAR_HOST
+        EOF
+      - echo "Running SonarQube scan..."
+      - /tmp/sonar-scanner-${SONAR_SCANNER_VERSION}-linux-x64/bin/sonar-scanner
+      - echo "Checking SonarQube quality gate status..."
+      - |
+        for i in {1..10}; do
+          curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST/api/qualitygates/project_status?projectKey=$SONAR_PROJECT_KEY" > /tmp/result.json
+          if [ "$(jq -r '.projectStatus.status' /tmp/result.json)" != "ERROR" ]; then
+            break
+          fi
+          echo "Waiting for SonarQube quality gate check... ($i)"
+          sleep 10
+        done
+      - |
+        if [ "$(jq -r '.projectStatus.status' /tmp/result.json)" = "ERROR" ]; then
+          echo "Quality gate failed."
+          exit 1
+        fi
+      - echo "SonarQube scan completed successfully."
+      - echo "Setting up Docker variables..."
+      - REPOSITORY_URI=919795083283.dkr.ecr.ap-south-1.amazonaws.com/$APP_NAME
+      - echo "REPOSITORY_URI=$REPOSITORY_URI"
+      - echo "Updating configuration files with environment variables using sed..."
+      - |
         sed -i 's/ENV_NAME/'"${ENV_NAME}"'/g' $CODEBUILD_SRC_DIR/Dockerfile
         sed -i 's/ENV_MYSQL_PASSWORD/'"${MYSQL_PASSWORD}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
         sed -i 's/ENV_MYSQL_HOST/'"${MYSQL_HOST}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
         sed -i 's/ENV_MYSQL_USER/'"${MYSQL_USER}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
         sed -i 's/ENV_MYSQL_DB/'"${MYSQL_DB}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
-      - "cat .env.${ENV_NAME}"
-      - echo Logging in to Amazon ECR...
-      - $(aws ecr get-login --no-include-email --region ap-south-1)
-      - APP_NAME=ams-${ENV_NAME}
-      - REPOSITORY_URI=919795083283.dkr.ecr.ap-south-1.amazonaws.com/$APP_NAME
-      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-8)
+        sed -i 's/ENV_DOCDB_HOST/'"${DOCDB_HOST}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
+        sed -i 's/ENV_DOCDB_USER/'"${DOCDB_USER}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
+        sed -i 's/ENV_DOCDB_PASSWORD/'"${DOCDB_PASSWORD}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
+        sed -i 's/ENV_DOCDB_PORT/'"${DOCDB_PORT}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
+        sed -i 's/ENV_ACCESS_KEY/'"${ACCESS_KEY}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
+        sed -i 's|ENV_SECRET_KEY|'"${SECRET_KEY}"'|g' "$CODEBUILD_SRC_DIR/.env.${ENV_NAME}"
+        sed -i 's/ENV_AWS_REGION/'"${AWS_REGION}"'/g' $CODEBUILD_SRC_DIR/.env.${ENV_NAME}
+        sed -i 's/RELIC_LICENCE_KEY/'"${RELIC_LICENCE_KEY}"'/g' $CODEBUILD_SRC_DIR/newrelic.js
+        sed -i 's/ENV_NAME/'"${ENV_NAME}"'/g' $CODEBUILD_SRC_DIR/newrelic.js
+
   build:
     commands:
-      - echo Build started on `date`
-      - echo Building the Docker image...
-      - docker build -t $REPOSITORY_URI:latest .
+      - echo "Building Docker image..."
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin 919795083283.dkr.ecr.$AWS_REGION.amazonaws.com
+      - docker build --build-arg NEW_RELIC_LICENSE_KEY=$NEW_RELIC_LICENSE_KEY --build-arg NEW_RELIC_APPNAME=$NEW_RELIC_APPNAME -t $REPOSITORY_URI:latest .
       - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$APP_NAME-$COMMIT_HASH
+
   post_build:
     commands:
-      - echo Build completed on `date`
-      - echo Pushing the Docker image...
+      - echo "Pushing Docker image..."
       - docker push $REPOSITORY_URI:latest
       - docker push $REPOSITORY_URI:$APP_NAME-$COMMIT_HASH
-      - rm -f imagedefinitions.json
-      - echo "Writing image definitions file....."
-      - printf '[{"name":"ams-'${ENV_NAME}'","imageUri":"%s"}]' $REPOSITORY_URI:latest > imagedefinitions.json
+      - echo "Writing image definitions..."
+      - printf '[{"name":"ams-%s","imageUri":"%s"}]' $ENV_NAME $REPOSITORY_URI:latest > imagedefinitions.json
       - cat imagedefinitions.json
 
 artifacts:
-    files: imagedefinitions.json
+  files:
+    - imagedefinitions.json
+
