@@ -7,6 +7,8 @@ env:
     MYSQL_USER: $SECRET/AMS:MYSQL_USER
     MYSQL_DB: $SECRET/AMS:MYSQL_DB
     MYSQL_PASSWORD: $SECRET/AMS:MYSQL_PASSWORD
+    SONAR_HOST: SHARED/sonarqube:sonarhost
+    SONAR_TOKEN: SHARED/sonarqube:sonartoken
 
 phases:
   install:
