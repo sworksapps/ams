@@ -1,49 +1,38 @@
 {
-  "name": "spoc-saas-backend",
+  "name": "asset-management-system",
   "version": "1.0.0",
-  "description": "",
-  "main": "app.js",
+  "description": "Comprehensive Asset Management System for central administrators",
+  "main": "server/index.js",
   "scripts": {
-    "prod": "env-cmd -f .env.prod nodemon app.js",
-    "dev": "env-cmd -f .env.dev nodemon app.js",
-    "qa": "env-cmd -f .env.qa node app.js",
-    "uat": "env-cmd -f .env.uat node app.js"
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "nodemon server/index.js",
+    "client": "cd client && npm start",
+    "build": "cd client && npm run build",
+    "install-all": "npm install && cd client && npm install"
   },
-  "author": "Smartworks",
-  "license": "ISC",
   "dependencies": {
-    "@aws-sdk/client-cloudwatch-logs": "^3.154.0",
-    "@aws-sdk/client-rekognition": "^3.165.0",
-    "aws-sdk": "^2.1025.0",
-    "axios": "^0.23.0",
-    "cls-hooked": "^4.2.2",
-    "config": "^3.3.6",
+    "aws-sdk": "^2.1692.0",
     "cors": "^2.8.5",
-    "dotenv": "^10.0.0",
-    "env-cmd": "^10.1.0",
-    "exceljs": "^4.3.0",
-    "express": "^4.17.1",
-    "express-mongo-sanitize": "^2.1.0",
-    "express-session": "^1.17.3",
-    "helmet": "^4.6.0",
-    "hpp": "^0.2.3",
-    "joi": "^17.4.2",
-    "jsonwebtoken": "^8.5.1",
+    "express": "^4.18.2",
+    "helmet": "^7.2.0",
+    "joi": "^17.13.3",
     "moment": "^2.29.4",
-    "moment-timezone": "^0.5.33",
-    "mongoose": "^6.5.4",
-    "mssql": "^9.0.1",
-    "multer": "^1.4.4",
-    "multer-s3": "^2.10.0",
-    "mysql": "^2.18.1",
-    "node-cron": "^3.0.2",
-    "nodemailer": "^6.7.0",
-    "uuid": "^8.3.2",
-    "winston": "^3.8.1",
-    "winston-cloudwatch": "^6.1.0"
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "multer-s3": "^3.0.1",
+    "sqlite3": "^5.1.6",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
-    "eslint": "^7.32.0",
-    "nodemon": "^2.0.15"
-  }
+    "concurrently": "^8.2.0",
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "asset-management",
+    "maintenance",
+    "dashboard",
+    "admin"
+  ],
+  "author": "Asset Management Team",
+  "license": "MIT"
 }

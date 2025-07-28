@@ -1,8 +1,0 @@
-{
-    "baseUrl": "http://localhost:9000/",
-    "baseDomain": "http://localhost:9000/",
-    "clientUrl": "sworks.co.in",
-    "jwtSecret": {
-        "user": "mjRL&xvjE6K*KneQscxtnz72G@gwCgrBhPFWAv#8eTyN6"
-    }
-}

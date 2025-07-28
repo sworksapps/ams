@@ -1,0 +1,566 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Modern Typography - Material 3 & Carbon Design Inspired */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* CSS Custom Properties - Material 3 Color System */
+:root {
+  /* Primary Colors - Dynamic Blue */
+  --color-primary-10: #001f2a;
+  --color-primary-20: #003544;
+  --color-primary-30: #004d61;
+  --color-primary-40: #00677f;
+  --color-primary-50: #00829f;
+  --color-primary-60: #009dc0;
+  --color-primary-70: #00b9e2;
+  --color-primary-80: #5dd5ff;
+  --color-primary-90: #b8eaff;
+  --color-primary-95: #dcf4ff;
+  --color-primary-99: #fefcff;
+  
+  /* Secondary Colors - Teal */
+  --color-secondary-10: #0a1f1c;
+  --color-secondary-20: #1f352f;
+  --color-secondary-30: #354c45;
+  --color-secondary-40: #4c645c;
+  --color-secondary-50: #647d74;
+  --color-secondary-60: #7e978d;
+  --color-secondary-70: #98b2a7;
+  --color-secondary-80: #b4cdc2;
+  --color-secondary-90: #d0e9dd;
+  --color-secondary-95: #def7eb;
+  --color-secondary-99: #f6fff9;
+  
+  /* Tertiary Colors - Warm Purple */
+  --color-tertiary-10: #2b1a2e;
+  --color-tertiary-20: #422f45;
+  --color-tertiary-30: #5a455d;
+  --color-tertiary-40: #735c76;
+  --color-tertiary-50: #8d7490;
+  --color-tertiary-60: #a88dab;
+  --color-tertiary-70: #c4a7c7;
+  --color-tertiary-80: #e0c2e3;
+  --color-tertiary-90: #fddeff;
+  --color-tertiary-95: #ffecff;
+  --color-tertiary-99: #fffbff;
+  
+  /* Neutral Colors */
+  --color-neutral-0: #000000;
+  --color-neutral-10: #1a1c1e;
+  --color-neutral-20: #2f3133;
+  --color-neutral-25: #3a3c3e;
+  --color-neutral-30: #464749;
+  --color-neutral-35: #525355;
+  --color-neutral-40: #5e5f61;
+  --color-neutral-50: #777779;
+  --color-neutral-60: #919094;
+  --color-neutral-70: #ababaf;
+  --color-neutral-80: #c7c6ca;
+  --color-neutral-90: #e3e2e6;
+  --color-neutral-95: #f1f0f4;
+  --color-neutral-98: #faf9fd;
+  --color-neutral-99: #fefbff;
+  --color-neutral-100: #ffffff;
+  
+  /* Error Colors */
+  --color-error-10: #410e0b;
+  --color-error-20: #601410;
+  --color-error-30: #8c1d18;
+  --color-error-40: #b3261e;
+  --color-error-50: #dc362e;
+  --color-error-60: #e46962;
+  --color-error-70: #ec928e;
+  --color-error-80: #f2b8b5;
+  --color-error-90: #f9dedc;
+  --color-error-95: #fceeee;
+  --color-error-99: #fffbf9;
+  
+  --color-purple-10: #f6f2ff;
+  --color-purple-50: #8a3ffc;
+  --color-purple-60: #6929c4;
+  --color-purple-70: #491d8b;
+  
+  --color-teal-10: #d9fbfb;
+  --color-teal-50: #009d9a;
+  --color-teal-60: #007d79;
+  --color-teal-70: #005d5d;
+  
+  /* Surface & Background */
+  --color-background: #ffffff;
+  --color-layer-01: #f4f4f4;
+  --color-layer-02: #ffffff;
+  --color-layer-03: #f4f4f4;
+  --color-field-01: #f4f4f4;
+  --color-field-02: #ffffff;
+  
+  /* Text Colors */
+  --color-text-primary: #161616;
+  --color-text-secondary: #525252;
+  --color-text-placeholder: #a8a8a8;
+  --color-text-helper: #6f6f6f;
+  --color-text-error: #da1e28;
+  --color-text-inverse: #ffffff;
+  
+  /* Border Colors */
+  --color-border-subtle: #e0e0e0;
+  --color-border-strong: #8d8d8d;
+  --color-border-inverse: #393939;
+  
+  /* Typography - IBM Plex Sans */
+  --font-family-sans: 'IBM Plex Sans', 'Source Sans Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-mono: 'IBM Plex Mono', 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+  
+  /* Type Scale - Carbon Design System */
+  --font-size-caption-01: 0.75rem;    /* 12px */
+  --font-size-caption-02: 0.875rem;   /* 14px */
+  --font-size-label-01: 0.75rem;      /* 12px */
+  --font-size-label-02: 0.875rem;     /* 14px */
+  --font-size-helper-text-01: 0.75rem; /* 12px */
+  --font-size-helper-text-02: 0.875rem; /* 14px */
+  --font-size-body-short-01: 0.875rem; /* 14px */
+  --font-size-body-short-02: 1rem;     /* 16px */
+  --font-size-body-long-01: 0.875rem;  /* 14px */
+  --font-size-body-long-02: 1rem;      /* 16px */
+  --font-size-code-01: 0.75rem;        /* 12px */
+  --font-size-code-02: 0.875rem;       /* 14px */
+  --font-size-heading-01: 0.875rem;    /* 14px */
+  --font-size-heading-02: 1rem;        /* 16px */
+  --font-size-heading-03: 1.25rem;     /* 20px */
+  --font-size-heading-04: 1.75rem;     /* 28px */
+  --font-size-heading-05: 2rem;        /* 32px */
+  --font-size-heading-06: 2.625rem;    /* 42px */
+  --font-size-heading-07: 3.375rem;    /* 54px */
+  
+  /* Line Heights */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-loose: 1.75;
+  
+  /* Spacing - 8px Grid System */
+  --spacing-01: 0.125rem;  /* 2px */
+  --spacing-02: 0.25rem;   /* 4px */
+  --spacing-03: 0.5rem;    /* 8px */
+  --spacing-04: 0.75rem;   /* 12px */
+  --spacing-05: 1rem;      /* 16px */
+  --spacing-06: 1.5rem;    /* 24px */
+  --spacing-07: 2rem;      /* 32px */
+  --spacing-08: 2.5rem;    /* 40px */
+  --spacing-09: 3rem;      /* 48px */
+  --spacing-10: 4rem;      /* 64px */
+  --spacing-11: 5rem;      /* 80px */
+  --spacing-12: 6rem;      /* 96px */
+  --spacing-13: 10rem;     /* 160px */
+  
+  /* Border Radius */
+  --radius-none: 0;
+  --radius-sm: 0.125rem;   /* 2px */
+  --radius-md: 0.25rem;    /* 4px */
+  --radius-lg: 0.5rem;     /* 8px */
+  --radius-xl: 1rem;       /* 16px */
+  
+  /* Shadows - Fluent Design Inspired */
+  --shadow-01: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-02: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow-03: 0 3px 6px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.12);
+  --shadow-04: 0 10px 20px rgba(0, 0, 0, 0.15), 0 3px 6px rgba(0, 0, 0, 0.10);
+  --shadow-05: 0 15px 25px rgba(0, 0, 0, 0.15), 0 5px 10px rgba(0, 0, 0, 0.05);
+  
+  /* Focus Ring */
+  --focus-ring: 0 0 0 2px var(--color-blue-60);
+  --focus-ring-offset: 0 0 0 1px var(--color-background);
+  
+  /* Animation - Fluent Motion */
+  --duration-fast-01: 70ms;
+  --duration-fast-02: 110ms;
+  --duration-moderate-01: 150ms;
+  --duration-moderate-02: 240ms;
+  --duration-slow-01: 400ms;
+  --duration-slow-02: 700ms;
+  
+  /* Easing Functions */
+  --ease-productive: cubic-bezier(0.2, 0, 0.38, 0.9);
+  --ease-expressive: cubic-bezier(0.4, 0.14, 0.3, 1);
+  --ease-entrance: cubic-bezier(0, 0, 0.38, 0.9);
+  --ease-exit: cubic-bezier(0.2, 0, 1, 0.9);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border-subtle);
+  }
+  
+  body {
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-body-short-02);
+    line-height: var(--line-height-normal);
+    color: var(--color-text-primary);
+    background-color: var(--color-background);
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
+  /* Typography Base - Carbon Design System */
+  h1 {
+    font-size: var(--font-size-heading-06);
+    font-weight: 300;
+    line-height: var(--line-height-tight);
+    letter-spacing: -0.64px;
+  }
+  
+  h2 {
+    font-size: var(--font-size-heading-05);
+    font-weight: 300;
+    line-height: var(--line-height-tight);
+    letter-spacing: -0.32px;
+  }
+  
+  h3 {
+    font-size: var(--font-size-heading-04);
+    font-weight: 400;
+    line-height: var(--line-height-tight);
+    letter-spacing: -0.16px;
+  }
+  
+  h4 {
+    font-size: var(--font-size-heading-03);
+    font-weight: 400;
+    line-height: var(--line-height-tight);
+  }
+  
+  h5 {
+    font-size: var(--font-size-heading-02);
+    font-weight: 600;
+    line-height: var(--line-height-tight);
+  }
+  
+  h6 {
+    font-size: var(--font-size-heading-01);
+    font-weight: 600;
+    line-height: var(--line-height-tight);
+    text-transform: uppercase;
+    letter-spacing: 0.32px;
+  }
+  
+  p {
+    font-size: var(--font-size-body-long-02);
+    line-height: var(--line-height-normal);
+    color: var(--color-text-primary);
+  }
+  
+  small {
+    font-size: var(--font-size-caption-02);
+    color: var(--color-text-secondary);
+  }
+}
+
+@layer components {
+  /* Professional Button System - Carbon Design Inspired */
+  .btn {
+    @apply inline-flex items-center justify-center font-medium transition-all focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed;
+    border-radius: var(--radius-none);
+    font-size: var(--font-size-body-short-02);
+    font-weight: 400;
+    line-height: var(--line-height-tight);
+    text-decoration: none;
+    cursor: pointer;
+    transition: all var(--duration-fast-02) var(--ease-productive);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .btn:focus {
+    box-shadow: inset 0 0 0 2px var(--color-blue-60), inset 0 0 0 3px var(--color-background);
+  }
+  
+  .btn-sm {
+    height: 2rem;
+    padding: 0 var(--spacing-04);
+    font-size: var(--font-size-caption-02);
+  }
+  
+  .btn-md {
+    height: 3rem;
+    padding: 0 var(--spacing-05);
+    font-size: var(--font-size-body-short-02);
+  }
+  
+  .btn-lg {
+    height: 4rem;
+    padding: 0 var(--spacing-06);
+    font-size: var(--font-size-body-short-02);
+  }
+  
+  /* Primary Button - Carbon Design System */
+  .btn-primary {
+    background-color: var(--color-blue-60);
+    color: var(--color-text-inverse);
+    border: 1px solid transparent;
+  }
+  
+  .btn-primary:hover {
+    background-color: var(--color-blue-70);
+  }
+  
+  .btn-primary:active {
+    background-color: var(--color-blue-80);
+  }
+  
+  .btn-primary:disabled {
+    background-color: var(--color-gray-30);
+    color: var(--color-text-placeholder);
+    border-color: var(--color-gray-30);
+  }
+  
+  /* Secondary Button - Material 3 Outlined */
+  .btn-secondary {
+    background-color: transparent;
+    color: var(--color-primary-40);
+    border: 1px solid var(--color-neutral-80);
+  }
+  
+  .btn-secondary:hover {
+    background-color: var(--color-primary-95);
+    border-color: var(--color-primary-40);
+    transform: translateY(-1px);
+  }
+  
+  .btn-secondary:active {
+    background-color: var(--color-primary-90);
+    transform: translateY(0);
+  }
+  
+  /* Success Button */
+  .btn-success {
+    background-color: var(--color-success-40);
+    color: var(--color-neutral-100);
+    box-shadow: var(--elevation-1);
+  }
+  
+  .btn-success:hover {
+    background-color: var(--color-success-30);
+    box-shadow: var(--elevation-2);
+    transform: translateY(-1px);
+  }
+  
+  /* Danger Button */
+  .btn-danger {
+    background-color: var(--color-error-40);
+    color: var(--color-neutral-100);
+    box-shadow: var(--elevation-1);
+  }
+  
+  .btn-danger:hover {
+    background-color: var(--color-error-30);
+    box-shadow: var(--elevation-2);
+    transform: translateY(-1px);
+  }
+  
+  /* Ghost Button */
+  .btn-ghost {
+    background-color: transparent;
+    color: var(--color-neutral-40);
+    border: none;
+  }
+  
+  .btn-ghost:hover {
+    background-color: var(--color-neutral-95);
+    color: var(--color-neutral-20);
+  }
+  
+  /* Modern Card System */
+  .card {
+    background-color: var(--color-surface-container-low);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--elevation-1);
+    border: 1px solid var(--color-neutral-90);
+    transition: all var(--duration-normal) var(--easing-standard);
+  }
+  
+  .card:hover {
+    box-shadow: var(--elevation-2);
+    transform: translateY(-2px);
+  }
+  
+  .card-elevated {
+    background-color: var(--color-surface-container);
+    box-shadow: var(--elevation-3);
+  }
+  
+  .card-elevated:hover {
+    box-shadow: var(--elevation-4);
+    transform: translateY(-4px);
+  }
+  
+  /* Modern Form Controls */
+  .input {
+    @apply w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200;
+    background-color: var(--color-surface-container-highest);
+    border-color: var(--color-neutral-80);
+    color: var(--color-neutral-10);
+    font-size: var(--text-sm);
+    border-radius: var(--radius-md);
+  }
+  
+  .input:focus {
+    border-color: var(--color-primary-40);
+    box-shadow: 0 0 0 3px var(--color-primary-95);
+    background-color: var(--color-surface-container-low);
+  }
+  
+  .input:hover {
+    border-color: var(--color-neutral-70);
+  }
+  
+  .select {
+    @apply w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-200;
+    background-color: var(--color-surface-container-highest);
+    border-color: var(--color-neutral-80);
+    color: var(--color-neutral-10);
+    font-size: var(--text-sm);
+    border-radius: var(--radius-md);
+  }
+  
+  .select:focus {
+    border-color: var(--color-primary-40);
+    box-shadow: 0 0 0 3px var(--color-primary-95);
+  }
+  
+  /* Modern Badge System */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 text-xs font-medium;
+    border-radius: var(--radius-full);
+    font-variation-settings: 'wght' 500;
+  }
+  
+  .badge-primary {
+    background-color: var(--color-primary-90);
+    color: var(--color-primary-10);
+  }
+  
+  .badge-success {
+    background-color: var(--color-success-90);
+    color: var(--color-success-10);
+  }
+  
+  .badge-warning {
+    background-color: var(--color-warning-90);
+    color: var(--color-warning-10);
+  }
+  
+  .badge-error {
+    background-color: var(--color-error-90);
+    color: var(--color-error-10);
+  }
+  
+  .badge-neutral {
+    background-color: var(--color-neutral-90);
+    color: var(--color-neutral-20);
+  }
+  
+  /* KPI Cards */
+  .kpi-card {
+    @apply card p-6 cursor-pointer;
+    background: linear-gradient(135deg, var(--color-surface-container-low) 0%, var(--color-surface-container) 100%);
+    transition: all var(--duration-normal) var(--easing-emphasized);
+  }
+  
+  .kpi-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: var(--elevation-4);
+  }
+  
+  .kpi-card:active {
+    transform: translateY(-2px) scale(1.01);
+  }
+  
+  /* Loading States */
+  .loading-shimmer {
+    background: linear-gradient(90deg, var(--color-neutral-95) 25%, var(--color-neutral-90) 50%, var(--color-neutral-95) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+  
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  
+  /* Micro-interactions */
+  .interactive {
+    transition: all var(--duration-normal) var(--easing-standard);
+  }
+  
+  .interactive:hover {
+    transform: translateY(-1px);
+  }
+  
+  .interactive:active {
+    transform: translateY(0);
+  }
+  
+  /* Focus States */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+  
+  .focus-ring:focus {
+    --tw-ring-color: var(--color-primary-50);
+  }
+}
+
+/* Enhanced Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-neutral-95);
+  border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-neutral-70);
+  border-radius: var(--radius-sm);
+  transition: background-color var(--duration-normal);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-neutral-60);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--color-neutral-95);
+}
+
+/* Selection */
+::selection {
+  background-color: var(--color-primary-80);
+  color: var(--color-primary-10);
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Loading animation */
+.loading-spinner {
+  border: 2px solid #f3f4f6;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

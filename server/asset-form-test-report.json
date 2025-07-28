@@ -1,0 +1,66 @@
+{
+  "summary": {
+    "total": 9,
+    "passed": 6,
+    "failed": 3,
+    "warnings": 0,
+    "duration": 479
+  },
+  "tests": [
+    {
+      "test": "Health Check",
+      "status": "PASS",
+      "details": "Status: 200",
+      "timestamp": "2025-07-26T07:51:26.530Z"
+    },
+    {
+      "test": "Categories API",
+      "status": "PASS",
+      "details": "Found 12 categories",
+      "timestamp": "2025-07-26T07:51:26.532Z"
+    },
+    {
+      "test": "Subcategories API",
+      "status": "PASS",
+      "details": "Found 3 subcategories for CCTV",
+      "timestamp": "2025-07-26T07:51:26.533Z"
+    },
+    {
+      "test": "Locations API",
+      "status": "FAIL",
+      "details": "HTTP 403: Forbidden",
+      "timestamp": "2025-07-26T07:51:26.817Z"
+    },
+    {
+      "test": "Assets List API",
+      "status": "PASS",
+      "details": "Status: 200",
+      "timestamp": "2025-07-26T07:51:26.822Z"
+    },
+    {
+      "test": "Asset Creation - Get Locations",
+      "status": "FAIL",
+      "details": "Cannot get locations for asset creation",
+      "timestamp": "2025-07-26T07:51:26.931Z"
+    },
+    {
+      "test": "Categories for Dropdown",
+      "status": "PASS",
+      "details": "Valid structure",
+      "timestamp": "2025-07-26T07:51:26.932Z"
+    },
+    {
+      "test": "Locations for Dropdown",
+      "status": "FAIL",
+      "details": "HTTP 403: Forbidden",
+      "timestamp": "2025-07-26T07:51:26.995Z"
+    },
+    {
+      "test": "Assets List",
+      "status": "PASS",
+      "details": "Endpoint accessible",
+      "timestamp": "2025-07-26T07:51:26.997Z"
+    }
+  ],
+  "timestamp": "2025-07-26T07:51:26.997Z"
+}

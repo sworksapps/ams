@@ -1,0 +1,437 @@
+/* TicketManagement Component Styles */
+
+/* Main Container */
+.ticket-management-container {
+  padding: 1.5rem;
+  background-color: #f9fafb;
+  min-height: 100vh;
+}
+
+/* Header Section */
+.ticket-management-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.ticket-management-title-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.ticket-management-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.ticket-management-subtitle {
+  color: #6b7280;
+}
+
+.ticket-management-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ticket-management-create-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.ticket-management-create-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.ticket-management-create-btn:active {
+  transform: translateY(0);
+}
+
+.ticket-management-refresh-btn {
+  color: #9ca3af;
+  transition: color 0.2s;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+}
+
+.ticket-management-refresh-btn:hover {
+  color: #6b7280;
+}
+
+.ticket-management-refresh-icon {
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
+/* KPI Cards Grid */
+.ticket-management-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .ticket-management-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .ticket-management-kpi-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+/* KPI Card Loading State */
+.ticket-management-kpi-loading {
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.ticket-management-kpi-loading-content {
+  display: flex;
+  align-items: center;
+}
+
+.ticket-management-kpi-loading-icon {
+  height: 2rem;
+  width: 2rem;
+  background-color: #d1d5db;
+  border-radius: 0.25rem;
+  margin-right: 0.75rem;
+}
+
+.ticket-management-kpi-loading-text {
+  flex: 1;
+}
+
+.ticket-management-kpi-loading-title {
+  height: 1rem;
+  background-color: #d1d5db;
+  border-radius: 0.25rem;
+  width: 4rem;
+  margin-bottom: 0.25rem;
+}
+
+.ticket-management-kpi-loading-value {
+  height: 1.5rem;
+  background-color: #d1d5db;
+  border-radius: 0.25rem;
+  width: 2rem;
+}
+
+/* KPI Card Base */
+.ticket-management-kpi-card {
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+  border: none;
+  width: 100%;
+}
+
+.ticket-management-kpi-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.ticket-management-kpi-card-active {
+  box-shadow: 0 0 0 2px #3b82f6;
+}
+
+.ticket-management-kpi-content {
+  display: flex;
+  align-items: center;
+}
+
+.ticket-management-kpi-icon {
+  height: 2rem;
+  width: 2rem;
+  margin-right: 0.75rem;
+}
+
+.ticket-management-kpi-icon-blue {
+  color: #2563eb;
+}
+
+.ticket-management-kpi-icon-green {
+  color: #059669;
+}
+
+.ticket-management-kpi-icon-orange {
+  color: #d97706;
+}
+
+.ticket-management-kpi-icon-red {
+  color: #dc2626;
+}
+
+.ticket-management-kpi-icon-gray {
+  color: #6b7280;
+}
+
+.ticket-management-kpi-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.ticket-management-kpi-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.ticket-management-kpi-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #111827;
+}
+
+/* Filters Section */
+.ticket-management-filters {
+  background-color: white;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  margin-bottom: 1.5rem;
+}
+
+.ticket-management-filters-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.ticket-management-filters-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  display: flex;
+  align-items: center;
+}
+
+.ticket-management-filters-icon {
+  height: 1.25rem;
+  width: 1.25rem;
+  margin-right: 0.5rem;
+}
+
+.ticket-management-filters-badge {
+  margin-left: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background-color: #dbeafe;
+  color: #1e40af;
+  font-size: 0.75rem;
+  border-radius: 9999px;
+}
+
+.ticket-management-filters-clear {
+  font-size: 0.875rem;
+  color: #2563eb;
+  font-weight: 500;
+  cursor: pointer;
+  background: none;
+  border: none;
+  transition: color 0.2s;
+}
+
+.ticket-management-filters-clear:hover {
+  color: #1d4ed8;
+}
+
+.ticket-management-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .ticket-management-filters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .ticket-management-filters-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .ticket-management-filters-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.ticket-management-filter-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.ticket-management-filter-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+
+/* Table Section */
+.ticket-management-table-container {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.ticket-management-table-header {
+  padding: 1.5rem 1.5rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.ticket-management-table-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* Table Cell Styles */
+.ticket-management-cell-text {
+  font-size: 0.875rem;
+  color: #111827;
+}
+
+.ticket-management-cell-text-truncate {
+  font-size: 0.875rem;
+  color: #111827;
+  max-width: 12rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ticket-management-cell-text-medium {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+.ticket-management-status-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ticket-management-status-icon {
+  height: 1rem;
+  width: 1rem;
+  color: #6b7280;
+}
+
+.ticket-management-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Status Badge Colors */
+.ticket-management-status-open {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.ticket-management-status-closed {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.ticket-management-status-pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.ticket-management-status-critical {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.ticket-management-status-default {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+/* External Link */
+.ticket-management-external-container {
+  display: flex;
+  justify-content: center;
+}
+
+.ticket-management-external-link {
+  color: #2563eb;
+  transition: color 0.2s;
+  text-decoration: none;
+}
+
+.ticket-management-external-link:hover {
+  color: #1d4ed8;
+}
+
+.ticket-management-external-icon {
+  height: 1rem;
+  width: 1rem;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .ticket-management-container {
+    padding: 1rem;
+  }
+  
+  .ticket-management-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .ticket-management-filters-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Animation */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
