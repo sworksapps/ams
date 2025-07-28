@@ -13,71 +13,91 @@ router.get('/', validate(paginationSchema, 'query'), async (req, res) => {
     console.log('Assets API called with query:', req.query);
     const { location, category, vendor, coverage_type, status, search } = req.query;
     
-    let sql = `
-      SELECT 
-        a.*,
-        c.vendor_name,
-        c.coverage_type,
-        c.period_till as coverage_expiry,
-        CASE 
-          WHEN c.period_till IS NULL THEN 'No Coverage'
-          WHEN DATE(c.period_till) < DATE('now') THEN 'Expired'
-          WHEN DATE(c.period_till) <= DATE('now', '+45 days') THEN 'Expiring Soon'
-          ELSE 'Active'
-        END as coverage_status,
-        CASE 
-          WHEN c.period_till IS NOT NULL THEN 
-            CAST((julianday(c.period_till) - julianday('now')) AS INTEGER)
-          ELSE NULL
-        END as days_left
-      FROM assets a
-      LEFT JOIN coverage c ON a.id = c.asset_id AND c.status = 'active'
-      WHERE a.status != 'deleted'
-    `;
+    // Build filters for Prisma
+    const filters = {};
     
-    const params = [];
+    if (location) filters.location = location;
+    if (category) filters.category = category;
+    if (status && status !== 'deleted') filters.status = status;
     
-    if (location) {
-      sql += ' AND a.location = ?';
-      params.push(location);
+    // For search, we'll need to use Prisma's OR conditions
+    if (search) {
+      filters.OR = [
+        { equipmentName: { contains: search, mode: 'insensitive' } },
+        { serialNumber: { contains: search, mode: 'insensitive' } },
+        { manufacturer: { contains: search, mode: 'insensitive' } }
+      ];
     }
     
-    if (category) {
-      sql += ' AND a.category = ?';
-      params.push(category);
-    }
+    // Exclude deleted assets
+    filters.status = { not: 'deleted' };
+    
+    const assets = await db.getAllAssets(filters);
+    
+    // Transform the data to match the expected format
+    const assetsWithCoverage = assets.map(asset => {
+      const activeCoverage = asset.coverage.find(c => c.status === 'active');
+      
+      let coverageStatus = 'No Coverage';
+      let daysLeft = null;
+      
+      if (activeCoverage && activeCoverage.periodTill) {
+        const expiryDate = new Date(activeCoverage.periodTill);
+        const today = new Date();
+        const diffTime = expiryDate - today;
+        daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (daysLeft < 0) {
+          coverageStatus = 'Expired';
+        } else if (daysLeft <= 45) {
+          coverageStatus = 'Expiring Soon';
+        } else {
+          coverageStatus = 'Active';
+        }
+      }
+      
+      return {
+        ...asset,
+        // Convert Prisma field names back to snake_case for compatibility
+        equipment_name: asset.equipmentName,
+        asset_type: asset.assetType,
+        location_name: asset.locationName,
+        location_alternate_id: asset.locationAlternateId,
+        location_center_id: asset.locationCenterId,
+        floor_name: asset.floorName,
+        floor_alternate_id: asset.floorAlternateId,
+        floor_id: asset.floorId,
+        model_number: asset.modelNumber,
+        serial_number: asset.serialNumber,
+        purchase_price: asset.purchasePrice,
+        poc_number: asset.pocNumber,
+        poc_name: asset.pocName,
+        owned_by: asset.ownedBy,
+        created_at: asset.createdAt,
+        updated_at: asset.updatedAt,
+        // Coverage information
+        vendor_name: activeCoverage?.vendorName || null,
+        coverage_type: activeCoverage?.coverageType || null,
+        coverage_expiry: activeCoverage?.periodTill || null,
+        coverage_status: coverageStatus,
+        days_left: daysLeft,
+        // Parse photos JSON
+        photos: asset.photos ? JSON.parse(asset.photos) : []
+      };
+    });
+    
+    // Apply additional filters that require post-processing
+    let filteredAssets = assetsWithCoverage;
     
     if (vendor) {
-      sql += ' AND c.vendor_name = ?';
-      params.push(vendor);
+      filteredAssets = filteredAssets.filter(asset => asset.vendor_name === vendor);
     }
     
     if (coverage_type) {
-      sql += ' AND c.coverage_type = ?';
-      params.push(coverage_type);
+      filteredAssets = filteredAssets.filter(asset => asset.coverage_type === coverage_type);
     }
     
-    if (status) {
-      sql += ' AND a.status = ?';
-      params.push(status);
-    }
-    
-    if (search) {
-      sql += ' AND (a.equipment_name LIKE ? OR a.serial_number LIKE ? OR a.manufacturer LIKE ?)';
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
-    }
-    
-    sql += ' ORDER BY a.created_at DESC';
-    
-    const assets = await db.all(sql, params);
-    
-    // Parse photos JSON
-    const assetsWithPhotos = assets.map(asset => ({
-      ...asset,
-      photos: asset.photos ? JSON.parse(asset.photos) : []
-    }));
-    
-    res.json(assetsWithPhotos);
+    res.json(filteredAssets);
   } catch (error) {
     console.error('Error fetching assets:', error);
     console.error('Error stack:', error.stack);
@@ -92,30 +112,61 @@ router.get('/', validate(paginationSchema, 'query'), async (req, res) => {
 // Get single asset by ID
 router.get('/:id', async (req, res) => {
   try {
-    const asset = await db.get('SELECT * FROM assets WHERE id = ?', [req.params.id]);
+    const asset = await db.getAssetById(req.params.id);
     
     if (!asset) {
       return res.status(404).json({ error: 'Asset not found' });
     }
     
-    // Get maintenance schedules
-    const schedules = await db.all(
-      'SELECT * FROM maintenance_schedules WHERE asset_id = ? AND is_active = 1',
-      [req.params.id]
-    );
-    
-    // Get coverage
-    const coverage = await db.all(
-      'SELECT * FROM coverage WHERE asset_id = ? ORDER BY created_at DESC',
-      [req.params.id]
-    );
-    
-    res.json({
+    // Transform the data to match expected format
+    const transformedAsset = {
       ...asset,
+      equipment_name: asset.equipmentName,
+      asset_type: asset.assetType,
+      location_name: asset.locationName,
+      location_alternate_id: asset.locationAlternateId,
+      location_center_id: asset.locationCenterId,
+      floor_name: asset.floorName,
+      floor_alternate_id: asset.floorAlternateId,
+      floor_id: asset.floorId,
+      model_number: asset.modelNumber,
+      serial_number: asset.serialNumber,
+      purchase_price: asset.purchasePrice,
+      poc_number: asset.pocNumber,
+      poc_name: asset.pocName,
+      owned_by: asset.ownedBy,
+      created_at: asset.createdAt,
+      updated_at: asset.updatedAt,
       photos: asset.photos ? JSON.parse(asset.photos) : [],
-      maintenance_schedules: schedules,
-      coverage: coverage
-    });
+      maintenance_schedules: asset.maintenanceSchedules.map(schedule => ({
+        ...schedule,
+        asset_id: schedule.assetId,
+        maintenance_name: schedule.maintenanceName,
+        start_date: schedule.startDate,
+        frequency_value: schedule.frequencyValue,
+        is_active: schedule.isActive,
+        created_at: schedule.createdAt
+      })),
+      coverage: asset.coverage.map(cov => ({
+        ...cov,
+        asset_id: cov.assetId,
+        vendor_name: cov.vendorName,
+        coverage_type: cov.coverageType,
+        amc_po: cov.amcPo,
+        amc_po_date: cov.amcPoDate,
+        amc_amount: cov.amcAmount,
+        amc_type: cov.amcType,
+        period_from: cov.periodFrom,
+        period_till: cov.periodTill,
+        month_of_expiry: cov.monthOfExpiry,
+        assets_owner: cov.assetsOwner,
+        types_of_service: cov.typesOfService,
+        created_at: cov.createdAt,
+        updated_at: cov.updatedAt
+      }))
+    };
+    
+    res.json(transformedAsset);
   } catch (error) {
     console.error('Error fetching asset:', error);
     res.status(500).json({ error: error.message });
@@ -149,62 +200,75 @@ router.post('/', validate(assetSchema), async (req, res) => {
       maintenance_schedules,
       coverage
     } = req.body;
-    
+
     const assetId = uuidv4();
     
-    // Insert asset
-    await db.run(`
-      INSERT INTO assets (
-        id, equipment_name, category, location, location_name, location_alternate_id, location_center_id,
-        asset_type, client, floor, floor_name, floor_alternate_id, floor_id,
-        model_number, capacity, manufacturer, serial_number, purchase_price,
-        poc_number, poc_name, owned_by, subcategory, make, unit, photos
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [
-      assetId, equipment_name, category, 
-      // Legacy location field (for backward compatibility)
-      locationData?.label || location,
-      // Central service location fields
-      locationData?.name || null,
-      locationData?.alternateId || null,
-      locationData?.centerId || null,
-      asset_type, client,
-      // Legacy floor field (for backward compatibility)
-      floorData?.label || floor,
-      // Central service floor fields
-      floorData?.name || null,
-      floorData?.alternateId || null,
-      floorData?.floorId || null,
-      model_number, capacity, manufacturer, serial_number, purchase_price,
-      poc_number, poc_name, owned_by, subcategory, make, unit,
-      JSON.stringify(photos || [])
-    ]);
+    // Prepare asset data for Prisma
+    const assetData = {
+      id: assetId,
+      equipmentName: equipment_name,
+      category,
+      location: locationData?.label || location,
+      locationName: locationData?.name || null,
+      locationAlternateId: locationData?.alternateId || null,
+      locationCenterId: locationData?.centerId || null,
+      assetType: asset_type,
+      client,
+      floor,
+      floorName: floorData?.name || null,
+      floorAlternateId: floorData?.alternateId || null,
+      floorId: floorData?.floorId || null,
+      modelNumber: model_number,
+      capacity,
+      manufacturer,
+      serialNumber: serial_number,
+      purchasePrice: purchase_price ? parseFloat(purchase_price) : null,
+      pocNumber: poc_number,
+      pocName: poc_name,
+      ownedBy: owned_by,
+      subcategory,
+      make,
+      unit,
+      photos: photos ? JSON.stringify(photos) : null,
+      status: 'active'
+    };
+
+    // Create the asset
+    const createdAsset = await db.createAsset(assetData);
     
-    // Insert maintenance schedules if provided
+    // Create maintenance schedules if provided
     if (maintenance_schedules && maintenance_schedules.length > 0) {
       for (const schedule of maintenance_schedules) {
-        await db.run(`
-          INSERT INTO maintenance_schedules (id, asset_id, maintenance_name, start_date, frequency, owner)
-          VALUES (?, ?, ?, ?, ?, ?)
-        `, [uuidv4(), assetId, schedule.maintenance_name, schedule.start_date, schedule.frequency, schedule.owner || 'SW']);
+        await db.createMaintenanceSchedule({
+          id: uuidv4(),
+          assetId: assetId,
+          maintenanceName: schedule.maintenance_name,
+          startDate: new Date(schedule.start_date),
+          frequency: schedule.frequency,
+          owner: schedule.owner || 'SW'
+        });
       }
     }
     
-    // Insert coverage if provided
+    // Create coverage if provided
     if (coverage && coverage.coverage_type !== 'Not Applicable') {
-      await db.run(`
-        INSERT INTO coverage (
-          id, asset_id, vendor_name, coverage_type, amc_po, amc_po_date,
-          amc_amount, amc_type, period_from, period_till, month_of_expiry,
-          status, remarks, assets_owner, types_of_service
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `, [
-        uuidv4(), assetId, coverage.vendor_name, coverage.coverage_type,
-        coverage.amc_po, coverage.amc_po_date, coverage.amc_amount,
-        coverage.amc_type, coverage.period_from, coverage.period_till,
-        coverage.month_of_expiry, 'active', coverage.remarks,
-        coverage.assets_owner, coverage.types_of_service
-      ]);
+      await db.createCoverage({
+        id: uuidv4(),
+        assetId: assetId,
+        vendorName: coverage.vendor_name,
+        coverageType: coverage.coverage_type,
+        amcPo: coverage.amc_po,
+        amcPoDate: coverage.amc_po_date ? new Date(coverage.amc_po_date) : null,
+        amcAmount: coverage.amc_amount ? parseFloat(coverage.amc_amount) : null,
+        amcType: coverage.amc_type,
+        periodFrom: coverage.period_from ? new Date(coverage.period_from) : null,
+        periodTill: coverage.period_till ? new Date(coverage.period_till) : null,
+        monthOfExpiry: coverage.month_of_expiry,
+        status: 'active',
+        remarks: coverage.remarks,
+        assetsOwner: coverage.assets_owner,
+        typesOfService: coverage.types_of_service
+      });
     }
     
     res.status(201).json({ id: assetId, message: 'Asset created successfully' });
@@ -220,38 +284,56 @@ router.put('/:id', validate(assetSchema), async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
     
-    // Handle location and floor data transformation
-    const processedData = { ...updateData };
+    // Transform the update data to match Prisma field names
+    const processedData = {};
+    
+    // Map snake_case to camelCase for Prisma
+    const fieldMapping = {
+      equipment_name: 'equipmentName',
+      asset_type: 'assetType',
+      model_number: 'modelNumber',
+      serial_number: 'serialNumber',
+      purchase_price: 'purchasePrice',
+      poc_number: 'pocNumber',
+      poc_name: 'pocName',
+      owned_by: 'ownedBy'
+    };
+    
+    Object.keys(updateData).forEach(key => {
+      if (fieldMapping[key]) {
+        processedData[fieldMapping[key]] = updateData[key];
+      } else if (key !== 'locationData' && key !== 'floorData' && key !== 'id') {
+        processedData[key] = updateData[key];
+      }
+    });
     
     // Process location data if provided
     if (updateData.locationData) {
       processedData.location = updateData.locationData.label;
-      processedData.location_name = updateData.locationData.name;
-      processedData.location_alternate_id = updateData.locationData.alternateId;
-      processedData.location_center_id = updateData.locationData.centerId;
-      delete processedData.locationData;
+      processedData.locationName = updateData.locationData.name;
+      processedData.locationAlternateId = updateData.locationData.alternateId;
+      processedData.locationCenterId = updateData.locationData.centerId;
     }
     
     // Process floor data if provided
     if (updateData.floorData) {
       processedData.floor = updateData.floorData.label;
-      processedData.floor_name = updateData.floorData.name;
-      processedData.floor_alternate_id = updateData.floorData.alternateId;
-      processedData.floor_id = updateData.floorData.floorId;
-      delete processedData.floorData;
+      processedData.floorName = updateData.floorData.name;
+      processedData.floorAlternateId = updateData.floorData.alternateId;
+      processedData.floorId = updateData.floorData.floorId;
     }
     
-    // Build dynamic update query
-    const fields = Object.keys(processedData).filter(key => key !== 'id');
-    const setClause = fields.map(field => `${field} = ?`).join(', ');
-    const values = fields.map(field => 
-      field === 'photos' ? JSON.stringify(processedData[field]) : processedData[field]
-    );
+    // Handle photos JSON serialization
+    if (processedData.photos) {
+      processedData.photos = JSON.stringify(processedData.photos);
+    }
     
-    await db.run(
-      `UPDATE assets SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-      [...values, id]
-    );
+    // Handle numeric fields
+    if (processedData.purchasePrice) {
+      processedData.purchasePrice = parseFloat(processedData.purchasePrice);
+    }
+    
+    await db.updateAsset(id, processedData);
     
     res.json({ message: 'Asset updated successfully' });
   } catch (error) {
@@ -263,10 +345,7 @@ router.put('/:id', validate(assetSchema), async (req, res) => {
 // Delete asset (soft delete)
 router.delete('/:id', async (req, res) => {
   try {
-    await db.run(
-      'UPDATE assets SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-      ['deleted', req.params.id]
-    );
+    await db.updateAsset(req.params.id, { status: 'deleted' });
     
     res.json({ message: 'Asset deleted successfully' });
   } catch (error) {
@@ -297,8 +376,25 @@ router.get('/data/locations', async (req, res) => {
 // Get categories for dropdown
 router.get('/data/categories', async (req, res) => {
   try {
-    const categories = await db.all('SELECT * FROM categories WHERE is_active = 1 ORDER BY name');
-    res.json(categories);
+    const categories = await db.getCategoriesHierarchy();
+    
+    // Transform to match expected format
+    const transformedCategories = categories.map(category => ({
+      id: category.id,
+      name: category.name,
+      parent_id: category.parentId,
+      is_active: category.isActive,
+      created_at: category.createdAt,
+      children: category.children.map(child => ({
+        id: child.id,
+        name: child.name,
+        parent_id: child.parentId,
+        is_active: child.isActive,
+        created_at: child.createdAt
+      }))
+    }));
+    
+    res.json(transformedCategories);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

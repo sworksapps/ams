@@ -1,0 +1,193 @@
+// Asset Management System - Prisma Schema
+// PostgreSQL database configuration for AWS RDS
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Assets table
+model Asset {
+  id                    String   @id
+  equipmentName         String   @map("equipment_name")
+  category              String
+  location              String
+  locationName          String?  @map("location_name")
+  locationAlternateId   String?  @map("location_alternate_id")
+  locationCenterId      String?  @map("location_center_id")
+  assetType             AssetType @map("asset_type")
+  client                String?
+  floor                 String?
+  floorName             String?  @map("floor_name")
+  floorAlternateId      String?  @map("floor_alternate_id")
+  floorId               String?  @map("floor_id")
+  modelNumber           String?  @map("model_number")
+  capacity              String?
+  manufacturer          String?
+  serialNumber          String?  @unique @map("serial_number")
+  purchasePrice         Float?   @map("purchase_price")
+  pocNumber             String?  @map("poc_number")
+  pocName               String?  @map("poc_name")
+  ownedBy               String?  @map("owned_by")
+  owner                 Owner    @default(SW)
+  subcategory           String?
+  make                  String?
+  unit                  String?
+  photos                String?  // JSON array of photo paths
+  status                AssetStatus @default(active)
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  maintenanceSchedules  MaintenanceSchedule[]
+  coverage              Coverage[]
+  tickets               Ticket[]
+
+  @@map("assets")
+}
+
+// Maintenance schedules table
+model MaintenanceSchedule {
+  id              String   @id
+  assetId         String   @map("asset_id")
+  maintenanceName String   @map("maintenance_name")
+  startDate       DateTime @map("start_date") @db.Date
+  frequency       String   // daily, weekly, monthly, quarterly, yearly
+  frequencyValue  Int      @default(1) @map("frequency_value")
+  owner           Owner    @default(SW)
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  asset           Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@map("maintenance_schedules")
+}
+
+// Coverage (AMC/Warranty) table
+model Coverage {
+  id              String       @id
+  assetId         String       @map("asset_id")
+  vendorName      String       @map("vendor_name")
+  coverageType    CoverageType @map("coverage_type")
+  amcPo           String?      @map("amc_po")
+  amcPoDate       DateTime?    @map("amc_po_date") @db.Date
+  amcAmount       Float?       @map("amc_amount")
+  amcType         String?      @map("amc_type")
+  periodFrom      DateTime?    @map("period_from") @db.Date
+  periodTill      DateTime?    @map("period_till") @db.Date
+  monthOfExpiry   String?      @map("month_of_expiry")
+  status          CoverageStatus @default(active)
+  remarks         String?
+  assetsOwner     String?      @map("assets_owner")
+  typesOfService  String?      @map("types_of_service")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  asset           Asset        @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@map("coverage")
+}
+
+// Tickets table
+model Ticket {
+  id                String       @id
+  assetId           String       @map("asset_id")
+  ticketNumber      String       @unique @map("ticket_number")
+  title             String
+  description       String?
+  priority          TicketPriority @default(medium)
+  status            TicketStatus @default(open)
+  assignedTo        String?      @map("assigned_to")
+  reportedBy        String       @map("reported_by")
+  reportedAt        DateTime     @default(now()) @map("reported_at")
+  resolvedAt        DateTime?    @map("resolved_at")
+  estimatedCost     Float?       @map("estimated_cost")
+  actualCost        Float?       @map("actual_cost")
+  workOrderNumber   String?      @map("work_order_number")
+  vendorName        String?      @map("vendor_name")
+  remarks           String?
+  photos            String?      // JSON array of photo paths
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  asset             Asset        @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@map("tickets")
+}
+
+// Locations table
+model Location {
+  id        String   @id
+  name      String   @unique
+  address   String?
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("locations")
+}
+
+// Categories table for dropdown data
+model Category {
+  id        String     @id
+  name      String     @unique
+  parentId  String?    @map("parent_id")
+  isActive  Boolean    @default(true) @map("is_active")
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  // Self-referential relation for parent-child categories
+  parent    Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryHierarchy")
+
+  @@map("categories")
+}
+
+// Enums
+enum AssetType {
+  building
+  client
+}
+
+enum Owner {
+  SW
+  Vendor
+}
+
+enum AssetStatus {
+  active
+  inactive
+  maintenance
+}
+
+enum CoverageType {
+  AMC
+  Warranty
+  NotApplicable @map("Not Applicable")
+}
+
+enum CoverageStatus {
+  active
+  expired
+  renewed
+}
+
+enum TicketPriority {
+  low
+  medium
+  high
+  critical
+}
+
+enum TicketStatus {
+  open
+  inProgress @map("in_progress")
+  resolved
+  closed
+  cancelled
+}

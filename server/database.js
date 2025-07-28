@@ -1,333 +1,118 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
-const fs = require('fs');
+const { PrismaClient } = require('@prisma/client');
 
-const DB_PATH = path.join(__dirname, 'asset_management.db');
-
-class Database {
+class DatabaseService {
   constructor() {
-    this.db = null;
-  }
-
-  async init() {
-    return new Promise((resolve, reject) => {
-      this.db = new sqlite3.Database(DB_PATH, (err) => {
-        if (err) {
-          console.error('Error opening database:', err);
-          reject(err);
-        } else {
-          console.log('Connected to SQLite database');
-          this.createTables().then(resolve).catch(reject);
-        }
-      });
+    this.prisma = new PrismaClient({
+      log: ['query', 'info', 'warn', 'error'],
     });
   }
 
-  async createTables() {
-    const tables = [
-      // Assets table
-      `CREATE TABLE IF NOT EXISTS assets (
-        id TEXT PRIMARY KEY,
-        equipment_name TEXT NOT NULL,
-        category TEXT NOT NULL,
-        location TEXT NOT NULL,
-        location_name TEXT, -- Central service location name
-        location_alternate_id TEXT, -- Central service alternateID
-        location_center_id TEXT, -- Central service centerId
-        asset_type TEXT NOT NULL CHECK(asset_type IN ('building', 'client')),
-        client TEXT, -- Client name when asset_type is 'client'
-        floor TEXT,
-        floor_name TEXT, -- Central service floor name
-        floor_alternate_id TEXT, -- Central service floor alternateId
-        floor_id TEXT, -- Central service floorId
-        model_number TEXT,
-        capacity TEXT,
-        manufacturer TEXT,
-        serial_number TEXT UNIQUE,
-        purchase_price REAL,
-        poc_number TEXT,
-        poc_name TEXT,
-        owned_by TEXT,
-        owner TEXT DEFAULT 'SW' CHECK(owner IN ('SW', 'Vendor')), -- maintenance owner
-        subcategory TEXT,
-        make TEXT,
-        unit TEXT,
-        photos TEXT, -- JSON array of photo paths
-        status TEXT DEFAULT 'active' CHECK(status IN ('active', 'inactive', 'maintenance')),
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`,
-
-      // Maintenance schedules table
-      `CREATE TABLE IF NOT EXISTS maintenance_schedules (
-        id TEXT PRIMARY KEY,
-        asset_id TEXT NOT NULL,
-        maintenance_name TEXT NOT NULL,
-        start_date DATE NOT NULL,
-        frequency TEXT NOT NULL, -- daily, weekly, monthly, quarterly, yearly
-        frequency_value INTEGER DEFAULT 1, -- every X days/weeks/months
-        owner TEXT DEFAULT 'SW' CHECK(owner IN ('SW', 'Vendor')), -- maintenance owner
-        is_active BOOLEAN DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (asset_id) REFERENCES assets (id) ON DELETE CASCADE
-      )`,
-
-      // Coverage (AMC/Warranty) table
-      `CREATE TABLE IF NOT EXISTS coverage (
-        id TEXT PRIMARY KEY,
-        asset_id TEXT NOT NULL,
-        vendor_name TEXT NOT NULL,
-        coverage_type TEXT NOT NULL CHECK(coverage_type IN ('AMC', 'Warranty', 'Not Applicable')),
-        amc_po TEXT,
-        amc_po_date DATE,
-        amc_amount REAL,
-        amc_type TEXT,
-        period_from DATE,
-        period_till DATE,
-        month_of_expiry TEXT,
-        status TEXT DEFAULT 'active' CHECK(status IN ('active', 'expired', 'renewed')),
-        remarks TEXT,
-        assets_owner TEXT,
-        types_of_service TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (asset_id) REFERENCES assets (id) ON DELETE CASCADE
-      )`,
-
-
-
-
-
-
-
-      // Categories table for dropdown data
-      `CREATE TABLE IF NOT EXISTS categories (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL UNIQUE,
-        parent_id TEXT,
-        is_active BOOLEAN DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (parent_id) REFERENCES categories (id)
-      )`
-    ];
-
-    for (const table of tables) {
-      await this.run(table);
-    }
-
-    // Run database migrations
-    await this.runMigrations();
-
-    // Insert default data
-    await this.insertDefaultData();
-  }
-
-  async runMigrations() {
+  async init() {
     try {
-      // Check if owner column exists in maintenance_schedules table
-      const tableInfo = await this.all("PRAGMA table_info(maintenance_schedules)");
-      const hasOwnerColumn = tableInfo.some(column => column.name === 'owner');
+      // Test the connection
+      await this.prisma.$connect();
+      console.log('Connected to PostgreSQL database via Prisma');
       
-      if (!hasOwnerColumn) {
-        console.log('Adding owner column to maintenance_schedules table...');
-        await this.run(`
-          ALTER TABLE maintenance_schedules 
-          ADD COLUMN owner TEXT DEFAULT 'SW' CHECK(owner IN ('SW', 'Vendor'))
-        `);
-        console.log('Owner column added successfully');
-      }
+      // Insert default data if tables are empty
+      await this.insertDefaultData();
       
-      // PPM tasks table migration removed - we no longer store PPM tasks internally
-      // All PPM task data is now fetched from external ticketing API
-      
-      // Remove owner column from assets table (maintenance owner should only be in schedules)
-      const assetsInfo = await this.all("PRAGMA table_info(assets)");
-      const hasAssetOwnerColumn = assetsInfo.some(column => column.name === 'owner');
-      
-      if (hasAssetOwnerColumn) {
-        console.log('Removing owner column from assets table...');
-        // SQLite doesn't support DROP COLUMN, so we need to recreate the table
-        await this.run(`
-          CREATE TABLE assets_new (
-            id TEXT PRIMARY KEY,
-            equipment_name TEXT NOT NULL,
-            category TEXT NOT NULL,
-            location TEXT NOT NULL,
-            asset_type TEXT NOT NULL CHECK(asset_type IN ('building', 'client')),
-            client TEXT,
-            floor TEXT,
-            model_number TEXT,
-            capacity TEXT,
-            manufacturer TEXT,
-            serial_number TEXT UNIQUE,
-            purchase_price REAL,
-            poc_number TEXT,
-            poc_name TEXT,
-            owned_by TEXT,
-            subcategory TEXT,
-            make TEXT,
-            unit TEXT,
-            photos TEXT,
-            status TEXT DEFAULT 'active' CHECK(status IN ('active', 'inactive', 'maintenance')),
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-          )
-        `);
-        
-        await this.run(`
-          INSERT INTO assets_new SELECT 
-            id, equipment_name, category, location, asset_type, NULL as client, floor,
-            model_number, capacity, manufacturer, serial_number, purchase_price,
-            poc_number, poc_name, owned_by, subcategory, make, unit, photos,
-            status, created_at, updated_at
-          FROM assets
-        `);
-        
-        await this.run('DROP TABLE assets');
-        await this.run('ALTER TABLE assets_new RENAME TO assets');
-        console.log('Owner column removed from assets table successfully');
-      }
+      return true;
     } catch (error) {
-      console.error('Error running migrations:', error);
-      // Don't throw error to prevent app from crashing
+      console.error('Error connecting to database:', error);
+      throw error;
     }
   }
 
   async insertDefaultData() {
-    // Default locations
+    try {
+      // Check if locations already exist
+      const locationCount = await this.prisma.location.count();
+      if (locationCount === 0) {
+        console.log('Inserting default locations...');
+        await this.insertDefaultLocations();
+      }
+
+      // Check if categories already exist
+      const categoryCount = await this.prisma.category.count();
+      if (categoryCount === 0) {
+        console.log('Inserting default categories...');
+        await this.insertDefaultCategories();
+      }
+
+      console.log('Default data insertion completed');
+    } catch (error) {
+      console.error('Error inserting default data:', error);
+    }
+  }
+
+  async insertDefaultLocations() {
     const locations = [
-      { id: 'loc-1', name: 'Mumbai Office', address: 'Bandra Kurla Complex, Mumbai' },
-      { id: 'loc-2', name: 'Delhi Office', address: 'Connaught Place, New Delhi' },
-      { id: 'loc-3', name: 'Bangalore Office', address: 'Electronic City, Bangalore' }
+      { id: 'loc-1', name: 'Building A', address: 'Main Campus, Floor 1-5' },
+      { id: 'loc-2', name: 'Building B', address: 'Main Campus, Floor 1-3' },
+      { id: 'loc-3', name: 'Building C', address: 'Main Campus, Floor 1-4' },
+      { id: 'loc-4', name: 'Data Center', address: 'Basement Level' },
+      { id: 'loc-5', name: 'Parking Area', address: 'Ground Level' },
+      { id: 'loc-6', name: 'Rooftop', address: 'Top Level' }
     ];
 
-    // Comprehensive categories and subcategories
+    for (const location of locations) {
+      await this.prisma.location.upsert({
+        where: { id: location.id },
+        update: {},
+        create: location
+      });
+    }
+  }
+
+  async insertDefaultCategories() {
     const categoryData = [
-      // Access Control
-      { category: 'Access Control', subcategory: 'Access Controller' },
-      { category: 'Access Control', subcategory: 'Access System' },
-      { category: 'Access Control', subcategory: 'CCTV' },
-      { category: 'Access Control', subcategory: 'NVR' },
-      // Battery
-      { category: 'Battery', subcategory: 'Battery' },
-      // BMS
-      { category: 'BMS', subcategory: 'AC Controller' },
-      { category: 'BMS', subcategory: 'BMS - Software & Hardware' },
-      { category: 'BMS', subcategory: 'Boom Barrier' },
-      { category: 'BMS', subcategory: 'CCTV' },
-      { category: 'BMS', subcategory: 'Controller' },
-      { category: 'BMS', subcategory: 'Flap Barrier' },
-      { category: 'BMS', subcategory: 'MLCP' },
-      { category: 'BMS', subcategory: 'PA System' },
-      { category: 'BMS', subcategory: 'Sliding Door' },
-      { category: 'BMS', subcategory: 'Software' },
-      { category: 'BMS', subcategory: 'Video Wall' },
-      // DG
-      { category: 'DG', subcategory: 'DG' },
-      { category: 'DG', subcategory: 'Diesel Generator' },
-      // Dishwasher
-      { category: 'Dishwasher', subcategory: 'Dishwasher' },
-      // Drinking Water System
-      { category: 'Drinking Water System', subcategory: 'Bubbletop Water Dispenser' },
-      { category: 'Drinking Water System', subcategory: 'Drinking Water System' },
-      { category: 'Drinking Water System', subcategory: 'RO' },
-      { category: 'Drinking Water System', subcategory: 'RO Dispenser' },
-      { category: 'Drinking Water System', subcategory: 'RO Machine' },
-      { category: 'Drinking Water System', subcategory: 'Water Dispenser' },
+      // Air Conditioner
+      { category: 'Air Conditioner', subcategory: 'Cassette AC' },
+      { category: 'Air Conditioner', subcategory: 'Ductable AC' },
+      { category: 'Air Conditioner', subcategory: 'Package AC' },
+      { category: 'Air Conditioner', subcategory: 'Split AC' },
+      { category: 'Air Conditioner', subcategory: 'VRF' },
+      { category: 'Air Conditioner', subcategory: 'Window AC' },
+      // Boiler
+      { category: 'Boiler', subcategory: 'Boiler' },
+      // Chiller
+      { category: 'Chiller', subcategory: 'Air Cooled Chiller' },
+      { category: 'Chiller', subcategory: 'Chiller' },
+      { category: 'Chiller', subcategory: 'Water Cooled Chiller' },
+      // DG Set
+      { category: 'DG Set', subcategory: 'DG Set' },
       // Electrical
-      { category: 'Electrical', subcategory: 'Air Cooler' },
-      { category: 'Electrical', subcategory: 'Air Curtain' },
       { category: 'Electrical', subcategory: 'APFC Panel' },
-      { category: 'Electrical', subcategory: 'Audio System' },
-      { category: 'Electrical', subcategory: 'Automatic Hand Sanitizer' },
-      { category: 'Electrical', subcategory: 'Bain Marie' },
-      { category: 'Electrical', subcategory: 'Bainmarie' },
-      { category: 'Electrical', subcategory: 'Buscoupler' },
-      { category: 'Electrical', subcategory: 'Changeover Panel' },
-      { category: 'Electrical', subcategory: 'Coffee Machine' },
-      { category: 'Electrical', subcategory: 'DB' },
-      { category: 'Electrical', subcategory: 'DG Incomer' },
-      { category: 'Electrical', subcategory: 'DG Syn Outgoing' },
-      { category: 'Electrical', subcategory: 'DG Sync Panel' },
-      { category: 'Electrical', subcategory: 'DG-1 Incomer' },
-      { category: 'Electrical', subcategory: 'DG-2 Incomer' },
-      { category: 'Electrical', subcategory: 'EB Incomer' },
-      { category: 'Electrical', subcategory: 'Electrical' },
+      { category: 'Electrical', subcategory: 'Capacitor Bank' },
+      { category: 'Electrical', subcategory: 'Control Panel' },
+      { category: 'Electrical', subcategory: 'Distribution Board' },
       { category: 'Electrical', subcategory: 'Electrical Panel' },
-      { category: 'Electrical', subcategory: 'Exhaust Fan' },
-      { category: 'Electrical', subcategory: 'Fan' },
-      { category: 'Electrical', subcategory: 'Flipper Machine' },
-      { category: 'Electrical', subcategory: 'Hand Dryer' },
       { category: 'Electrical', subcategory: 'HT Panel' },
-      { category: 'Electrical', subcategory: 'HT VCB Panel' },
-      { category: 'Electrical', subcategory: 'Inverter' },
-      { category: 'Electrical', subcategory: 'LT Kiosk ACB Panel' },
       { category: 'Electrical', subcategory: 'LT Panel' },
-      { category: 'Electrical', subcategory: 'Main LT Panel' },
-      { category: 'Electrical', subcategory: 'Meter Cubical' },
-      { category: 'Electrical', subcategory: 'Microwave' },
-      { category: 'Electrical', subcategory: 'Music Systems' },
-      { category: 'Electrical', subcategory: 'Pantry' },
-      { category: 'Electrical', subcategory: 'Pneumatic Pumps' },
-      { category: 'Electrical', subcategory: 'Pump' },
-      { category: 'Electrical', subcategory: 'Raw & LTG Panel' },
-      { category: 'Electrical', subcategory: 'Refrigerator' },
-      { category: 'Electrical', subcategory: 'RMU (SF6 Panel)' },
-      { category: 'Electrical', subcategory: 'Submersible Pump' },
-      { category: 'Electrical', subcategory: 'Television' },
+      { category: 'Electrical', subcategory: 'Main Panel' },
+      { category: 'Electrical', subcategory: 'MCC Panel' },
+      { category: 'Electrical', subcategory: 'PCC Panel' },
+      { category: 'Electrical', subcategory: 'Power Panel' },
+      { category: 'Electrical', subcategory: 'Sub Panel' },
       { category: 'Electrical', subcategory: 'Transformer' },
-      { category: 'Electrical', subcategory: 'Utility Panel' },
-      { category: 'Electrical', subcategory: 'Washing Machine' },
-      { category: 'Electrical', subcategory: 'Water Tank' },
-      // Escalator
-      { category: 'Escalator', subcategory: 'Escalator' },
-      // FAS
-      { category: 'FAS', subcategory: 'Cabinet' },
-      { category: 'FAS', subcategory: 'Clean Agent' },
-      { category: 'FAS', subcategory: 'FAS' },
-      { category: 'FAS', subcategory: 'FAS Main Panel' },
-      { category: 'FAS', subcategory: 'FAS Repeater Panel' },
-      { category: 'FAS', subcategory: 'Fire Alarm Panel' },
-      { category: 'FAS', subcategory: 'Fire Detection' },
-      { category: 'FAS', subcategory: 'Fire Extinguisher' },
-      { category: 'FAS', subcategory: 'Fire Fighting' },
-      { category: 'FAS', subcategory: 'Fire Tank' },
-      { category: 'FAS', subcategory: 'GSS' },
-      { category: 'FAS', subcategory: 'Hooter' },
-      { category: 'FAS', subcategory: 'MCP' },
-      { category: 'FAS', subcategory: 'PA System' },
-      { category: 'FAS', subcategory: 'Pump' },
-      { category: 'FAS', subcategory: 'Rodent Repellent Panel' },
-      { category: 'FAS', subcategory: 'Smoke Detector' },
-      { category: 'FAS', subcategory: 'Sprinkler' },
-      { category: 'FAS', subcategory: 'UG Tanks' },
-      { category: 'FAS', subcategory: 'Water Tank' },
-      { category: 'FAS', subcategory: 'WLD' },
-      // Gym
-      { category: 'Gym', subcategory: 'Gym' },
-      // HK
-      { category: 'HK', subcategory: 'Dustbin' },
-      // HK Machine
-      { category: 'HK Machine', subcategory: 'HK Machinery' },
-      { category: 'HK Machine', subcategory: 'IPC' },
-      { category: 'HK Machine', subcategory: 'Single Disc Machine' },
-      { category: 'HK Machine', subcategory: 'Single Disc Scrubbing Machine' },
-      { category: 'HK Machine', subcategory: 'Vacuum Cleaner' },
-      { category: 'HK Machine', subcategory: 'Vacuum' },
+      { category: 'Electrical', subcategory: 'VFD' },
+      // Fire Safety
+      { category: 'Fire Safety', subcategory: 'Fire Alarm Panel' },
+      { category: 'Fire Safety', subcategory: 'Fire Extinguisher' },
+      { category: 'Fire Safety', subcategory: 'Fire Hydrant System' },
+      { category: 'Fire Safety', subcategory: 'Fire Sprinkler System' },
+      { category: 'Fire Safety', subcategory: 'Smoke Detector' },
+      // Generator
+      { category: 'Generator', subcategory: 'Generator' },
       // HVAC
       { category: 'HVAC', subcategory: 'AHU' },
-      { category: 'HVAC', subcategory: 'Air Scrubber' },
-      { category: 'HVAC', subcategory: 'Air Washer' },
-      { category: 'HVAC', subcategory: 'Chiller' },
-      { category: 'HVAC', subcategory: 'Cooling Tower' },
-      { category: 'HVAC', subcategory: 'Fan' },
-      { category: 'HVAC', subcategory: 'Non VRV Outdoor' },
-      { category: 'HVAC', subcategory: 'PAC Unit' },
-      { category: 'HVAC', subcategory: 'Pump' },
-      { category: 'HVAC', subcategory: 'Split AC-Outdoor' },
-      { category: 'HVAC', subcategory: 'VRV/VRF Outdoor' },
+      { category: 'HVAC', subcategory: 'Exhaust Fan' },
+      { category: 'HVAC', subcategory: 'FCU' },
+      { category: 'HVAC', subcategory: 'Fresh Air Unit' },
+      { category: 'HVAC', subcategory: 'HVAC System' },
       // Lift
-      { category: 'Lift', subcategory: 'Operation Lift' },
+      { category: 'Lift', subcategory: 'Goods Lift' },
+      { category: 'Lift', subcategory: 'Passenger Lift' },
       { category: 'Lift', subcategory: 'Service Lift' },
       // Pumps
       { category: 'Pumps', subcategory: 'Booster Pump' },
@@ -354,19 +139,22 @@ class Database {
     ];
 
     // Convert to hierarchical structure
-    const categories = [];
     const categoryMap = new Map();
     let categoryIdCounter = 1;
     let subcategoryIdCounter = 1;
 
-    // First pass: create categories
+    // First pass: create parent categories
     for (const item of categoryData) {
       if (!categoryMap.has(item.category)) {
         const categoryId = `cat-${categoryIdCounter++}`;
-        categories.push({
-          id: categoryId,
-          name: item.category,
-          parent_id: null
+        await this.prisma.category.upsert({
+          where: { id: categoryId },
+          update: {},
+          create: {
+            id: categoryId,
+            name: item.category,
+            parentId: null
+          }
         });
         categoryMap.set(item.category, categoryId);
       }
@@ -375,95 +163,268 @@ class Database {
     // Second pass: create subcategories
     for (const item of categoryData) {
       const parentId = categoryMap.get(item.category);
-      categories.push({
-        id: `sub-${subcategoryIdCounter++}`,
-        name: item.subcategory,
-        parent_id: parentId
-      });
-    }
-
-    try {
-      for (const location of locations) {
-        await this.run(
-          'INSERT OR IGNORE INTO locations (id, name, address) VALUES (?, ?, ?)',
-          [location.id, location.name, location.address]
-        );
-      }
-
-      for (const category of categories) {
-        await this.run(
-          'INSERT OR IGNORE INTO categories (id, name, parent_id) VALUES (?, ?, ?)',
-          [category.id, category.name, category.parent_id]
-        );
-      }
+      const subcategoryId = `sub-${subcategoryIdCounter++}`;
       
-      // Clean up any invalid entries
-      await this.cleanupInvalidCategories();
-    } catch (error) {
-      console.error('Error inserting default data:', error);
+      await this.prisma.category.upsert({
+        where: { id: subcategoryId },
+        update: {},
+        create: {
+          id: subcategoryId,
+          name: item.subcategory,
+          parentId: parentId
+        }
+      });
     }
   }
 
-  async cleanupInvalidCategories() {
+  // Asset operations
+  async createAsset(assetData) {
+    return await this.prisma.asset.create({
+      data: assetData,
+      include: {
+        maintenanceSchedules: true,
+        coverage: true,
+        tickets: true
+      }
+    });
+  }
+
+  async getAssetById(id) {
+    return await this.prisma.asset.findUnique({
+      where: { id },
+      include: {
+        maintenanceSchedules: true,
+        coverage: true,
+        tickets: true
+      }
+    });
+  }
+
+  async getAllAssets(filters = {}) {
+    const where = {};
+    
+    if (filters.category) where.category = filters.category;
+    if (filters.location) where.location = filters.location;
+    if (filters.status) where.status = filters.status;
+    if (filters.assetType) where.assetType = filters.assetType;
+
+    return await this.prisma.asset.findMany({
+      where,
+      include: {
+        maintenanceSchedules: true,
+        coverage: true,
+        tickets: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  async updateAsset(id, updateData) {
+    return await this.prisma.asset.update({
+      where: { id },
+      data: {
+        ...updateData,
+        updatedAt: new Date()
+      },
+      include: {
+        maintenanceSchedules: true,
+        coverage: true,
+        tickets: true
+      }
+    });
+  }
+
+  async deleteAsset(id) {
+    return await this.prisma.asset.delete({
+      where: { id }
+    });
+  }
+
+  // Maintenance Schedule operations
+  async createMaintenanceSchedule(scheduleData) {
+    return await this.prisma.maintenanceSchedule.create({
+      data: scheduleData,
+      include: { asset: true }
+    });
+  }
+
+  async getMaintenanceSchedules(assetId = null) {
+    const where = assetId ? { assetId } : {};
+    return await this.prisma.maintenanceSchedule.findMany({
+      where,
+      include: { asset: true },
+      orderBy: { startDate: 'asc' }
+    });
+  }
+
+  async updateMaintenanceSchedule(id, updateData) {
+    return await this.prisma.maintenanceSchedule.update({
+      where: { id },
+      data: updateData,
+      include: { asset: true }
+    });
+  }
+
+  async deleteMaintenanceSchedule(id) {
+    return await this.prisma.maintenanceSchedule.delete({
+      where: { id }
+    });
+  }
+
+  // Coverage operations
+  async createCoverage(coverageData) {
+    return await this.prisma.coverage.create({
+      data: coverageData,
+      include: { asset: true }
+    });
+  }
+
+  async getCoverage(assetId = null) {
+    const where = assetId ? { assetId } : {};
+    return await this.prisma.coverage.findMany({
+      where,
+      include: { asset: true },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  async updateCoverage(id, updateData) {
+    return await this.prisma.coverage.update({
+      where: { id },
+      data: {
+        ...updateData,
+        updatedAt: new Date()
+      },
+      include: { asset: true }
+    });
+  }
+
+  async deleteCoverage(id) {
+    return await this.prisma.coverage.delete({
+      where: { id }
+    });
+  }
+
+  // Ticket operations
+  async createTicket(ticketData) {
+    return await this.prisma.ticket.create({
+      data: ticketData,
+      include: { asset: true }
+    });
+  }
+
+  async getTickets(filters = {}) {
+    const where = {};
+    
+    if (filters.assetId) where.assetId = filters.assetId;
+    if (filters.status) where.status = filters.status;
+    if (filters.priority) where.priority = filters.priority;
+    if (filters.assignedTo) where.assignedTo = filters.assignedTo;
+
+    return await this.prisma.ticket.findMany({
+      where,
+      include: { asset: true },
+      orderBy: { createdAt: 'desc' }
+    });
+  }
+
+  async updateTicket(id, updateData) {
+    return await this.prisma.ticket.update({
+      where: { id },
+      data: {
+        ...updateData,
+        updatedAt: new Date()
+      },
+      include: { asset: true }
+    });
+  }
+
+  async deleteTicket(id) {
+    return await this.prisma.ticket.delete({
+      where: { id }
+    });
+  }
+
+  // Location operations
+  async getLocations() {
+    return await this.prisma.location.findMany({
+      where: { isActive: true },
+      orderBy: { name: 'asc' }
+    });
+  }
+
+  async createLocation(locationData) {
+    return await this.prisma.location.create({
+      data: locationData
+    });
+  }
+
+  // Category operations
+  async getCategories() {
+    return await this.prisma.category.findMany({
+      where: { isActive: true },
+      include: {
+        parent: true,
+        children: true
+      },
+      orderBy: { name: 'asc' }
+    });
+  }
+
+  async getCategoriesHierarchy() {
+    const categories = await this.prisma.category.findMany({
+      where: { 
+        isActive: true,
+        parentId: null // Get only parent categories
+      },
+      include: {
+        children: {
+          where: { isActive: true }
+        }
+      },
+      orderBy: { name: 'asc' }
+    });
+
+    return categories;
+  }
+
+  async createCategory(categoryData) {
+    return await this.prisma.category.create({
+      data: categoryData
+    });
+  }
+
+  // Generic query methods for backward compatibility
+  async run(sql, params = []) {
+    // This method is for raw SQL queries if needed
+    return await this.prisma.$executeRaw`${sql}`;
+  }
+
+  async get(sql, params = []) {
+    // This method is for raw SQL queries if needed
+    return await this.prisma.$queryRaw`${sql}`;
+  }
+
+  async all(sql, params = []) {
+    // This method is for raw SQL queries if needed
+    return await this.prisma.$queryRaw`${sql}`;
+  }
+
+  async close() {
+    await this.prisma.$disconnect();
+    console.log('Disconnected from PostgreSQL database');
+  }
+
+  // Health check method
+  async healthCheck() {
     try {
-      // Remove entries with [Object Object] or similar invalid names
-      await this.run(
-        'DELETE FROM categories WHERE name LIKE "%Object%" OR name = "[object Object]" OR name = "[Object Object]"'
-      );
-      console.log('Cleaned up invalid category entries');
+      await this.prisma.$queryRaw`SELECT 1`;
+      return { status: 'healthy', timestamp: new Date() };
     } catch (error) {
-      console.error('Error cleaning up invalid categories:', error);
+      return { status: 'unhealthy', error: error.message, timestamp: new Date() };
     }
-  }
-
-  run(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      this.db.run(sql, params, function(err) {
-        if (err) {
-          reject(err);
-        } else {
-          resolve({ id: this.lastID, changes: this.changes });
-        }
-      });
-    });
-  }
-
-  get(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      this.db.get(sql, params, (err, row) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(row);
-        }
-      });
-    });
-  }
-
-  all(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      this.db.all(sql, params, (err, rows) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
-        }
-      });
-    });
-  }
-
-  close() {
-    return new Promise((resolve, reject) => {
-      this.db.close((err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
-    });
   }
 }
 
-const database = new Database();
+const database = new DatabaseService();
 module.exports = database;
